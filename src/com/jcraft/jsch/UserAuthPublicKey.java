@@ -61,7 +61,6 @@ class UserAuthPublicKey extends UserAuth{
     buf.putByte((byte)0);
     buf.putString(identity.getAlgName().getBytes());
     buf.putString(pubkeyblob);
-    packet.pack();
     session.write(packet);
 
     // receive
@@ -101,7 +100,6 @@ class UserAuthPublicKey extends UserAuth{
     System.arraycopy(buf.buffer, 5, tmp, 0, tmp.length);
     buf.putString(identity.getSignature(tmp));
     
-    packet.pack();
     session.write(packet);
 
     // receive

@@ -76,7 +76,6 @@ class ChannelSftp extends ChannelSession{
       buf.putInt(5);
       buf.putByte((byte)1);         // FXP_INIT
       buf.putInt(3);                // version 3
-      packet.pack();
       session.write(packet);
 
 
@@ -96,7 +95,6 @@ class ChannelSftp extends ChannelSession{
       buf.putByte((byte)16);         // FXP_REALPATH
       buf.putInt(1);                 // id(1)
       buf.putString(".".getBytes()); // path
-      packet.pack();
       session.write(packet);
 
       // receive FXP_NAME
@@ -130,7 +128,6 @@ System.out.println("longname: "+new String(str));
       buf.putByte((byte)16);         // FXP_REALPATH
       buf.putInt(2);                 // id(2)
       buf.putString("/tmp".getBytes()); // path
-      packet.pack();
       session.write(packet);
 
       buf.rewind();
@@ -147,7 +144,6 @@ System.out.println("longname: "+new String(str));
       buf.putByte((byte)17);        // FXP_STAT
       buf.putInt(3);                 // id(3)
       buf.putString("/tmp".getBytes()); // path
-      packet.pack();
       session.write(packet);
 
       buf.rewind();

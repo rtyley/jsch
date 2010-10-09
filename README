@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Thu Oct 31 13:35:38 UTC 2002
+Last modified: Tue Nov  5 14:40:30 UTC 2002
 
 Description
 ===========
@@ -58,6 +58,8 @@ Features
 * port forwarding.
 * stream forwarding.
 * remote exec.
+* packet compression.
+  JZlib(http://www.jcraft.com/jzlib/) has been used.
 * JSch is licensed under GNU LGPL.
 
 
@@ -66,7 +68,7 @@ How To Try
 This archive does not include java byte code, so please compile
 the source code by your self.
   $ cd jsch-?.?.?/src
-  $ javac com/jcraft/jsch/*java com/jcraft/jsch/jce/*java
+  $ javac com/jcraft/jsch/*java com/jcraft/jsch/jce/*java com/jcraft/jzlib/*.java
 '/examples/' directory has included some samples to demonstrate what 
 JSch can do.  Please refer to '/examples/README' file.
 
@@ -84,11 +86,21 @@ A sample program, /example/StreamForwarding.java , demonstrates
 this functionality.
 
 
+Packet Compression
+==================
+According to the draft from IETF sesch working group, the packet
+compression can be applied to each data stream directions; from sshd
+server to ssh client and from ssh client to sshd server.  So, jsch
+allow you to choose which data stream direction will be compressed or not.
+For example, in X11 forwarding session, the packet compression for data
+stream from sshd to ssh client will save the network traffic, but
+usually the traffic from ssh client to sshd is not so many, so by omitting
+the  compression, you may be able to save the CPU time.
+
+
 TODO
 ====
 * file transfer.
-* packet compression.
-  JZlib(http://www.jcraft.com/jzlib/) will be used.
 * re-implementation with java.nio.
 * replacing cipher, hash by JCE with pure Java code.
   It seems BeeCrypt(http://www.virtualunlimited.com/products/beecrypt/),

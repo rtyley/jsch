@@ -75,3 +75,12 @@ This directory contains some examples, which demonstrate how to use JSch
   $ CLASSPATH=.:../src UserAuthPubKey
   You will be asked hostname, privatekey(id_dsa), username and passphrase. 
   If everything works fine, you will get the shell prompt
+
+- Compression.java
+  This program will demonstrate the packet compression.
+  $ CLASSPATH=.:../src javac Compression.java
+  $ CLASSPATH=.:../src Compression
+  You will be asked hostname, username and passwd. 
+  If everything works fine, you will get the shell prompt. 
+  In this program, all data from sshd server to jsch will be
+  compressed.

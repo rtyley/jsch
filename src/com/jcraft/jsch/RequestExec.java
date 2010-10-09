@@ -41,7 +41,6 @@ class RequestExec implements Request{
     buf.putString("exec".getBytes());
     buf.putByte((byte)0);
     buf.putString(command.getBytes());
-    packet.pack();
     session.write(packet);
   }
 }

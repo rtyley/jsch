@@ -52,6 +52,9 @@ public class Session implements Runnable{
   private MAC c2smac;
   private byte[] mac_buf;
 
+  private Compression deflater;
+  private Compression inflater;
+
   private IO io;
 
   private String identity;
@@ -143,15 +146,16 @@ public class Session implements Runnable{
       buf.putString(KeyExchange.enc_s2c.getBytes());
       buf.putString(KeyExchange.mac_c2s.getBytes());
       buf.putString(KeyExchange.mac_s2c.getBytes());
-      buf.putString(KeyExchange.comp_c2s.getBytes());
-      buf.putString(KeyExchange.comp_s2c.getBytes());
+      buf.putString(getConfig("compression.c2s").getBytes());
+      buf.putString(getConfig("compression.s2c").getBytes());
+//    buf.putString(KeyExchange.comp_c2s.getBytes());
+//    buf.putString(KeyExchange.comp_s2c.getBytes());
       buf.putString(KeyExchange.lang_c2s.getBytes());
       buf.putString(KeyExchange.lang_s2c.getBytes());
       buf.putByte((byte)0);
       buf.putInt(0);
       I_C=new byte[buf.getLength()];
       buf.getByte(I_C);
-      packet.pack();
       write(packet);
 
       KeyExchange kex=null;
@@ -197,7 +201,6 @@ public class Session implements Runnable{
       //  send SSH_MSG_NEWKEYS(21)
       packet.reset();
       buf.putByte((byte)0x15);
-      packet.pack();
       write(packet);
 
       updateKeys(hash, K, H, session_id);
@@ -240,9 +243,12 @@ public class Session implements Runnable{
   }
 
 
-
   // encode will bin invoked in write with synchronization.
   public void encode(Packet packet) throws Exception{
+     if(deflater!=null){
+       packet.buffer.index=deflater.compress(packet.buffer.buffer, 5, packet.buffer.index);
+     }
+     packet.padding();
      byte[] mac=null;
      if(c2scipher!=null){
        int pad=packet.buffer.buffer[4];
@@ -289,6 +295,10 @@ public class Session implements Runnable{
 	}
       }
       seqi++;
+
+      if(inflater!=null){
+        inflater.uncompress(buf);
+      }
 
       if(buf.buffer[5]==1){
         buf.rewind();
@@ -416,6 +426,13 @@ public class Session implements Runnable{
       c=Class.forName(getConfig(getConfig("mac.c2s")));
       c2smac=(MAC)(c.newInstance());
       c2smac.init(MACc2s);
+
+      if(!getConfig("compression.c2s").equals("none")){
+        deflater=Compression.getDeflater(6);
+      }
+      if(!getConfig("compression.s2c").equals("none")){
+        inflater=Compression.getInflater();
+      }
     }
     catch(Exception e){ System.err.println(e); }
   }
@@ -459,7 +476,6 @@ public class Session implements Runnable{
 	    buf.putByte((byte)93);
 	    buf.putInt(channel.getRecipient());
 	    buf.putInt(channel.lwsize_max-channel.lwsize);
-	    packet.pack();
 	    write(packet);
 	    channel.setLocalWindowSize(channel.lwsize_max);
 	  }
@@ -490,7 +506,6 @@ public class Session implements Runnable{
 	  packet.reset();
 	  buf.putByte((byte)Const.SSH_MSG_CHANNEL_EOF);
 	  buf.putInt(channel.getRecipient());
-	  packet.pack();
 	  write(packet);
 	  break;
 	case Const.SSH_MSG_CHANNEL_CLOSE:
@@ -503,7 +518,6 @@ public class Session implements Runnable{
 	  packet.reset();
 	  buf.putByte((byte) Const.SSH_MSG_CHANNEL_CLOSE);
 	  buf.putInt(channel.getRecipient());
-	  packet.pack();
 	  write(packet);
 	  Channel.del(channel);
 	  break;
@@ -544,7 +558,6 @@ public class Session implements Runnable{
 	  buf.putInt(channel.id);
 	  buf.putInt(channel.lwsize);
 	  buf.putInt(channel.lmpsize);
-	  packet.pack();
 	  write(packet);
 	  (new Thread(channel)).start();
           break;
@@ -581,7 +594,6 @@ public class Session implements Runnable{
     buf.putByte((byte)0);
     buf.putString("0.0.0.0".getBytes());
     buf.putInt(rport);
-    packet.pack();
     write(packet);
   }
 
@@ -611,4 +623,11 @@ public class Session implements Runnable{
   public void setX11Cookie(String cookie){ ChannelX11.setCookie(cookie); }
   public void setIdentity(String foo){ this.identity=foo; }
   String getIdentity(){ return identity; }
+  public void setConfig(java.util.Properties foo){
+    if(config==null) config=new java.util.Properties();
+    for(java.util.Enumeration e=foo.keys() ; e.hasMoreElements() ;) {
+      String key=(String)(e.nextElement());
+      config.put(key, (String)(foo.get(key)));
+    }
+  }
 }

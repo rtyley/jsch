@@ -111,7 +111,6 @@ public class Channel implements Runnable{
       buf.putInt(this.id);
       buf.putInt(this.lwsize);
       buf.putInt(this.lmpsize);
-      packet.pack();
       session.write(packet);
 
       try{

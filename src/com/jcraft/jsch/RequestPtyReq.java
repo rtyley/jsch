@@ -39,7 +39,6 @@ class RequestPtyReq implements Request{
     buf.putInt(640);
     buf.putInt(480);
     buf.putString("".getBytes());
-    packet.pack();
     session.write(packet);
   }
 }

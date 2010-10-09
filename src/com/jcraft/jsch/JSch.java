@@ -31,8 +31,8 @@ public class JSch{
     config.put("cipher.c2s", "blowfish-cbc");
     config.put("mac.s2c", "hmac-md5");
     config.put("mac.c2s", "hmac-md5");
-    config.put("compress.s2c", "none");
-    config.put("compress.c2s", "none");
+    config.put("compression.s2c", "none");
+    config.put("compression.c2s", "none");
 
     config.put("diffie-hellman-group-exchange-sha1",
 	       "com.jcraft.jsch.jce.DHGEX");

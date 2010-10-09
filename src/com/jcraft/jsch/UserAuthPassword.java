@@ -48,7 +48,6 @@ class UserAuthPassword extends UserAuth{
     buf.putString("password".getBytes());
     buf.putByte((byte)0);
     buf.putString(userinfo.getPassword().getBytes());
-    packet.pack();
     session.write(packet);
 
     // receive

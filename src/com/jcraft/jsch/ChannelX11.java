@@ -118,7 +118,6 @@ System.out.println("");
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-        packet.pack();
 	session.write(packet);
       }
     }

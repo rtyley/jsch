@@ -73,7 +73,6 @@ class ChannelForwardedTCPIP extends Channel{
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-        packet.pack();
 	session.write(packet);
       }
     }
@@ -86,7 +85,6 @@ class ChannelForwardedTCPIP extends Channel{
       packet.reset();
       buf.putByte((byte) Const.SSH_MSG_CHANNEL_EOF);
       buf.putInt(recipient);
-      packet.pack();
       session.write(packet);
     }
     catch(Exception e){

@@ -46,7 +46,6 @@ class RequestX11 implements Request{
     buf.putString("MIT-MAGIC-COOKIE-1".getBytes());
     buf.putString(ChannelX11.getFakedCookie(session));
     buf.putInt(0);
-    packet.pack();
     session.write(packet);
   }
 }

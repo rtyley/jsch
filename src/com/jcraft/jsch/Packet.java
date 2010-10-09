@@ -34,7 +34,7 @@ public class Packet{
   public void reset(){
     buffer.index=5;
   }
-  public void pack(){
+  void padding(){
     int len=buffer.index;
     int pad=(-len)&7;
     if(pad<8){

@@ -31,7 +31,6 @@ abstract class UserAuth{
     packet.reset();
     buf.putByte((byte)Const.SSH_MSG_SERVICE_REQUEST);
     buf.putString("ssh-userauth".getBytes());
-    packet.pack();
     session.write(packet);
 
     // receive

@@ -33,7 +33,6 @@ public class RequestSftp implements Request{
 //    buf.putByte((byte)1);
     buf.putByte((byte)0);
     buf.putString("sftp".getBytes());
-    packet.pack();
     session.write(packet);
 
     /*

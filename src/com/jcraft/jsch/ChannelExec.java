@@ -69,7 +69,6 @@ public class ChannelExec extends ChannelSession{
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-        packet.pack();
 	session.write(packet);
       }
     }

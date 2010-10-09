@@ -76,7 +76,6 @@ public class DHGEX extends KeyExchange{
     buf.putInt(min);
     buf.putInt(preferred);
     buf.putInt(max);
-    packet.pack();
     session.write(packet); 
 
     // byte  SSH_MSG_KEX_DH_GEX_GROUP(31)
@@ -102,7 +101,6 @@ public class DHGEX extends KeyExchange{
     packet.reset();
     buf.putByte((byte)0x20);
     buf.putMPInt(e);
-    packet.pack();
     session.write(packet);
 
     // The server responds with:

@@ -70,7 +70,6 @@ public class ChannelDirectTCPIP extends Channel{
       buf.putInt(port);
       buf.putString(originator_IP_address.getBytes());
       buf.putInt(originator_port);
-      packet.pack();
       session.write(packet);
       try{
         while(this.getRecipient()==-1){
@@ -105,7 +104,6 @@ public class ChannelDirectTCPIP extends Channel{
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-        packet.pack();
 	session.write(packet);
       }
     }
@@ -117,7 +115,6 @@ public class ChannelDirectTCPIP extends Channel{
       packet.reset();
       buf.putByte((byte)Const.SSH_MSG_CHANNEL_EOF);
       buf.putInt(recipient);
-      packet.pack();
       session.write(packet);
     }
     catch(Exception e){

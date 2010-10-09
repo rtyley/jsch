@@ -36,7 +36,6 @@ class RequestShell implements Request{
     buf.putInt(channel.getRecipient());
     buf.putString("shell".getBytes());
     buf.putByte((byte)0);
-    packet.pack();
     session.write(packet);
   }
 }

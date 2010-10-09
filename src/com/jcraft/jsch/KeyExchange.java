@@ -44,8 +44,8 @@ public abstract class KeyExchange{
   static String mac_c2s="hmac-md5";     // hmac-md5,hmac-sha1,hmac-ripemd160,
                                         // hmac-sha1-96,hmac-md5-96
   static String mac_s2c="hmac-md5";
-  static String comp_c2s="none";        // zlib
-  static String comp_s2c="none";
+//static String comp_c2s="none";        // zlib
+//static String comp_s2c="none";
   static String lang_c2s="";
   static String lang_s2c="";
 
