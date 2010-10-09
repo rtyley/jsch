@@ -1,8 +1,14 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Oct  4 15:00:18 UTC 2005
+Last modified: Tue Oct 11 16:18:54 UTC 2005
 
+
+Changes since version 0.1.22:		
+- bugfix: there is a freeze problem at fails on key-exchanging. FIXED. 
+- bugfix: race-condition forcefully disconnects session in closing channels.
+	  FIXED. 
 	
+
 Changes since version 0.1.21:		
 - bugfix: there is a bug in read() method implementation for the
           input-stream returned from ChannelSftp.get().  FIXED. 

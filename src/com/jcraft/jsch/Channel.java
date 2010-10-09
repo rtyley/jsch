@@ -246,20 +246,28 @@ public abstract class Channel implements Runnable{
     write(foo, 0, foo.length);
   }
   void write(byte[] foo, int s, int l) throws IOException {
-    if(io.out!=null)
+    try{
+//    if(io.out!=null)
       io.put(foo, s, l);
+    }catch(NullPointerException e){}
   }
   void write_ext(byte[] foo, int s, int l) throws IOException {
-    if(io.out_ext!=null)
+    try{
+//    if(io.out_ext!=null)
       io.put_ext(foo, s, l);
+    }catch(NullPointerException e){}
   }
 
-  void eof_remote() throws IOException {
+  void eof_remote(){
     eof_remote=true;
-    if(io.out!=null){
-      io.out.close();
-      io.out=null;
+    try{
+      if(io.out!=null){
+        io.out.close();
+        io.out=null;
+      }
     }
+    catch(NullPointerException e){}
+    catch(IOException e){}
   }
 
   void eof(){
@@ -362,62 +370,32 @@ public abstract class Channel implements Runnable{
     }
   }
 
+  /*
   public void finalize() throws Throwable{
     disconnect();
     super.finalize();
     session=null;
   }
+  */
 
   public void disconnect(){
-//System.out.println(this+":disconnect "+((ChannelExec)this).command+" "+io.in);
 //System.out.println(this+":disconnect "+io+" "+io.in);
     if(!connected){
       return;
     }
     connected=false;
 
-    //eof();
     close();
     thread=null;
 
     try{
       if(io!=null){
         io.close();
-        /*
-	try{
-	  //System.out.println(" io.in="+io.in);
-	  if(io.in!=null && 
-	     (io.in instanceof PassiveInputStream)
-	     )
-	    io.in.close();
-          io.in=null;
-	}
-	catch(Exception ee){}
-	try{
-	  //System.out.println(" io.out="+io.out);
-	  if(io.out!=null && 
-	     (io.out instanceof PassiveOutputStream)
-	     )
-	    io.out.close();
-          io.out=null;
-	}
-	catch(Exception ee){}
-	try{
-	  //System.out.println(" io.out_ext="+out_ext);
-	  if(io.out_ext!=null &&
-	     (io.out_ext instanceof PassiveOutputStream)
-	     )
-	    io.out_ext.close();
-          io.out_ext=null;
-	}
-	catch(Exception ee){}
-        */
       }
     }
     catch(Exception e){
       //e.printStackTrace();
     }
-
     io=null;
     Channel.del(this);
   }

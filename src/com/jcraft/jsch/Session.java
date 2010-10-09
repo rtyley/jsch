@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.22";
+  static private final String version="JSCH-0.1.23";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -316,10 +316,12 @@ public class Session implements Runnable{
 	  result=kex.next(buf);
 	  if(!result){
 	    //System.out.println("verify: "+result);
+            in_kex=false;
 	    throw new JSchException("verify: "+result);
 	  }
 	}
 	else{
+          in_kex=false;
 	  throw new JSchException("invalid protocol(kex): "+buf.buffer[5]);
 	}
 	if(kex.getState()==KeyExchange.STATE_END){
@@ -327,9 +329,13 @@ public class Session implements Runnable{
 	}
       }
 
-      checkHost(host, kex);
+      try{ checkHost(host, kex); }
+      catch(JSchException ee){
+        in_kex=false;
+        throw ee;
+      }
 
-send_newkeys();
+      send_newkeys();
 
       // receive SSH_MSG_NEWKEYS(21)
       buf=read(buf);
@@ -1012,6 +1018,7 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
   }
   */
   public void write(Packet packet) throws Exception{
+    // System.out.println("in_kex="+in_kex+" "+(packet.buffer.buffer[5]));
     while(in_kex){
       byte command=packet.buffer.buffer[5];
       //System.out.println("command: "+command);
@@ -1021,6 +1028,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
          command==SSH_MSG_KEXDH_REPLY){
         break;
       }
+      try{Thread.sleep(10);}
+      catch(java.lang.InterruptedException e){};
     }
     _write(packet);
   }
@@ -1319,10 +1328,12 @@ break;
     isConnected=false;
   }
 
+  /*
   public void finalize() throws Throwable{
     disconnect();
     jsch=null;
   }
+  */
 
   public void disconnect(){
     if(!isConnected) return;

@@ -182,7 +182,8 @@ public class ChannelSftp extends ChannelSession{
 
 //    thread=Thread.currentThread();
 
-      buf=new Buffer();
+//      buf=new Buffer();
+      buf=new Buffer(rmpsize);
       packet=new Packet(buf);
       int i=0;
       int j=0;
@@ -1688,9 +1689,11 @@ public class ChannelSftp extends ChannelSession{
     return (new File(path)).isAbsolute();
   }
 
+  /*
   public void finalize() throws Throwable{
     super.finalize();
   }
+  */
 
   public void disconnect(){
     //waitForRunningThreadFinish(10000);
