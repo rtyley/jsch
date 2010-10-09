@@ -211,22 +211,17 @@ public class Sftp{
 	  if(cmds.size()==3)p2=(String)cmds.elementAt(2);
 	  try{
 	    SftpProgressMonitor monitor=new MyProgressMonitor();
-//monitor=null;
 	    if(cmd.startsWith("get")){
 	      int mode=ChannelSftp.OVERWRITE;
 	      if(cmd.equals("get-resume")){ mode=ChannelSftp.RESUME; }
 	      else if(cmd.equals("get-append")){ mode=ChannelSftp.APPEND; } 
-//long foo=System.currentTimeMillis();
 	      c.get(p1, p2, monitor, mode);
-//System.out.println(System.currentTimeMillis()-foo);
 	    }
 	    else{ 
 	      int mode=ChannelSftp.OVERWRITE;
 	      if(cmd.equals("put-resume")){ mode=ChannelSftp.RESUME; }
 	      else if(cmd.equals("put-append")){ mode=ChannelSftp.APPEND; } 
-//long foo=System.currentTimeMillis();
 	      c.put(p1, p2, monitor, mode); 
-//System.out.println(System.currentTimeMillis()-foo);
 	    }
 	  }
 	  catch(SftpException e){

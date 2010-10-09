@@ -1,6 +1,14 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Thu Feb 16 16:16:04 UTC 2006
+Last modified: Thu Mar 30 15:23:26 UTC 2006
+
+	
+Changes since version 0.1.25:		
+- bugfix: infinite loop/hang on connection at unexpected error during
+          key-exchanging operation.  FIXED
+- bugfix: delays on sftp uploading.  FIXED
+- bugfix: failed to purge a host-key from its repository in some case. FIXED.
+- feature: SOCKS4 proxy
 
 	
 Changes since version 0.1.24:		
@@ -11,8 +19,7 @@ Changes since version 0.1.24:
 - bugfix: ChannelShell.setXForwarding always set xforwarding to be true. FIXED.
 - change: ChannelShell.setPty is added.
 - change: Proxy interface is free from session object.
-- change: added examples/ScpToNoneCipher.java to demonstrate NONE Cipher switching.
-- feature: added NONE Cipher switching support.
+- feature: added None Cipher support
 - feature: timeout check will be enabled for proxy connections.
 
 	
@@ -30,7 +37,8 @@ Changes since version 0.1.23:
 	                              ServerSocketFactory ssf)
 
 Changes since version 0.1.22:		
-- bugfix: there was a freeze problem at fails on key-exchanging. FIXED.
+- bugfix: there is a freeze problem, which will occur whenever the key-exchage 
+	  operation fails.  FIXED. 
 - bugfix: race-condition forcefully disconnects session in closing channels.
 	  FIXED. 
 
@@ -42,7 +50,7 @@ Changes since version 0.1.21:
 	  an exception should be thrown. FIXED. 
 - bugfix: SSH_MSG_CHANNEL_OPEN request for the X11 forwarding should not
 	  be accepted if clients don not expect it. FIXED.
-- bugfix: there is a problem in transferring large date(mote than 1GB)
+- bugfix: there is a problem in transferring large data(mote than 1GB)
 	  to sshd from recent OpenSSH(3.6.1 or later). FIXED.
 	  For security concerns, those sshd will re-key periodically and 
 	  jsch had failed to handle it.
@@ -94,7 +102,7 @@ Changes since version 0.1.20:
 	   invoked after Channel.isClosed()==true.
 	
 Changes since version 0.1.19:		
-- ClassCastException while calling ChannelExec.finalize() method. FIXED.
+- ClassCastException while calling Channel.finalize() method. FIXED.
   Thanks to wswiatek at ais dot pl.
 
 	
@@ -113,7 +121,7 @@ Changes since version 0.1.18:
 - fixed a problem in connecting to Cisco Devices.	
   Thanks to Jason Jeffords at comcast dot net.
 - changed the method 'add' of 'HostKeyRepository' interface.
-- 'UIKeyborarInteracetive' will ignore empty prompt by sshd.
+- 'UIKeyborarInteracetive' will ignore empty prompt from sshd.
 - added 'sendIgnore()' method to 'Session' class.
 - added '-p' for scp command in 'examples/ScpTo.java' to preserve
   modification times, access times, and modes from the original file.

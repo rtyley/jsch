@@ -13,6 +13,7 @@ public class ScpToNoneCipher{
       System.exit(-1);
     }      
 
+    FileInputStream fis=null;
     try{
 
       String lfile=arg[0];
@@ -69,13 +70,15 @@ public class ScpToNoneCipher{
       }
 
       // send a content of lfile
-      FileInputStream fis=new FileInputStream(lfile);
+      fis=new FileInputStream(lfile);
       byte[] buf=new byte[1024];
       while(true){
         int len=fis.read(buf, 0, buf.length);
 	if(len<=0) break;
         out.write(buf, 0, len); out.flush();
       }
+      fis.close();
+      fis=null;
 
       // send '\0'
       buf[0]=0; out.write(buf, 0, 1); out.flush();
@@ -84,10 +87,13 @@ public class ScpToNoneCipher{
 	System.exit(0);
       }
 
+      session.disconnect();
+
       System.exit(0);
     }
     catch(Exception e){
       System.out.println(e);
+      try{if(fis!=null)fis.close();}catch(Exception ee){}
     }
   }
 

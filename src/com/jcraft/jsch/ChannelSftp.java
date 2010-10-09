@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -131,6 +131,7 @@ public class ChannelSftp extends ChannelSession{
 //  private boolean interactive=true;
   private boolean interactive=false;
   private int count=1;
+  private int[] ackid=new int[1];
   private Buffer buf;
   private Packet packet=new Packet(buf);
 
@@ -477,6 +478,10 @@ public class ChannelSftp extends ChannelSession{
       if(mode==RESUME || mode==APPEND){
 	offset+=skip;
       }
+
+      int startid=count;
+      int _ackid=count;
+      int ackcount=0;
       while(true){
         //i=src.read(data, 0, data.length);
 
@@ -493,15 +498,40 @@ public class ChannelSftp extends ChannelSession{
         int _i=i;
         while(_i>0){
           _i-=sendWRITE(handle, offset, data, 0, _i);
+
+          if((count-1)==startid ||
+             io.in.available()>=1024){
+            while(io.in.available()>0){
+              if(checkStatus(ackid)){
+                _ackid=ackid[0];
+                if(startid>_ackid || _ackid>count-1){
+                  throw new SftpException(SSH_FX_FAILURE, "");
+                }
+                ackcount++;
+              }
+              else{
+                break;
+              }
+            }
+          }
+
         }
         offset+=i;
-        //if(!checkStatus()){ break; }
 	if(monitor!=null && !monitor.count(i)){
           break;
 	}
       }
+
+      int _ackcount=count-startid;
+      while(_ackcount>ackcount){
+        if(!checkStatus(null)){
+          break;
+        }
+        ackcount++;
+      }
       if(monitor!=null)monitor.end();
       _sendCLOSE(handle);
+//System.out.println("start end "+startid+" "+endid);
     }
     catch(Exception e){
       if(e instanceof SftpException) throw (SftpException)e;
@@ -563,16 +593,43 @@ public class ChannelSftp extends ChannelSession{
       final long[] _offset=new long[1];
       _offset[0]=offset;
       OutputStream out = new OutputStream(){
+        private boolean init=true;
+        private int[] ackid=new int[1];
+        private int startid=0;
+        private int _ackid=0;
+        private int ackcount=0;
+
         public void write(byte[] d, int s, int len) throws java.io.IOException{
+
+          if(init){
+            startid=count;
+            _ackid=count;
+            init=false;
+          }
+
           try{
             int _len=len;
             while(_len>0){
               _len-=sendWRITE(handle, _offset[0], d, s, _len);
+
+              if((count-1)==startid ||
+                 io.in.available()>=1024){
+                while(io.in.available()>0){
+                  if(checkStatus(ackid)){
+                    _ackid=ackid[0];
+                    if(startid>_ackid || _ackid>count-1){
+                      throw new SftpException(SSH_FX_FAILURE, "");
+                    }
+                    ackcount++;
+                  }
+                  else{
+                    break;
+                  }
+                }
+              }
+
             }
             _offset[0]+=len;
-//            if(!checkStatus()){ 
-//              throw new IOException("jsch status error");
-//            }
     	    if(monitor!=null && !monitor.count(len)){
               throw new IOException("canceled");
 	    }
@@ -586,6 +643,20 @@ public class ChannelSftp extends ChannelSession{
           write(_data, 0, 1);
         }
         public void close() throws java.io.IOException{
+
+          try{
+            int _ackcount=count-startid;
+            while(_ackcount>ackcount){
+              if(!checkStatus(null)){
+                break;
+              }
+              ackcount++;
+            }
+          }
+          catch(SftpException e){
+            throw new IOException(e.toString());
+          }
+
           if(monitor!=null)monitor.end();
           try{ _sendCLOSE(handle); }
           catch(IOException e){ throw e; }
@@ -1458,15 +1529,30 @@ public class ChannelSftp extends ChannelSession{
   public String lpwd(){ return lcwd; }
   public String version(){ return version; }
 
-  private boolean checkStatus() throws IOException, SftpException{
+  private void read(byte[] buf, int s, int l) throws IOException, SftpException{
+    int i=0;
+    while(l>0){
+      i=io.in.read(buf, s, l);
+      if(i<=0){
+        throw new SftpException(SSH_FX_FAILURE, "");
+      }
+      s+=i;
+      l-=i;
+    }
+  }
+  private boolean checkStatus(int[] ackid ) throws IOException, SftpException{
     buf.rewind();
-    io.in.read(buf.buffer, 0, buf.buffer.length);
+    read(buf.buffer, 0, 5);
     int length=buf.getInt();
     int type=buf.getByte();
     if(type!=SSH_FXP_STATUS){ 
       throw new SftpException(SSH_FX_FAILURE, "");
     }
-    buf.getInt();
+    buf.rewind();
+    //io.in.read(buf.buffer, 0, length-1);
+    read(buf.buffer, 0, length-1);
+    int id=buf.getInt();
+    if(ackid!=null)ackid[0]=id;
     int i=buf.getInt();
     if(i!=SSH_FX_OK){
       throwStatusError(buf, i);
@@ -1596,7 +1682,6 @@ public class ChannelSftp extends ChannelSession{
     buf.putLong(offset);
     buf.putString(data, start, _length);
     session.write(packet, this, 21+handle.length+_length+4);
-    checkStatus();
     return _length;
   }
 

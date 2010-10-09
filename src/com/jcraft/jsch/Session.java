@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.25";
+  static private final String version="JSCH-0.1.26";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -284,6 +284,7 @@ public class Session implements Runnable{
 	receive_newkeys(buf, kex);
       }
       else{
+        in_kex=false;
 	throw new JSchException("invalid protocol(newkyes): "+buf.buffer[5]);
       }
 
@@ -293,10 +294,16 @@ public class Session implements Runnable{
       UserAuthNone usn=new UserAuthNone(userinfo);
       auth=usn.start(this);
 
-      String methods=usn.getMethods().toLowerCase();
-      // methods: publickey,password,keyboard-interactive
-      if(methods==null){
-	methods="publickey,password,keyboard-interactive";
+      String methods=null;
+      if(!auth){
+        methods=usn.getMethods();
+        if(methods!=null){
+          methods=methods.toLowerCase();
+        }
+        else{
+          // methods: publickey,password,keyboard-interactive
+          methods="publickey,password,keyboard-interactive";
+        }
       }
 
       loop:
@@ -373,6 +380,7 @@ public class Session implements Runnable{
       throw new JSchException("Auth fail");
     }
     catch(Exception e) {
+      in_kex=false;
       if(isConnected){
 	try{
 	  packet.reset();
@@ -555,7 +563,9 @@ System.out.println(e);
       }
       else{
         synchronized(hkr){
-          hkr.remove(host, null);
+          hkr.remove(host, 
+                     (key_type.equals("DSA") ? "ssh-dss" : "ssh-rsa"), 
+                     null);
           insert=true;
         }
       }
@@ -977,7 +987,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
       if(command==SSH_MSG_KEXINIT ||
          command==SSH_MSG_NEWKEYS ||
          command==SSH_MSG_KEXDH_INIT ||
-         command==SSH_MSG_KEXDH_REPLY){
+         command==SSH_MSG_KEXDH_REPLY ||
+         command==SSH_MSG_DISCONNECT){
         break;
       }
       try{Thread.sleep(10);}

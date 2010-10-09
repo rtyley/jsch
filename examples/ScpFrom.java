@@ -13,6 +13,7 @@ public class ScpFrom{
       System.exit(-1);
     }      
 
+    FileOutputStream fos=null;
     try{
 
       String user=arg[0].substring(0, arg[0].indexOf('@'));
@@ -84,9 +85,7 @@ public class ScpFrom{
         buf[0]=0; out.write(buf, 0, 1); out.flush();
 
         // read a content of lfile
-        FileOutputStream fos=new FileOutputStream(prefix==null ? 
-						  lfile :
-						  prefix+file);
+        fos=new FileOutputStream(prefix==null ? lfile : prefix+file);
         int foo;
         while(true){
           if(buf.length<filesize) foo=buf.length;
@@ -101,6 +100,7 @@ public class ScpFrom{
           if(filesize==0L) break;
         }
         fos.close();
+        fos=null;
 
         byte[] tmp=new byte[1];
 
@@ -111,10 +111,14 @@ public class ScpFrom{
         // send '\0'
         buf[0]=0; out.write(buf, 0, 1); out.flush();
       }
+
+      session.disconnect();
+
       System.exit(0);
     }
     catch(Exception e){
       System.out.println(e);
+      try{if(fos!=null)fos.close();}catch(Exception ee){}
     }
   }
 
