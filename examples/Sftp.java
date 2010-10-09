@@ -278,6 +278,19 @@ public class Sftp{
 	  }
 	  continue;
 	}
+	if(cmd.equals("realpath")){
+          if(cmds.size()!=2) continue;
+	  String p1=(String)cmds.elementAt(1);
+	  String filename=null;
+	  try{
+	    filename=c.realpath(p1);
+            out.println(filename);
+	  }
+	  catch(SftpException e){
+	    System.out.println(e.toString());
+	  }
+	  continue;
+	}
 	if(cmd.equals("version")){
 	  out.println("SFTP protocol version "+c.version());
 	  continue;
@@ -491,6 +504,7 @@ public class Sftp{
 "rm path                       Delete remote file\n"+
 "symlink oldpath newpath       Symlink remote file\n"+
 "readlink path                 Check the target of a symbolic link\n"+
+"realpath path                 Canonicalize the path\n"+
 "rekey                         Key re-exchanging\n"+
 "compression level             Packet compression will be enabled\n"+
 "version                       Show SFTP version\n"+

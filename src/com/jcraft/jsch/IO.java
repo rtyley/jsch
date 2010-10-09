@@ -89,17 +89,23 @@ public class IO{
     while (length>0);
   }
 
+  void out_close(){
+    try{
+      if(out!=null && !out_dontclose) out.close();
+      out=null;
+    }
+    catch(Exception ee){}
+  }
+
   public void close(){
     try{
       if(in!=null && !in_dontclose) in.close();
       in=null;
     }
     catch(Exception ee){}
-    try{
-      if(out!=null && !out_dontclose) out.close();
-      out=null;
-    }
-    catch(Exception ee){}
+
+    out_close();
+
     try{
       if(out_ext!=null && !out_ext_dontclose) out_ext.close();
       out_ext=null;

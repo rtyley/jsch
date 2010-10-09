@@ -390,13 +390,11 @@ public abstract class Channel implements Runnable{
   }
   void write(byte[] foo, int s, int l) throws IOException {
     try{
-//    if(io.out!=null)
       io.put(foo, s, l);
     }catch(NullPointerException e){}
   }
   void write_ext(byte[] foo, int s, int l) throws IOException {
     try{
-//    if(io.out_ext!=null)
       io.put_ext(foo, s, l);
     }catch(NullPointerException e){}
   }
@@ -404,18 +402,13 @@ public abstract class Channel implements Runnable{
   void eof_remote(){
     eof_remote=true;
     try{
-      if(io.out!=null){
-        io.out.close();
-        io.out=null;
-      }
+      io.out_close();
     }
     catch(NullPointerException e){}
-    catch(IOException e){}
   }
 
   void eof(){
-//System.err.println("EOF!!!! "+this);
-//Thread.dumpStack();
+    //System.err.println("EOF!!!! "+this);
     if(close)return;
     if(eof_local)return;
     eof_local=true;
@@ -552,9 +545,9 @@ public abstract class Channel implements Runnable{
     return false;
   }
 
-  public void sendSignal(String foo) throws Exception {
+  public void sendSignal(String signal) throws Exception {
     RequestSignal request=new RequestSignal();
-    request.setSignal(foo);
+    request.setSignal(signal);
     request.request(session, this);
   }
 
@@ -593,7 +586,7 @@ public abstract class Channel implements Runnable{
     }
   }
 
-  void setExitStatus(int foo){ exitstatus=foo; }
+  void setExitStatus(int status){ exitstatus=status; }
   public int getExitStatus(){ return exitstatus; }
 
   void setSession(Session session){

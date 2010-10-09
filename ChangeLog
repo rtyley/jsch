@@ -1,8 +1,30 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Mon Jan 21 07:57:03 UTC 2008
+Last modified: Tue Apr 22 14:35:13 UTC 2008
 
 	
+Changes since version 0.1.37:			
+- bugfix: NPE should not be thrown at unexpeced session drop.  FIXED.
+- bugfix: AIOOBE at Session#connect().                         FIXED.
+- bugfix: Even if 'true' is given for
+	    Channel#setOutputStream(OutputStream out, boolean dontclose)
+	  as the second paramter, 'out' will be closed.        FIXED.
+- change: 'examples/Sftp.java' has been modified to demonstrate
+          ChannelSftp#reaplpath(String path)
+- change: setEnv(Hashtable env) for exec and shell channels have been
+	  marked as @deprecated
+- feature: setEnv(String name, String value) has been added to exec
+	   and shell channels.
+- feature: setEnv(byte[] name, byte[] value) has been added to exec
+	   and shell channels.
+- feature: ChannelSftp#realpath(String path) has been added.
+- feature: ChannelExec#setCommand(byte[] command) has been added.
+- feature: com.jcraft.jsch.ChannelSftp.LsEntry has implemented
+	   java.lang.Comparable
+- feature: Session#getServerAliveInterval(), Session#getServerAliveCountMaX()
+	   have been added.
+
+
 Changes since version 0.1.36:			
 - bugfix: some sftpd will send invalid data in sftp protocol 
           point of view, and we need to work around such data. FIXED.
@@ -58,7 +80,6 @@ Changes since version 0.1.34:
 	   String getClientVersion()
 	   void setFilenameEncoding(String encoding)
 	   String getExtension(String key)
-
 	
 Changes since version 0.1.33:			
 - bugfix: there had a possibility that the session may be broken 
@@ -69,6 +90,9 @@ Changes since version 0.1.33:
 	  not been functional.                                     FIXED.
 - bugfix: the remote port-forwarding to the daemon had been broken 
 	  since 0.1.30.                                            FIXED. 
+- change: the cipher "aes128-cbc" will be used if AES is available.
+- change: the interface 'com.jcraft.jsch.ForwardedTCPIPDaemon' has been changed.
+- change: the data transfer rate will be improved on some environment.
 - feature: ChannelExec can control the size of pty;
 	   ChannelExec#setPtySize(int col, int row, int wp, int hp) is
            added.
@@ -76,9 +100,6 @@ Changes since version 0.1.33:
 	   Refer to 'examples/AES.java'.
 - feature: Session#setConfig(String key, String value),
 	   JSch#setConfig(String key, String value) have been added.
-- change: the cipher "aes128-cbc" will be used if AES is available.
-- change: the interface 'com.jcraft.jsch.ForwardedTCPIPDaemon' has been changed.
-- change: the data transfer rate will be improved on some environment.
 
 	
 Changes since version 0.1.32:			
@@ -105,13 +126,13 @@ Changes since version 0.1.31:
 	a session will be terminated.                              FIXED.
 - bugfix: due to the cancel for keyboard-interactive auth method, 
 	a session will be terminated.                              FIXED.
+- change: com.jcraft.jsch.jcraft.Compression#uncompress will respect
+	the argument "start".
+- change: "gssapi-with-mic" will choose the default credential.
 - feature: Session#setPortForwardingL will return the assigned local
 	TCP port number; TCP port will be assigned dynamically if lport==0.
 - feature: support for SSH_MSG_UNIMPLEMENTED.
 - feature: support for PASSWD_CHANGEREQ. 
-- change: com.jcraft.jsch.jcraft.Compression#uncompress will respect
-	the argument "start".
-- change: "gssapi-with-mic" will choose the default credential.
 
 	
 Changes since version 0.1.30:		

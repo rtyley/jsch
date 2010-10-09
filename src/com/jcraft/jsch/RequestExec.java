@@ -30,9 +30,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 class RequestExec extends Request{
-  private String command="";
-  RequestExec(String foo){
-    this.command=foo;
+  private byte[] command=new byte[0];
+  RequestExec(byte[] command){
+    this.command=command;
   }
   public void request(Session session, Channel channel) throws Exception{
     super.request(session, channel);
@@ -51,7 +51,7 @@ class RequestExec extends Request{
     buf.putInt(channel.getRecipient());
     buf.putString("exec".getBytes());
     buf.putByte((byte)(waitForReply() ? 1 : 0));
-    buf.putString(command.getBytes());
+    buf.putString(command);
     write(packet);
   }
 }

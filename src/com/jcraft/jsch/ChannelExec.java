@@ -33,7 +33,7 @@ import java.util.*;
 
 public class ChannelExec extends ChannelSession{
 
-  String command="";
+  byte[] command=new byte[0];
 
   public void start() throws JSchException{
     try{
@@ -58,7 +58,13 @@ public class ChannelExec extends ChannelSession{
     }
   }
 
-  public void setCommand(String foo){ command=foo;}
+  public void setCommand(String command){ 
+    this.command=command.getBytes();
+  }
+  public void setCommand(byte[] command){ 
+    this.command=command;
+  }
+
   public void init(){
     io.setInputStream(session.in);
     io.setOutputStream(session.out);

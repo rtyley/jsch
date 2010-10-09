@@ -33,7 +33,7 @@ import java.io.*;
 import java.net.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.37";
+  static private final String version="JSCH-0.1.38";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -237,14 +237,16 @@ public class Session implements Runnable{
 
         if(buf.buffer[i-1]==10){    // 0x0a
           i--;
-          if(buf.buffer[i-1]==13){  // 0x0d
+          if(i>0 && buf.buffer[i-1]==13){  // 0x0d
             i--;
           }
         }
 
-        if(i>4 && (i!=buf.buffer.length) &&
-           (buf.buffer[0]!='S'||buf.buffer[1]!='S'||
-            buf.buffer[2]!='H'||buf.buffer[3]!='-')){
+        if(i<=3 || 
+           ((i!=buf.buffer.length) &&
+            (buf.buffer[0]!='S'||buf.buffer[1]!='S'||
+             buf.buffer[2]!='H'||buf.buffer[3]!='-'))){
+          // It must not start with 'SSH-'
           //System.err.println(new String(buf.buffer, 0, i);
           continue;
         }
@@ -1802,6 +1804,7 @@ break;
   public String getHostKeyAlias(){
     return hostKeyAlias;
   }
+
   public void setServerAliveInterval(int interval) throws JSchException {
     setTimeout(interval);
     this.serverAliveInterval=interval;
@@ -1809,6 +1812,14 @@ break;
   public void setServerAliveCountMax(int count){
     this.serverAliveCountMax=count;
   }
+
+  public int getServerAliveInterval(){
+    return this.serverAliveInterval;
+  }
+  public int getServerAliveCountMax(){
+    return this.serverAliveCountMax;
+  }
+
   public void setDaemonThread(boolean enable){
     this.daemon_thread=enable;
   }

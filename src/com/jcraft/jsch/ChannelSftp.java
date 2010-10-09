@@ -139,6 +139,7 @@ public class ChannelSftp extends ChannelSession{
   private String version=String.valueOf(client_version);
 
   private java.util.Hashtable extensions=null;
+  private InputStream io_in=null;
 
 /*
 10. Changes from previous protocol versions
@@ -178,6 +179,8 @@ public class ChannelSftp extends ChannelSession{
       io.setOutputStream(pos);
       PipedInputStream pis=new MyPipedInputStream(pos, 32*1024);
       io.setInputStream(pis);
+
+      io_in=io.in;
 
       Request request=new RequestSftp();
       request.request(session, this);
@@ -528,8 +531,8 @@ public class ChannelSftp extends ChannelSession{
         while(_i>0){
           _i-=sendWRITE(handle, offset, data, 0, _i);
           if((seq-1)==startid ||
-             io.in.available()>=1024){
-            while(io.in.available()>0){
+             io_in.available()>=1024){
+            while(io_in.available()>0){
               if(checkStatus(ackid, header)){
                 _ackid=ackid[0];
                 if(startid>_ackid || _ackid>seq-1){
@@ -665,8 +668,8 @@ public class ChannelSftp extends ChannelSession{
               s+=sent;
               _len-=sent;
               if((seq-1)==startid ||
-                 io.in.available()>=1024){
-                while(io.in.available()>0){
+                 io_in.available()>=1024){
+                while(io_in.available()>0){
                   if(checkStatus(ackid, header)){
                     _ackid=ackid[0];
                     if(startid>_ackid || _ackid>seq-1){
@@ -928,7 +931,7 @@ public class ChannelSftp extends ChannelSession{
           if(bar>buf.buffer.length){
             bar=buf.buffer.length;
           }
-          i=io.in.read(buf.buffer, 0, bar);
+          i=io_in.read(buf.buffer, 0, bar);
           if(i<0){
             break loop;
 	  }
@@ -941,7 +944,7 @@ public class ChannelSftp extends ChannelSession{
           if(monitor!=null){
             if(!monitor.count(data_len)){
               while(foo>0){
-                i=io.in.read(buf.buffer, 
+                i=io_in.read(buf.buffer, 
                              0, 
                              (buf.buffer.length<foo?buf.buffer.length:foo));
                 if(i<=0) break;
@@ -1105,7 +1108,7 @@ public class ChannelSftp extends ChannelSession{
                if(bar>len){
                  bar=len;
                }
-               i=io.in.read(d, s, bar);
+               i=io_in.read(d, s, bar);
                if(i<0){
                  return -1;
                }
@@ -1119,7 +1122,7 @@ public class ChannelSftp extends ChannelSession{
                  int _len=rest_length;
                  int j;
                  while(_len>0){
-                   j=io.in.read(rest_byte, _s, _len);
+                   j=io_in.read(rest_byte, _s, _len);
                    if(j<=0)break;
                    _s+=j;
                    _len-=j;
@@ -1146,7 +1149,7 @@ public class ChannelSftp extends ChannelSession{
                if(foo>buf.buffer.length){
                  foo=buf.buffer.length;
                }
-               io.in.read(buf.buffer, 0, foo);
+               io_in.read(buf.buffer, 0, foo);
                rest_length-=foo;
              }
              */
@@ -1910,7 +1913,7 @@ public class ChannelSftp extends ChannelSession{
   private void read(byte[] buf, int s, int l) throws IOException, SftpException{
     int i=0;
     while(l>0){
-      i=io.in.read(buf, s, l);
+      i=io_in.read(buf, s, l);
       if(i<=0){
         throw new SftpException(SSH_FX_FAILURE, "");
       }
@@ -2157,7 +2160,7 @@ public class ChannelSftp extends ChannelSession{
 	if(length>0){
 	  buf.shift();
           int j=(buf.buffer.length>(buf.index+length)) ? length : (buf.buffer.length-buf.index);
-	  i=io.in.read(buf.buffer, buf.index, j);
+	  i=io_in.read(buf.buffer, buf.index, j);
 	  if(i<=0)break;
 	  buf.index+=i;
 	  length-=i;
@@ -2321,7 +2324,7 @@ public class ChannelSftp extends ChannelSession{
     int i=0;
     int foo=s;
     while(len>0){
-      i=io.in.read(buf, s, len);
+      i=io_in.read(buf, s, len);
       if(i<=0){
         throw new IOException("inputstream is closed");
         //return (s-foo)==0 ? i : s-foo;
@@ -2333,7 +2336,7 @@ public class ChannelSftp extends ChannelSession{
   }
   private void skip(long foo) throws IOException{
     while(foo>0){
-      long bar=io.in.skip(foo);
+      long bar=io_in.skip(foo);
       if(bar<=0) 
         break;
       foo-=bar;
@@ -2408,7 +2411,20 @@ public class ChannelSftp extends ChannelSession{
     return (String)extensions.get(key);
   }
 
-  public class LsEntry {
+  public String realpath(String path) throws SftpException{
+    try{
+      byte[] _path=_realpath(remoteAbsolutePath(path));
+      return Util.byte2str(_path, fEncoding);
+    }
+    catch(Exception e){
+      if(e instanceof SftpException) throw (SftpException)e;
+      if(e instanceof Throwable)
+        throw new SftpException(SSH_FX_FAILURE, "", (Throwable)e);
+      throw new SftpException(SSH_FX_FAILURE, "");
+    }
+  }
+
+  public class LsEntry implements Comparable{
     private  String filename;
     private  String longname;
     private  SftpATTRS attrs;
@@ -2424,5 +2440,11 @@ public class ChannelSftp extends ChannelSession{
     public SftpATTRS getAttrs(){return attrs;};
     void setAttrs(SftpATTRS attrs) {this.attrs = attrs;};
     public String toString(){ return longname; }
+    public int compareTo(Object o) throws ClassCastException{
+      if(o instanceof LsEntry){
+        return filename.compareTo(((LsEntry)o).getFilename());
+      }
+      throw new ClassCastException("a decendent of LsEntry must be given.");
+    }
   }
 }

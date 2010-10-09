@@ -53,25 +53,101 @@ class ChannelSession extends Channel{
     io=new IO();
   }
 
+  /**
+   * Enable the agent forwarding.
+   *
+   * @param enable
+   */
   public void setAgentForwarding(boolean enable){ 
     agent_forwarding=enable;
   }
+
+  /**
+   * Enable the X11 forwarding.
+   *
+   * @param enable
+   * @see RFC4254 6.3.1. Requesting X11 Forwarding
+   */
   public void setXForwarding(boolean enable){
     xforwading=enable; 
   }
+
+  /**
+   * @deprecated Use {@link #setEnv(String, String)} or {@link #setEnv(byte[], byte[])} instead.
+   * @see #setEnv(String, String)
+   * @see #setEnv(byte[], byte[])
+   */
   public void setEnv(Hashtable env){ 
-    this.env=env; 
+    synchronized(this){
+      this.env=env; 
+    }
   }
 
+  /**
+   * Set the environment variable. 
+   * If <code>name</code> and <code>value</code> are needed to be passed 
+   * to the remote in your faivorite encoding,use 
+   * {@link #setEnv(byte[], byte[])}.
+   *
+   * @param name A name for environment variable.
+   * @param value A value for environment variable.
+   * @see RFC4254 6.4 Environment Variable Passing
+   */
+  public void setEnv(String name, String value){
+    setEnv(name.getBytes(), value.getBytes());
+  }
+
+  /**
+   * Set the environment variable.
+   *
+   * @param name A name of environment variable.
+   * @param value A value of environment variable.
+   * @see #setEnv(String, String)
+   * @see RFC4254 6.4 Environment Variable Passing
+   */
+  public void setEnv(byte[] name, byte[] value){
+    synchronized(this){
+      getEnv().put(name, value);
+    }
+  }
+
+  private Hashtable getEnv(){
+    if(env==null)
+      env=new Hashtable();
+    return env;
+  }
+
+  /**
+   * Allocate a Pseudo-Terminal.
+   *
+   * @param enable
+   * @see RFC4254 6.2. Requesting a Pseudo-Terminal
+   */
   public void setPty(boolean enable){ 
     pty=enable; 
   }
 
+  /**
+   * Set the terminal mode.
+   * 
+   * @param terminal_mode
+   */
   public void setTerminalMode(byte[] terminal_mode){
     this.terminal_mode=terminal_mode;
   }
+
+  /**
+   * Change the window dimension interactively.
+   * 
+   * @param col terminal width, columns
+   * @param row terminal height, rows
+   * @param wp terminal width, pixels
+   * @param hp terminal height, pixels
+   * @see RFC4254 6.7. Window Dimension Change Message
+   */
   public void setPtySize(int col, int row, int wp, int hp){
-    if(!pty){
+    setPtyType(this.ttype, col, row, wp, hp);
+    if(!pty || !isConnected()){
       return;
     }
     try{
@@ -84,10 +160,27 @@ class ChannelSession extends Channel{
     }
   }
 
+  /**
+   * Set the terminal type.
+   * This method is not effective after Channel#connect().
+   *
+   * @param ttype terminal type(for example, "vt100")
+   * @see #setPtyType(String, int, int, int, int)
+   */
   public void setPtyType(String ttype){
     setPtyType(ttype, 80, 24, 640, 480);
   }
 
+  /**
+   * Set the terminal type.
+   * This method is not effective after Channel#connect().
+   *
+   * @param ttype terminal type(for example, "vt100")
+   * @param col terminal width, columns
+   * @param row terminal height, rows
+   * @param wp terminal width, pixels
+   * @param hp terminal height, pixels
+   */
   public void setPtyType(String ttype, int col, int row, int wp, int hp){
     this.ttype=ttype;
     this.tcol=col;
@@ -119,22 +212,26 @@ class ChannelSession extends Channel{
     }
 
     if(env!=null){
-      for(Enumeration _env=env.keys() ; _env.hasMoreElements() ;) {
-        String name=(String)(_env.nextElement());
-        String value=(String)(env.get(name));
+      for(Enumeration _env=env.keys(); _env.hasMoreElements();){
+        Object name=_env.nextElement();
+        Object value=env.get(name);
         request=new RequestEnv();
-        ((RequestEnv)request).setEnv(name, value);
+        ((RequestEnv)request).setEnv(toByteArray(name), 
+                                     toByteArray(value));
         request.request(session, this);
       }
     }
   }
 
+  private byte[] toByteArray(Object o){
+    if(o instanceof String){
+      return ((String)o).getBytes();
+    }
+    return (byte[])o;
+  }
+
   public void run(){
     //System.err.println(this+":run >");
-/*
-    if(thread!=null){ return; }
-    thread=Thread.currentThread();
-*/
 
     Buffer buf=new Buffer(rmpsize);
     Packet packet=new Packet(buf);

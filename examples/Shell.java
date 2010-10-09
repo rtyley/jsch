@@ -24,6 +24,7 @@ public class Shell{
       host=host.substring(host.indexOf('@')+1);
 
       Session session=jsch.getSession(user, host, 22);
+
       //session.setPassword("your password");
 
       // username and password will be given via UserInfo interface.
@@ -41,13 +42,25 @@ public class Shell{
       //((ChannelShell)channel).setAgentForwarding(true);
 
       channel.setInputStream(System.in);
+      /*
+      // a hack for MS-DOS prompt on Windows.
+      channel.setInputStream(new FilterInputStream(System.in){
+          public int read(byte[] b, int off, int len)throws IOException{
+            return in.read(b, off, (len>1024?1024:len));
+          }
+        });
+       */
+
       channel.setOutputStream(System.out);
 
       /*
+      // Choose the pty-type "vt102".
       ((ChannelShell)channel).setPtyType("vt102");
-      java.util.Hashtable env=new java.util.Hashtable();
-      env.put("LANG", "ja_JP.eucJP");
-      ((ChannelShell)channel).setEnv(env);
+      */
+
+      /*
+      // Set environment variable "LANG" as "ja_JP.eucJP".
+      ((ChannelShell)channel).setEnv("LANG", "ja_JP.eucJP");
       */
 
       //channel.connect();

@@ -30,9 +30,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 class RequestEnv extends Request{
-  String name=null;
-  String value=null;
-  void setEnv(String name, String value){
+  byte[] name=new byte[0];
+  byte[] value=new byte[0];
+  void setEnv(byte[] name, byte[] value){
     this.name=name;
     this.value=value;
   }
@@ -47,8 +47,8 @@ class RequestEnv extends Request{
     buf.putInt(channel.getRecipient());
     buf.putString("env".getBytes());
     buf.putByte((byte)(waitForReply() ? 1 : 0));
-    buf.putString(name.getBytes());
-    buf.putString(value.getBytes());
+    buf.putString(name);
+    buf.putString(value);
     write(packet);
   }
 }
