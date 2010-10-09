@@ -124,6 +124,9 @@ public class ChannelSftp extends ChannelSubsystem{
       operation).
 */
 
+  public static final int OVERWRITE=0;
+  public static final int RESUME=1;
+  public static final int APPEND=2;
 
 //  private boolean interactive=true;
   private boolean interactive=false;
@@ -297,10 +300,17 @@ public class ChannelSftp extends ChannelSubsystem{
       s->c STATUS 
   */
   public void put(String src, String dst) throws SftpException{
-    put(src, dst, null);
+    put(src, dst, null, OVERWRITE);
+  }
+  public void put(String src, String dst, int mode) throws SftpException{
+    put(src, dst, null, mode);
   }
   public void put(String src, String dst, 
 		  SftpProgressMonitor monitor) throws SftpException{
+    put(src, dst, monitor, OVERWRITE);
+  }
+  public void put(String src, String dst, 
+		  SftpProgressMonitor monitor, int mode) throws SftpException{
 //    if(!src.startsWith("/")){ src=lcwd+file_separator+src; } 
     if(!isLocalAbsolutePath(src)){ src=lcwd+file_separator+src; } 
     if(!dst.startsWith("/")){ dst=cwd+"/"+dst; }
@@ -328,12 +338,36 @@ public class ChannelSftp extends ChannelSubsystem{
 	  else _dst+=_src.substring(i+1);
 	}
 
+//System.out.println("_dst "+_dst);
+
+	long size_of_dst=0;
+	if(mode==RESUME){
+	  try{
+	    SftpATTRS attr=stat(_dst);
+	    size_of_dst=attr.getSize();
+	  }
+	  catch(Exception eee){
+	    //System.out.println(eee);
+	  }
+	  long size_of_src=new File(_src).length();
+	  if(size_of_src<size_of_dst){
+	    throw new SftpException(SSH_FX_FAILURE, "failed to resume for "+_dst);
+	  }
+	  if(size_of_src==size_of_dst){
+	    return;
+	  }
+	}
+
         if(monitor!=null){
  	  monitor.init(SftpProgressMonitor.PUT, _src, _dst,
 		       (new File(_src)).length());
+	  if(mode==RESUME){
+	    monitor.count(size_of_dst);
+	  }
         }
+
         FileInputStream fis=new FileInputStream(_src);
-        put(fis, _dst, monitor);
+        put(fis, _dst, monitor, mode);
         fis.close();
       }
     }
@@ -343,10 +377,17 @@ public class ChannelSftp extends ChannelSubsystem{
     }
   }
   public void put(InputStream src, String dst) throws SftpException{
-    put(src, dst, null);
+    put(src, dst, null, OVERWRITE);
+  }
+  public void put(InputStream src, String dst, int mode) throws SftpException{
+    put(src, dst, null, mode);
   }
   public void put(InputStream src, String dst, 
 		  SftpProgressMonitor monitor) throws SftpException{
+    put(src, dst, monitor, OVERWRITE);
+  }
+  public void put(InputStream src, String dst, 
+		  SftpProgressMonitor monitor, int mode) throws SftpException{
     try{
       if(!dst.startsWith("/")){ dst=cwd+"/"+dst; } 
       Vector v=glob_remote(dst);
@@ -357,7 +398,31 @@ public class ChannelSftp extends ChannelSubsystem{
       if(isRemoteDir(dst)){
 	throw new SftpException(SSH_FX_FAILURE, dst+" is a directory");
       }
-      sendOPENW(dst.getBytes());
+
+      long skip=0;
+      if(mode==RESUME || mode==APPEND){
+	try{
+	  SftpATTRS attr=stat(dst);
+	  skip=attr.getSize();
+	}
+	catch(Exception eee){
+	  //System.out.println(eee);
+	}
+      }
+
+      if(mode==RESUME && skip>0){
+	long skipped=src.skip(skip);
+	if(skipped<skip){
+	  throw new SftpException(SSH_FX_FAILURE, "failed to resume for "+dst);
+	}
+      }
+
+      if(mode==OVERWRITE){
+	sendOPENW(dst.getBytes());
+      }
+      else{
+	sendOPENA(dst.getBytes());
+      }
 
       buf.rewind();
       int i=io.in.read(buf.buffer, 0, buf.buffer.length);
@@ -373,11 +438,12 @@ public class ChannelSftp extends ChannelSubsystem{
       }
       buf.getInt();
       byte[] handle=buf.getString();         // filename
-
       byte[] data=new byte[1024];
 
       long offset=0;
-
+      if(mode==RESUME || mode==APPEND){
+	offset+=skip;
+      }
       while(true){
         i=src.read(data, 0, 1024);
         if(i<=0)break;
@@ -391,6 +457,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	if(type!=SSH_FXP_STATUS){ break;}
         buf.getInt();
         if(buf.getInt()!=SSH_FX_OK){
+//System.out.println("getInt="+buf.getInt());
           break;
 	}
 
@@ -403,7 +470,7 @@ public class ChannelSftp extends ChannelSubsystem{
       }
 
       sendCLOSE(handle);
-
+//System.out.println("done");
       if(monitor!=null)monitor.end();
 
       buf.rewind();
@@ -424,6 +491,12 @@ public class ChannelSftp extends ChannelSubsystem{
     }
   }
   public OutputStream put(String dst) throws SftpException{
+    return put(dst, (SftpProgressMonitor)null, OVERWRITE);
+  }
+  public OutputStream put(String dst, final int mode) throws SftpException{
+    return put(dst, (SftpProgressMonitor)null, mode);
+  }
+  public OutputStream put(String dst, final SftpProgressMonitor monitor, final int mode) throws SftpException{
     if(!dst.startsWith("/")){ dst=cwd+"/"+dst; } 
     try{
       Vector v=glob_remote(dst);
@@ -441,7 +514,7 @@ public class ChannelSftp extends ChannelSubsystem{
       final String _dst=dst;
       new Thread(new Runnable(){
 	  public void run(){
-	    try{ channel.put(pis, _dst); }
+	    try{ channel.put(pis, _dst, monitor, mode); }
 	    catch(Exception ee){
 	      System.out.println("!!"+ee);
 	    }
@@ -456,10 +529,14 @@ public class ChannelSftp extends ChannelSubsystem{
     }
   }
   public void get(String src, String dst) throws SftpException{
-    get(src, dst, null);
+    get(src, dst, null, OVERWRITE);
   }
   public void get(String src, String dst,
 		  SftpProgressMonitor monitor) throws SftpException{
+    get(src, dst, monitor, OVERWRITE);
+  }
+  public void get(String src, String dst,
+		  SftpProgressMonitor monitor, int mode) throws SftpException{
     if(!src.startsWith("/")){ src=cwd+"/"+src; } 
 //    if(!dst.startsWith("/")){ dst=lcwd+file_separator+dst; } 
     if(!isLocalAbsolutePath(dst)){ dst=lcwd+file_separator+dst; } 
@@ -477,13 +554,32 @@ public class ChannelSftp extends ChannelSubsystem{
 	  else _dst+=_src.substring(i+1);
 	}
 
-	if(monitor!=null){
-	  SftpATTRS attr=stat(_src);
-	  monitor.init(SftpProgressMonitor.GET, _src, _dst, attr.getSize());
+	SftpATTRS attr=stat(_src);
+	if(mode==RESUME){
+	  long size_of_src=attr.getSize();
+	  long size_of_dst=new File(_dst).length();
+	  if(size_of_dst>size_of_src){
+	    throw new SftpException(SSH_FX_FAILURE, "failed to resume for "+_dst);
+	  }
+	  if(size_of_dst==size_of_src){
+	    return;
+	  }
 	}
 
-	FileOutputStream fos=new FileOutputStream(_dst);
-	get(_src, fos, monitor);
+	if(monitor!=null){
+	  monitor.init(SftpProgressMonitor.GET, _src, _dst, attr.getSize());
+	  if(mode==RESUME){
+	    monitor.count(new File(_dst).length());
+	  }
+	}
+	FileOutputStream fos=null;
+	if(mode==OVERWRITE){
+	  fos=new FileOutputStream(_dst);
+	}
+	else{
+	  fos=new FileOutputStream(_dst, true); // append
+	}
+	get(_src, fos, monitor, mode, new File(_dst).length());
 	fos.close();
       }
     }
@@ -493,10 +589,14 @@ public class ChannelSftp extends ChannelSubsystem{
     }
   }
   public void get(String src, OutputStream dst) throws SftpException{
-    get(src, dst, null);
+    get(src, dst, null, OVERWRITE, 0);
   }
   public void get(String src, OutputStream dst,
 		  SftpProgressMonitor monitor) throws SftpException{
+    get(src, dst, monitor, OVERWRITE, 0);
+  }
+  private void get(String src, OutputStream dst,
+		   SftpProgressMonitor monitor, int mode, long skip) throws SftpException{
 //System.out.println("get: "+src+", "+dst);
     try{
       if(!src.startsWith("/")){ src=cwd+"/"+src; } 
@@ -525,6 +625,9 @@ public class ChannelSftp extends ChannelSubsystem{
       byte[] data=null;
 
       long offset=0;
+      if(mode==RESUME){
+	offset+=skip;
+      }
       while(true){
         sendREAD(handle, offset, 1000);
         buf.rewind();
@@ -574,6 +677,15 @@ public class ChannelSftp extends ChannelSubsystem{
     }
   }
   public InputStream get(String src) throws SftpException{
+    return get(src, null, OVERWRITE);
+  }
+  public InputStream get(String src, int mode) throws SftpException{
+    return get(src, null, mode);
+  }
+  public InputStream get(String src, final SftpProgressMonitor monitor, final int mode) throws SftpException{
+    if(mode==RESUME){
+      throw new SftpException(SSH_FX_FAILURE, "faile to resume from "+src);
+    }
     if(!src.startsWith("/")){ src=cwd+"/"+src; } 
     try{
       Vector v=glob_remote(src);
@@ -584,7 +696,7 @@ public class ChannelSftp extends ChannelSubsystem{
 
       SftpATTRS attr=stat(src);
 
-      java.io.PipedInputStream pis=new java.io.PipedInputStream();
+      final java.io.PipedInputStream pis=new java.io.PipedInputStream();
       final java.io.PipedOutputStream pos=new java.io.PipedOutputStream(pis);
       final ChannelSftp channel=this;
       final String _src=src;
@@ -594,17 +706,27 @@ public class ChannelSftp extends ChannelSubsystem{
 	return pis;
       }
 
+      final Exception[] closed=new Exception[1];
+      closed[0]=null;
       new Thread(new Runnable(){
 	  public void run(){
-	    try{ channel.get(_src, pos); }
+	    try{ channel.get(_src, pos, monitor, mode, (long)0); }
 	    catch(Exception ee){
-	      System.out.println("!!"+ee);
+	      //System.out.println("!!"+ee);
+	      closed[0]=ee;
+//	      try{ pis.close(); }catch(Exception eee){}
 	    }
+//System.out.println("channel.get end");
 	    try{ pos.close(); }catch(Exception ee){}
+//System.out.println("pos.close end");
 	  }
 	}).start();
       while(true){
 	if(pis.available()!=0)break;
+	if(closed[0]!=null){
+	  throw closed[0];
+	}
+//	System.out.println("pis wait");
 	Thread.sleep(1000);
       }
       return pis;
@@ -1130,6 +1252,9 @@ public class ChannelSftp extends ChannelSubsystem{
   }
   private void sendOPENW(byte[] path) throws Exception{
     sendOPEN(path, SSH_FXF_WRITE|SSH_FXF_CREAT|SSH_FXF_TRUNC);
+  }
+  private void sendOPENA(byte[] path) throws Exception{
+    sendOPEN(path, SSH_FXF_WRITE|/*SSH_FXF_APPEND|*/SSH_FXF_CREAT);
   }
   private void sendOPEN(byte[] path, int mode) throws Exception{
     packet.reset();

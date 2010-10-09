@@ -66,8 +66,8 @@ public class JSch{
 
     config.put("StrictHostKeyChecking",  "ask");
   }
-  /*static*/ java.util.Vector pool=new java.util.Vector();
-  /*static*/ java.util.Vector identities=new java.util.Vector();
+  java.util.Vector pool=new java.util.Vector();
+  java.util.Vector identities=new java.util.Vector();
   private KnownHosts known_hosts=null;
 
   public JSch(){

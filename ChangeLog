@@ -1,6 +1,18 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Aug 26 16:47:57 UTC 2003
+Last modified: Fri Sep 19 15:45:33 UTC 2003
+
+Changes since version 0.1.7:	
+- added APIs for sftp resume downloads and uploads.
+  The author greatly appreciates 
+	elpernotador(webmaster at unlix dot com dot ar),
+  who motivated him to hack this functionality.
+- 'examples/Sftp.java' demonstrates sftp resume functionality.
+  Please refer to "put-resume", "put-append", "get-resume" and
+  "get-append" command.
+- added the support of 'window-change' request.
+- fixed a freeze bug in 'Inputstream get(String src)' method of 'ChannelSftp'
+  class.
 
 	
 Changes since version 0.1.6:	

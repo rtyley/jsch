@@ -132,7 +132,7 @@ class PortWatcher implements Runnable{
       }
     }
     catch(Exception e){
-      System.out.println("! "+e);
+      //System.out.println("! "+e);
     }
   }
 

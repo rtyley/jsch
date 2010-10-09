@@ -29,74 +29,38 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
-
-public class ChannelShell extends ChannelSession{
-  boolean xforwading=false;
-  /*
-  ChannelShell(){
-    super();
-    type="session".getBytes();
-    io=new IO();
+class RequestWindowChange implements Request{
+  int width_columns=80;
+  int height_rows=24;
+  int width_pixels=640;
+  int height_pixels=480;
+  void setSize(int row, int col, int wp, int hp){
+    this.width_columns=row; 
+    this.height_rows=col; 
+    this.width_pixels=wp;
+    this.height_pixels=hp;
   }
-  */
-  public void setXForwarding(boolean foo){
-    xforwading=true;
-  }
-  public void start(){
-    try{
-      Request request;
-      if(xforwading){
-        request=new RequestX11();
-        request.request(session, this);
-      }
-      request=new RequestPtyReq();
-      request.request(session, this);
-      request=new RequestShell();
-      request.request(session, this);
-    }
-    catch(Exception e){
-    }
-    (new Thread(this)).start();
-  }
-  public void init(){
-    io.setInputStream(session.in);
-    io.setOutputStream(session.out);
-  }
-  public void run(){
-    thread=this;
+  public void request(Session session, Channel channel) throws Exception{
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
-    int i=0;
-    try{
-      while(thread!=null && io.in!=null){
-        i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
-	if(i==0)continue;
-	if(i==-1)break;
-	if(close)break;
-        packet.reset();
-        buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
-        buf.putInt(recipient);
-        buf.putInt(i);
-        buf.skip(i);
-	session.write(packet, this, i);
-      }
-    }
-    catch(Exception e){
-      System.out.println(e);
-    }
-    thread=null;
-  }
 
-  public void setPtySize(int row, int col, int wp, int hp){
-    //if(thread==null) return;
-    try{
-      RequestWindowChange request=new RequestWindowChange();
-      request.setSize(row, col, wp, hp);
-      request.request(session, this);
-    }
-    catch(Exception e){
-      System.out.println(e);
-    }
+    //byte      SSH_MSG_CHANNEL_REQUEST
+    //uint32    recipient_channel
+    //string    "window-change"
+    //boolean   FALSE
+    //uint32    terminal width, columns
+    //uint32    terminal height, rows
+    //uint32    terminal width, pixels
+    //uint32    terminal height, pixels
+    packet.reset();
+    buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
+    buf.putInt(channel.getRecipient());
+    buf.putString("window-change".getBytes());
+    buf.putByte((byte)0);
+    buf.putInt(width_columns);
+    buf.putInt(height_rows);
+    buf.putInt(width_pixels);
+    buf.putInt(height_pixels);
+    session.write(packet);
   }
 }

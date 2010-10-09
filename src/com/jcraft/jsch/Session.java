@@ -32,10 +32,9 @@ package com.jcraft.jsch;
 import java.io.*;
 import java.net.*;
 import java.lang.*;
-//import java.util.Vector;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.3";
+  static private final String version="JSCH-0.1.8";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;

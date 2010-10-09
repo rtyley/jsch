@@ -179,7 +179,34 @@ public class Sftp{
 	  }
 	  continue;
 	}
-	if(cmd.equals("get") || cmd.equals("put")){
+	if(cmd.equals("lls") || cmd.equals("ldir")){
+	  String path=".";
+	  if(cmds.size()==2) path=(String)cmds.elementAt(1);
+	  try{
+	    java.io.File file=new java.io.File(path);
+	    if(!file.exists()){
+	      out.println(path+": No such file or directory");
+              continue; 
+            }
+	    if(file.isDirectory()){
+	      String[] list=file.list();
+	      for(int ii=0; ii<list.length; ii++){
+		out.println(list[ii]);
+	      }
+	      continue;
+	    }
+	    out.println(path);
+	  }
+	  catch(Exception e){
+	    System.out.println(e);
+	  }
+	  continue;
+	}
+	if(cmd.equals("get") || 
+	   cmd.equals("get-resume") || cmd.equals("get-append") || 
+	   cmd.equals("put") || 
+	   cmd.equals("put-resume") || cmd.equals("put-append")
+	   ){
 	  if(cmds.size()!=2 && cmds.size()!=3) continue;
 	  String p1=(String)cmds.elementAt(1);
 //	  String p2=p1;
@@ -187,8 +214,18 @@ public class Sftp{
 	  if(cmds.size()==3)p2=(String)cmds.elementAt(2);
 	  try{
 	    SftpProgressMonitor monitor=new MyProgressMonitor();
-	    if(cmd.equals("get")){ c.get(p1, p2, monitor); }
-	    else{ c.put(p1, p2, monitor); }
+	    if(cmd.startsWith("get")){
+	      int mode=ChannelSftp.OVERWRITE;
+	      if(cmd.equals("get-resume")){ mode=ChannelSftp.RESUME; }
+	      else if(cmd.equals("get-append")){ mode=ChannelSftp.APPEND; } 
+	      c.get(p1, p2, monitor, mode);
+	    }
+	    else{ 
+	      int mode=ChannelSftp.OVERWRITE;
+	      if(cmd.equals("put-resume")){ mode=ChannelSftp.RESUME; }
+	      else if(cmd.equals("put-append")){ mode=ChannelSftp.APPEND; } 
+	      c.put(p1, p2, monitor, mode); 
+	    }
 	  }
 	  catch(SftpException e){
 	    System.out.println(e.message);
@@ -265,7 +302,7 @@ public class Sftp{
 	  out.println("SFTP protocol version "+c.version());
 	  continue;
 	}
-	if(cmd.equals("help") || cmd.equals("help")){
+	if(cmd.equals("help") || cmd.equals("?")){
 	  out.println(help);
 	  continue;
 	}
@@ -389,6 +426,8 @@ public class Sftp{
 "chown own path                Change owner of file 'path' to 'own'\n"+
 "help                          Display this help text\n"+
 "get remote-path [local-path]  Download file\n"+
+"get-resume remote-path [local-path]  Resume to download file.\n"+
+"get-append remote-path [local-path]  Append remote file to local file\n"+
 "*lls [ls-options [path]]      Display local directory listing\n"+
 "ln oldpath newpath            Symlink remote file\n"+
 "*lmkdir path                  Create local directory\n"+
@@ -397,6 +436,8 @@ public class Sftp{
 "*lumask umask                 Set local umask to 'umask'\n"+
 "mkdir path                    Create remote directory\n"+
 "put local-path [remote-path]  Upload file\n"+
+"put-resume local-path [remote-path]  Resume to upload file\n"+
+"put-append local-path [remote-path]  Append local file to remote file.\n"+
 "pwd                           Display remote working directory\n"+
 "stat path                     Display info about path\n"+
 "exit                          Quit sftp\n"+
