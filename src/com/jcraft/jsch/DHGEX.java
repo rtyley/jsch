@@ -95,7 +95,8 @@ public class DHGEX extends KeyExchange{
       dh.init();
     }
     catch(Exception e){
-      System.err.println(e);
+//      System.err.println(e);
+      throw e;
     }
 
     packet.reset();

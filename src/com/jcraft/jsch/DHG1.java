@@ -107,7 +107,8 @@ public class DHG1 extends KeyExchange{
       dh.init();
     }
     catch(Exception e){
-      System.err.println(e);
+      //System.err.println(e);
+      throw e;
     }
 
     dh.setP(p);

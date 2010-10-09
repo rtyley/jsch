@@ -38,6 +38,6 @@ public class SftpException extends Exception{
     this.message=message;
   }
   public String toString(){
-    return message;
+    return id+": "+message;
   }
 }

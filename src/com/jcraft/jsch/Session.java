@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.26";
+  static private final String version="JSCH-0.1.27";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -225,6 +225,8 @@ public class Session implements Runnable{
       }
 
       if(i==buf.buffer.length ||
+         (i>4 && (buf.buffer[0]!='S'||buf.buffer[1]!='S'||
+                  buf.buffer[2]!='H'||buf.buffer[3]!='-'))||
 	 i<7 ||                                      // SSH-1.99 or SSH-2.0
 	 (buf.buffer[4]=='1' && buf.buffer[6]!='9')  // SSH-1.5
 	 ){
@@ -680,26 +682,15 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
         ((buf.buffer[2]<< 8)&0x0000ff00)|
         ((buf.buffer[3]    )&0x000000ff);
       j=j-4-cipher_size+8;
+      if(j<0 || (buf.index+j)>buf.buffer.length){
+        throw new IOException("invalid data");
+      }
       if(j>0){
 	io.getByte(buf.buffer, buf.index, j); buf.index+=(j);
 	if(s2ccipher!=null){
 	  s2ccipher.update(buf.buffer, cipher_size, j, buf.buffer, cipher_size);
 	}
       }
-      /*
-      io.getByte(buf.buffer, buf.index, 8); buf.index+=8;
-      if(s2ccipher!=null){
-        s2ccipher.update(buf.buffer, 0, 8, buf.buffer, 0);
-      }
-      j=((buf.buffer[0]<<24)&0xff000000)|
-        ((buf.buffer[1]<<16)&0x00ff0000)|
-        ((buf.buffer[2]<< 8)&0x0000ff00)|
-        ((buf.buffer[3]    )&0x000000ff);
-      io.getByte(buf.buffer, buf.index, j-4); buf.index+=(j-4);
-      if(s2ccipher!=null){
-        s2ccipher.update(buf.buffer, 8, j-4, buf.buffer, 8);
-      }
-      */
 
       if(s2cmac!=null){
 	s2cmac.update(seqi);
@@ -707,7 +698,7 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	byte[] result=s2cmac.doFinal();
 	io.getByte(mac_buf, 0, mac_buf.length);
         if(!java.util.Arrays.equals(result, mac_buf)){
-          System.out.println("mac error");
+          //System.err.println("mac error");
 	  throw new IOException("MAC Error");
 	}
       }
@@ -951,6 +942,9 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
       synchronized(c){
 	if(c.rwsize>0){
 	  int len=c.rwsize;
+          if(len>length){
+            len=length;
+          }
 	  s=packet.shift(len, (c2smac!=null ? c2smac.getBlockSize() : 0));
 	  command=packet.buffer.buffer[5];
 	  recipient=c.getRecipient();
@@ -962,10 +956,19 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
       if(sendit){
 	_write(packet);
 	packet.unshift(command, recipient, s, length);
+
+        synchronized(c){
+          if(c.rwsize>=length){
+            c.rwsize-=length;
+            break;
+          }
+        }
+
       }
 
+
 //      try{Thread.sleep(10);}
-      try{Thread.sleep(100);}
+      try{ Thread.sleep(100); }
       catch(java.lang.InterruptedException e){};
     }
     _write(packet);
@@ -1524,5 +1527,6 @@ setConfig((java.util.Hashtable)foo);
   private HostKey hostkey=null;
   public HostKey getHostKey(){ return hostkey; }
   public String getHost(){return host;}
+  public String getUserName(){return username;}
   public int getPort(){return port;}
 }

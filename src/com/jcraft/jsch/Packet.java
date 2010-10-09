@@ -83,6 +83,12 @@ System.out.println("");
     }
     /**/
 
+//if(buffer.buffer.length<len+5+9)
+//  System.err.println("buffer.buffer.length="+buffer.buffer.length+" len+5+9="+(len+5+9));
+
+//if(buffer.buffer.length<s)
+//  System.err.println("buffer.buffer.length="+buffer.buffer.length+" s="+(s));
+
     System.arraycopy(buffer.buffer, 
 		     len+5+9, 
 		     buffer.buffer, s, buffer.index-5-9-len);

@@ -169,17 +169,34 @@ System.out.println("");
 	faked_cookie=(byte[])faked_cookie_pool.get(session);
       }
 
+      /*
+System.out.print("faked_cookie: ");
+for(int i=0; i<faked_cookie.length; i++){
+    System.out.print(Integer.toHexString(faked_cookie[i]&0xff)+":");
+}
+System.out.println("");
+System.out.print("bar: ");
+for(int i=0; i<bar.length; i++){
+    System.out.print(Integer.toHexString(bar[i]&0xff)+":");
+}
+System.out.println("");
+      */
       if(equals(bar, faked_cookie)){
         if(cookie!=null)
           System.arraycopy(cookie, 0, foo, s+12+plen+((-plen)&3), dlen);
       }
       else{
-	  System.out.println("wrong cookie");
+	  //System.out.println("wrong cookie");
+          thread=null;
+          eof();
+          io.close();
+          disconnect();
       }
       init=false;
     }
     io.put(foo, s, l);
   }
+
   private static boolean equals(byte[] foo, byte[] bar){
     if(foo.length!=bar.length)return false;
     for(int i=0; i<foo.length; i++){
