@@ -33,7 +33,7 @@ import java.io.*;
 import java.net.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.34";
+  static private final String version="JSCH-0.1.35";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -1297,10 +1297,14 @@ break;
 	  if(channel==null){
 	    //break;
 	  }
-	  channel.setRecipient(buf.getInt());
-	  channel.setRemoteWindowSize(buf.getInt());
-	  channel.setRemotePacketSize(buf.getInt());
-	  break;
+          int r=buf.getInt();
+          int rws=buf.getInt();
+          int rps=buf.getInt();
+
+          channel.setRemoteWindowSize(rws);
+          channel.setRemotePacketSize(rps);
+          channel.setRecipient(r);
+          break;
 	case SSH_MSG_CHANNEL_OPEN_FAILURE:
           buf.getInt(); 
 	  buf.getShort(); 

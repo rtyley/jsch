@@ -9,13 +9,20 @@ public class Sftp{
     try{
       JSch jsch=new JSch();
 
-      String host=JOptionPane.showInputDialog("Enter username@hostname",
-					      System.getProperty("user.name")+
-					      "@localhost"); 
+      String host=null;
+      if(arg.length>0){
+        host=arg[0];
+      }
+      else{
+        host=JOptionPane.showInputDialog("Enter username@hostname",
+                                         System.getProperty("user.name")+
+                                         "@localhost"); 
+      }
       String user=host.substring(0, host.indexOf('@'));
       host=host.substring(host.indexOf('@')+1);
+      int port=22;
 
-      Session session=jsch.getSession(user, host, 22);
+      Session session=jsch.getSession(user, host, port);
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();

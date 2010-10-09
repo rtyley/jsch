@@ -137,66 +137,147 @@ class Util{
   }
   static private boolean glob(byte[] pattern, int pattern_index,
 			      byte[] name, int name_index){
-//System.err.println("glob: "+new String(pattern)+", "+new String(name));
+    //System.err.println("glob: "+new String(pattern)+", "+pattern_index+" "+new String(name)+", "+name_index);
+
     int patternlen=pattern.length;
     if(patternlen==0)
       return false;
+
     int namelen=name.length;
     int i=pattern_index;
     int j=name_index;
+
     while(i<patternlen && j<namelen){
-//System.err.println("i="+i+", j="+j);
       if(pattern[i]=='\\'){
 	if(i+1==patternlen)
 	  return false;
 	i++;
-	if(pattern[i]!=name[j]) return false;
-	i++; j++;
+	if(pattern[i]!=name[j]) 
+          return false;
+        i+=skipUTF8Char(pattern[i]);
+        j+=skipUTF8Char(name[j]);
 	continue;
       }
+
       if(pattern[i]=='*'){
-	if(patternlen==i+1) return true;
-	i++;
+        while(i<patternlen){
+          if(pattern[i]=='*'){
+            i++;
+            continue;
+          }
+          break;
+        }
+	if(patternlen==i)
+          return true;
+
 	byte foo=pattern[i];
+        if(foo=='?'){
+          while(j<namelen){
+	    if(glob(pattern, i, name, j)){
+	      return true;
+            }
+            j+=skipUTF8Char(name[j]);
+          }
+          return false;
+        }
+        else if(foo=='\\'){
+          if(i+1==patternlen)
+            return false;
+          i++;
+          foo=pattern[i];
+          while(j<namelen){
+            if(foo==name[j]){
+              if(glob(pattern, i+skipUTF8Char(foo),
+                      name, j+skipUTF8Char(name[j]))){
+                return true;
+              }
+            }
+            j+=skipUTF8Char(name[j]);
+          }
+          return false;
+        }
+
 	while(j<namelen){
 	  if(foo==name[j]){
 	    if(glob(pattern, i, name, j)){
 	      return true;
 	    }
 	  }
-	  j++;
+          j+=skipUTF8Char(name[j]);
 	}
 	return false;
-	/*
-	if(j==namelen) return false;
-	i++; j++;
-	continue;
-	*/
       }
+
       if(pattern[i]=='?'){
-	i++; j++;
+        i++;
+        j+=skipUTF8Char(name[j]);
 	continue;
       }
-      if(pattern[i]!=name[j]) return false;
-      i++; j++;
-      if(!(j<namelen)){
-        if(!(i<patternlen)){
+
+      if(pattern[i]!=name[j])
+        return false;
+
+      i+=skipUTF8Char(pattern[i]);
+      j+=skipUTF8Char(name[j]);
+
+      if(!(j<namelen)){         // name is end
+        if(!(i<patternlen)){    // pattern is end
 	  return true;
 	}
-	if(pattern[i]=='*' 
-           //&& !((i+1)<patternlen)
-	   ){
-	  return true;
+	if(pattern[i]=='*'){    
+          break;
 	}
       }
       continue;
     }
-    if(i==patternlen && j==namelen) return true;
+
+    if(i==patternlen && j==namelen) 
+      return true;
+
+    if(!(j<namelen) &&  // name is end
+       pattern[i]=='*'){
+      boolean ok=true;
+      while(i<patternlen){
+        if(pattern[i++]!='*'){
+          ok=false;
+          break;
+        }
+      }
+      return ok;
+    }
+
     return false;
   }
 
-  static String unquote(String _path){
-    byte[] path=_path.getBytes();
+  static String quote(String path){
+    byte[] _path=str2byte(path);
+    int count=0;
+    for(int i=0;i<_path.length; i++){
+      byte b=_path[i];
+      if(b=='\\' || b=='?' || b=='*')
+        count++;
+    }
+    if(count==0)
+      return path;
+    byte[] _path2=new byte[_path.length+count];
+    for(int i=0, j=0; i<_path.length; i++){
+      byte b=_path[i];
+      if(b=='\\' || b=='?' || b=='*'){
+        _path2[j++]='\\';
+      }
+      _path2[j++]=b;
+    }
+    return byte2str(_path2);
+  }
+
+  static String unquote(String path){
+    byte[] foo=str2byte(path);
+    byte[] bar=unquote(foo);
+    if(foo.length==bar.length)
+      return path;
+    return byte2str(bar);
+  }
+  static byte[] unquote(byte[] path){
     int pathlen=path.length;
     int i=0;
     while(i<pathlen){
@@ -205,14 +286,16 @@ class Util{
           break;
         System.arraycopy(path, i+1, path, i, path.length-(i+1));
         pathlen--;
+        i++;
         continue;
       }
       i++;
     }
-    if(pathlen==path.length)return _path;
+    if(pathlen==path.length)
+      return path;
     byte[] foo=new byte[pathlen];
     System.arraycopy(path, 0, foo, 0, pathlen);
-    return new String(foo);
+    return foo;
   }
 
   private static String[] chars={
@@ -305,19 +388,28 @@ class Util{
     return socket;
   } 
 
-  static byte[] str2byte(String str){
+  static byte[] str2byte(String str, String encoding){
     if(str==null) 
       return null;
-    try{ return str.getBytes("UTF-8"); }
+    try{ return str.getBytes(encoding); }
     catch(java.io.UnsupportedEncodingException e){
       return str.getBytes();
     }
   }
-  static String byte2str(byte[] str){
-    try{ return new String(str, "UTF-8"); }
+
+  static byte[] str2byte(String str){
+    return str2byte(str, "UTF-8");
+  }
+
+  static String byte2str(byte[] str, String encoding){
+    try{ return new String(str, encoding); }
     catch(java.io.UnsupportedEncodingException e){
       return new String(str);
     }
+  }
+
+  static String byte2str(byte[] str){
+    return byte2str(str, "UTF-8");
   }
 
   /*
@@ -361,5 +453,12 @@ class Util{
       else{ result=result+","+stra[i]; }
     }
     return result;
+  }
+
+  private static int skipUTF8Char(byte b){
+    if((byte)(b&0x80)==0) return 1;
+    if((byte)(b&0xe0)==(byte)0xc0) return 2;
+    if((byte)(b&0xf0)==(byte)0xe0) return 3;
+    return 1;
   }
 }

@@ -1,6 +1,25 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Aug 29 06:34:29 UTC 2007
+Last modified: Tue Oct 16 07:24:24 UTC 2007
+
+	
+Changes since version 0.1.34:			
+- bugfix: the OutputStream from the channel may make the JVM
+	  lockup in some case.                                 FIXED.
+	  There was a possibility that Channel#connect() may be failed 
+	  to initialize its internal without throwing the JSchException.
+	  On such case, the write operation for OutputStream from 
+	  that channel will cause the system(JVM) to lock up.
+- bugfix: ChannelSftp had problems filename globbing.              FIXED.
+- bugfix: the message included in SSH_FXP_STATUS must be UTF-8.    FIXED.
+- change: ChannelSftp supports the filename globbing for 
+	  the filename in multi-byte characters.
+- change: ChannelSftp will internally handle filenames in UTF-8 encoding. 
+- feature: following methods have been added in ChannelSftp
+	   String getServerVersion()
+	   String getClientVersion()
+	   void setFilenameEncoding(String encoding)
+	   String getExtension(String key)
 
 	
 Changes since version 0.1.33:			
@@ -107,9 +126,9 @@ Changes since version 0.1.29:
 Changes since version 0.1.28:	
 - bugfix: ChannelSftp#put will stack in some situations              FIXED.
 - bugfix: ChannelSftp invoked 'glob_remote' redundantly.             FIXED.
-- bugfix: ChannelSftp failed to make globing for some file names.    FIXED.
+- bugfix: ChannelSftp failed to make globbing for some file names.    FIXED.
 - bugfix: ChannelSftp did not carefully read its input-stream.       FIXED.
-- bugfix: ChannelSftp#lstat did not try globing for given path.      FIXED.
+- bugfix: ChannelSftp#lstat did not try globbing for given path.      FIXED.
 - bugfix: at closing channel, eof_lcoal and eof_remote did not
           become true.                                               FIXED.
 - bugfix: IdentityFile did not carefully read file input-streams.    FIXED.
@@ -270,7 +289,7 @@ Changes since version 0.1.20:
           had been thrown. FIXED.
 - bugfix: fixed a bug in hadling the size of remote channel window.
 - bugfix: channels should not be closed even if EOF is received. FIXED.
-- bugfix: fixed bugs in file name globing on sftp.
+- bugfix: fixed bugs in file name globbing on sftp.
 - change: to transfer packets efficiently, the size of internal buffer
           for each channel has been increased.
 - change: ChannelSftp.ls will return a vector of 

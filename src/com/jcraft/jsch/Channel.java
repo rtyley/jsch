@@ -190,7 +190,9 @@ public abstract class Channel implements Runnable{
     }
     catch(Exception e){
       connected=false;
-      if(e instanceof JSchException) throw (JSchException)e;
+      if(e instanceof JSchException) 
+        throw (JSchException)e;
+      throw new JSchException(e.toString());
     }
   }
 
@@ -256,9 +258,17 @@ public abstract class Channel implements Runnable{
         private Buffer buffer=null;
         private Packet packet=null;
         private boolean closed=false;
-        private void init(){
+        private synchronized void init() throws java.io.IOException{
           buffer=new Buffer(rmpsize);
           packet=new Packet(buffer);
+
+          byte[] _buf=buffer.buffer;
+          if(_buf.length-(14+0)-32-20<=0){
+            buffer=null;
+            packet=null;
+            throw new IOException("failed to initialize the channel.");
+          }
+
         }
         byte[] b=new byte[1];
         public void write(int w) throws java.io.IOException{
@@ -318,7 +328,13 @@ public abstract class Channel implements Runnable{
         }
         public void close() throws java.io.IOException{
           if(packet==null){
-            init();
+            try{
+              init();
+            }
+            catch(java.io.IOException e){
+              // close should be finished silently.
+              return;
+            }
           }
           if(closed){
             return;
