@@ -9,18 +9,20 @@ import javax.swing.*;
 public class ScpTo{
   public static void main(String[] arg){
     if(arg.length!=2){
-      System.err.println("usage: java ScpTo file1 remotehost:file2");
+      System.err.println("usage: java ScpTo file1 user@remotehost:file2");
       System.exit(-1);
     }      
 
     try{
 
       String lfile=arg[0];
+      String user=arg[1].substring(0, arg[1].indexOf('@'));
+      arg[1]=arg[1].substring(arg[1].indexOf('@')+1);
       String host=arg[1].substring(0, arg[1].indexOf(':'));
       String rfile=arg[1].substring(arg[1].indexOf(':')+1);
 
       JSch jsch=new JSch();
-      Session session=jsch.getSession(host, 22);
+      Session session=jsch.getSession(user, host, 22);
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
@@ -33,11 +35,9 @@ public class ScpTo{
       Channel channel=session.openChannel("exec");
       ((ChannelExec)channel).setCommand(command);
 
-      // plug I/O streams for remote scp
-      PipedOutputStream out=new PipedOutputStream();
-      channel.setInputStream(new PipedInputStream(out));
-      PipedInputStream in=new PipedInputStream();
-      channel.setOutputStream(new PipedOutputStream(in));
+      // get I/O streams for remote scp
+      OutputStream out=channel.getOutputStream();
+      InputStream in=channel.getInputStream();
 
       channel.connect();
 
@@ -84,7 +84,6 @@ public class ScpTo{
   }
 
   public static class MyUserInfo implements UserInfo{
-    public String getUserName(){ return username; }
     public String getPassword(){ return passwd; }
     public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
@@ -97,24 +96,17 @@ public class ScpTo{
        return foo==0;
     }
   
-    String username;
     String passwd;
-
-    JLabel mainLabel=new JLabel("Username and Password");
-    JLabel userLabel=new JLabel("Username: ");
-    JLabel passwordLabel=new JLabel("Password: ");
-    JTextField usernameField=new JTextField(20);
     JTextField passwordField=(JTextField)new JPasswordField(20);
 
     public String getPassphrase(){ return null; }
-    public boolean promptNameAndPassphrase(String message){ return true; }
-    public boolean promptNameAndPassword(String message){
-      Object[] ob={userLabel,usernameField,passwordLabel,passwordField}; 
+    public boolean promptPassphrase(String message){ return true; }
+    public boolean promptPassword(String message){
+      Object[] ob={passwordField}; 
       int result=
 	  JOptionPane.showConfirmDialog(null, ob, message,
 					JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
-        username=usernameField.getText();
 	passwd=passwordField.getText();
 	return true;
       }
@@ -124,4 +116,5 @@ public class ScpTo{
       JOptionPane.showMessageDialog(null, message);
     }
   }
+
 }

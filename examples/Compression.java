@@ -8,10 +8,15 @@ public class Compression{
   public static void main(String[] arg){
 
     try{
-      String host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
-
       JSch jsch=new JSch();
-      Session session=jsch.getSession(host, 22);
+
+      String host=JOptionPane.showInputDialog("Enter username@hostname",
+					      System.getProperty("user.name")+
+					      "@localhost"); 
+      String user=host.substring(0, host.indexOf('@'));
+      host=host.substring(host.indexOf('@')+1);
+
+      Session session=jsch.getSession(user, host, 22);
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
@@ -35,7 +40,6 @@ public class Compression{
   }
 
   public static class MyUserInfo implements UserInfo{
-    public String getUserName(){ return username; }
     public String getPassword(){ return passwd; }
     public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
@@ -48,24 +52,17 @@ public class Compression{
        return foo==0;
     }
   
-    String username;
     String passwd;
-
-    JLabel mainLabel=new JLabel("Username and Password");
-    JLabel userLabel=new JLabel("Username: ");
-    JLabel passwordLabel=new JLabel("Password: ");
-    JTextField usernameField=new JTextField(20);
     JTextField passwordField=(JTextField)new JPasswordField(20);
 
     public String getPassphrase(){ return null; }
-    public boolean promptNameAndPassphrase(String message){ return true; }
-    public boolean promptNameAndPassword(String message){
-      Object[] ob={userLabel,usernameField,passwordLabel,passwordField}; 
+    public boolean promptPassphrase(String message){ return true; }
+    public boolean promptPassword(String message){
+      Object[] ob={passwordField}; 
       int result=
 	  JOptionPane.showConfirmDialog(null, ob, message,
 					JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
-        username=usernameField.getText();
 	passwd=passwordField.getText();
 	return true;
       }

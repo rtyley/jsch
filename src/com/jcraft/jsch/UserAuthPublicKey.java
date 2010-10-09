@@ -23,6 +23,7 @@
 package com.jcraft.jsch;
 
 import java.io.*;
+import java.util.Vector;
 
 class UserAuthPublicKey extends UserAuth{
   UserInfo userinfo;
@@ -33,65 +34,80 @@ class UserAuthPublicKey extends UserAuth{
   public boolean start(Session session) throws Exception{
     super.start(session);
 
-    Identity identity=new Identity(session.getIdentity(), session);
+//    Identity identity=new Identity(session.getIdentity(), session.jsch);
+    Vector identities=JSch.identities;
 
     Packet packet=session.packet;
     Buffer buf=session.buf;
 
-    String passphrase=session.passphrase;
-    String username=session.username;
+    String passphrase=null;
+    final String username=session.username;
+
+    for(int i=0; i<identities.size(); i++){
+
+    Identity identity=(Identity)(JSch.identities.elementAt(i));
+    byte[] pubkeyblob=identity.getPublicKeyBlob();
+
+    if(pubkeyblob!=null/* && username!=null*/){
+      // send
+      // byte      SSH_MSG_USERAUTH_REQUEST(50)
+      // string    user name
+      // string    service name ("ssh-connection")
+      // string    "publickey"
+      // boolen    FALSE
+      // string    plaintext password (ISO-10646 UTF-8)
+      packet.reset();
+      buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
+      buf.putString(username.getBytes());
+      buf.putString("ssh-connection".getBytes());
+      buf.putString("publickey".getBytes());
+      buf.putByte((byte)0);
+      buf.putString(identity.getAlgName().getBytes());
+      buf.putString(pubkeyblob);
+      session.write(packet);
+
+      // receive
+      // byte      SSH_MSG_USERAUTH_PK_OK(52)
+      // string    service name
+      buf=session.read(buf);
+      //System.out.println("read: 60 ? "+    buf.buffer[5]);
+      if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_PK_OK){
+      }
+      else if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
+//	System.out.println("USERAUTH publickey "+session.getIdentity()+
+//			   " is not acceptable.");
+	continue;
+      }
+      else{
+	System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
+	//throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
+	continue;
+      }
+    }
 
     while(true){
-      if(passphrase==null || username==null){
+      if(/*username==null ||*/
+	 (identity.isEncrypted() && passphrase==null)){
 	if(userinfo==null) throw new JSchException("USERAUTH fail");
-	if(!userinfo.promptNameAndPassphrase("??")){
-	  throw new JSchException("USERAUTH cancel");
+	if((/*username==null ||*/ identity.isEncrypted()) &&
+	   !userinfo.promptPassphrase("Passphrase for "+identity.identity)){
+	  //throw new JSchException("USERAUTH cancel");
+	  break;
 	}
-	username=userinfo.getUserName();
+	//username=userinfo.getUserName();
 	passphrase=userinfo.getPassphrase();
       }
-      if(username!=null && passphrase!=null && identity.setPassphrase(passphrase.getBytes())){
+      if(/*username!=null &&*/ (!identity.isEncrypted() || passphrase!=null)){
+	if(identity.setPassphrase(passphrase))
         break;
       }
       passphrase=null;
-      username=null;
+      //username=null;
     }
 
-    byte[] pubkeyblob=identity.getPublicKeyBlob();
-
-    // send
-    // byte      SSH_MSG_USERAUTH_REQUEST(50)
-    // string    user name
-    // string    service name ("ssh-connection")
-    // string    "publickey"
-    // boolen    FALSE
-    // string    plaintext password (ISO-10646 UTF-8)
-    packet.reset();
-    buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
-    buf.putString(username.getBytes());
-    buf.putString("ssh-connection".getBytes());
-    buf.putString("publickey".getBytes());
-    buf.putByte((byte)0);
-    buf.putString(identity.getAlgName().getBytes());
-    buf.putString(pubkeyblob);
-    session.write(packet);
-
-    // receive
-    // byte      SSH_MSG_USERAUTH_PK_OK(52)
-    // string    service name
-    buf=session.read(buf);
-    //System.out.println("read: 60 ? "+    buf.buffer[5]);
-    if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_PK_OK){
-    }
-    else if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
-      System.out.println("USERAUTH publickey "+session.getIdentity()+
-			 " is not acceptable.");
-      return false;
-    }
-    else{
-      System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
-      throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
-    }
+    if(identity.isEncrypted()) continue;
+    if(pubkeyblob==null)  pubkeyblob=identity.getPublicKeyBlob();
+    if(pubkeyblob==null)  continue;
 
     // send
     // byte      SSH_MSG_USERAUTH_REQUEST(50)
@@ -111,7 +127,7 @@ class UserAuthPublicKey extends UserAuth{
 
     byte[] tmp=new byte[buf.index-5];
     System.arraycopy(buf.buffer, 5, tmp, 0, tmp.length);
-    buf.putString(identity.getSignature(tmp));
+    buf.putString(identity.getSignature(session, tmp));
     
     session.write(packet);
 
@@ -132,7 +148,8 @@ class UserAuthPublicKey extends UserAuth{
     }
     else{
       System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
-      throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
+      //throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
+    }
     }
 
     return false;

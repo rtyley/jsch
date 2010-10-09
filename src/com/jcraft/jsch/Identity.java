@@ -28,7 +28,7 @@ class Identity{
   String identity;
   byte[] key;
   byte[] iv;
-  private Session session;
+  private JSch jsch;
   private HASH hash;
   private byte[] encoded_data;
 
@@ -52,35 +52,34 @@ class Identity{
   static final int RSA=0;
   static final int DSS=1;
   private int type=0;
+  private byte[] publickeyblob=null;
 
-  Identity(String identity, Session session){
+  private boolean encrypted=true;
+
+  Identity(String identity, JSch jsch){
     this.identity=identity;
-    this.session=session;
+    this.jsch=jsch;
     try{
       Class c;
-      c=Class.forName(session.getConfig("3des-cbc"));
+      c=Class.forName(jsch.getConfig("3des-cbc"));
       cipher=(Cipher)(c.newInstance());
       key=new byte[cipher.getBlockSize()];   // 24
       iv=new byte[cipher.getIVSize()];       // 8
-      c=Class.forName(session.getConfig("md5"));
+      c=Class.forName(jsch.getConfig("md5"));
       hash=(HASH)(c.newInstance());
       hash.init();
       File file=new File(identity);
       FileInputStream fis = new FileInputStream(identity);
-      DataInputStream dis = new DataInputStream(fis);
       byte[] buf=new byte[(int)(file.length())];
       int len=fis.read(buf, 0, buf.length);
+      fis.close();
 
       int i=0;
       while(i<len){
         if(buf[i]=='B'&& buf[i+1]=='E'&& buf[i+2]=='G'&& buf[i+3]=='I'){
           i+=6;	    
-          if(buf[i]=='D'&& buf[i+1]=='S'&& buf[i+2]=='A'){
-            type=DSS;
-	  }
-	  else if(buf[i]=='R'&& buf[i+1]=='S'&& buf[i+2]=='A'){
-            type=RSA;
-	  }
+          if(buf[i]=='D'&& buf[i+1]=='S'&& buf[i+2]=='A'){ type=DSS; }
+	  else if(buf[i]=='R'&& buf[i+1]=='S'&& buf[i+2]=='A'){ type=RSA; }
 	  else{
             System.out.println("invalid format: "+identity);
 	  }
@@ -95,7 +94,19 @@ class Identity{
   	  }
 	  continue;
 	}
-	if(buf[i]==0x0a && buf[i+1]==0x0a){ i+=2; break; }
+	if(buf[i]==0x0a){
+	  if(buf[i+1]==0x0a){ i+=2; break; }
+	  boolean inheader=false;
+	  for(int j=i+1; j<buf.length; j++){
+	    if(buf[j]==0x0a) break;
+	    if(buf[j]==':'){inheader=true; break;}
+	  }
+	  if(!inheader){
+	    i++; 
+	    encrypted=false;    // no passphrase
+	    break;
+	  }
+	}
 	i++;
       }
       int start=i;
@@ -109,11 +120,23 @@ class Identity{
         i++;
       }
       encoded_data=Util.fromBase64(buf, start, i-start);
-      if(encoded_data.length%8!=0){
-        byte[] foo=new byte[encoded_data.length/8*8];
-        System.arraycopy(encoded_data, 0, foo, 0, foo.length);
-        encoded_data=foo;
-      }
+//      if(encoded_data.length%8!=0){
+//        byte[] foo=new byte[encoded_data.length/8*8];
+//        System.arraycopy(encoded_data, 0, foo, 0, foo.length);
+//        encoded_data=foo;
+//      }
+
+      file=new File(identity+".pub");
+      fis=new FileInputStream(identity+".pub");
+      buf=new byte[(int)(file.length())];
+      len=fis.read(buf, 0, buf.length);
+      fis.close();
+      i=0;
+      while(i<len){ if(buf[i]==' ')break; i++;} i++;
+      if(i>=len) return;
+      start=i;
+      while(i<len){ if(buf[i]==' ')break; i++;}
+      publickeyblob=Util.fromBase64(buf, start, i-start);
     }
     catch(Exception e){
       //System.out.println(e);
@@ -126,36 +149,46 @@ class Identity{
     return "ssh-dss"; 
   }
 
-  boolean setPassphrase(byte[] passphrase) throws Exception{
+  boolean setPassphrase(String _passphrase) throws Exception{
     /*
       hash is MD5
       h(0) <- hash(passphrase, iv);
       h(n) <- hash(h(n-1), passphrase, iv);
       key <- (h(0),...,h(n))[0,..,key.length];
     */
-    int hsize=hash.getBlockSize();
-    byte[] hn=new byte[key.length/hsize*hsize+
-		       (key.length%hsize==0?0:hsize)];
-    byte[] tmp=null;
-    for(int index=0; index+hsize<=hn.length;){
-      if(tmp!=null){ hash.update(tmp, 0, tmp.length); }
+    if(encrypted){
+      if(_passphrase==null) return false;
+      byte[] passphrase=_passphrase.getBytes();
+      int hsize=hash.getBlockSize();
+      byte[] hn=new byte[key.length/hsize*hsize+
+			 (key.length%hsize==0?0:hsize)];
+      byte[] tmp=null;
+      for(int index=0; index+hsize<=hn.length;){
+	if(tmp!=null){ hash.update(tmp, 0, tmp.length); }
 	hash.update(passphrase, 0, passphrase.length);
 	hash.update(iv, 0, iv.length);
 	tmp=hash.digest();
 	System.arraycopy(tmp, 0, hn, index, tmp.length);
 	index+=tmp.length;
+      }
+      System.arraycopy(hn, 0, key, 0, key.length); 
     }
-    System.arraycopy(hn, 0, key, 0, key.length); 
+    if(decrypt()){
+      encrypted=false;
+      return true;
+    }
     P_array=Q_array=G_array=pub_array=prv_array=null;
-    return decrypt();
+    return false;
   }
 
   byte[] getPublicKeyBlob(){
+    if(publickeyblob!=null) return publickeyblob;
     if(type==RSA) return getPublicKeyBlob_rsa();
     return getPublicKeyBlob_dss();
   }
 
   byte[] getPublicKeyBlob_rsa(){
+    if(e_array==null) return null;
     Buffer buf=new Buffer("ssh-rsa".length()+4+
 			   e_array.length+4+ 
  			   n_array.length+4);
@@ -166,6 +199,7 @@ class Identity{
   }
 
   byte[] getPublicKeyBlob_dss(){
+    if(P_array==null) return null;
     Buffer buf=new Buffer("ssh-dss".length()+4+
 			   P_array.length+4+ 
 			   Q_array.length+4+ 
@@ -179,14 +213,14 @@ class Identity{
     return buf.buffer;
   }
 
-  byte[] getSignature(byte[] data){
-    if(type==RSA) return getSignature_rsa(data);
-    return getSignature_dss(data);
+  byte[] getSignature(Session session, byte[] data){
+    if(type==RSA) return getSignature_rsa(session, data);
+    return getSignature_dss(session, data);
   }
 
-  byte[] getSignature_rsa(byte[] data){
+  byte[] getSignature_rsa(Session session, byte[] data){
     try{      
-      Class c=Class.forName(session.getConfig("signature.rsa"));
+      Class c=Class.forName(jsch.getConfig("signature.rsa"));
       SignatureRSA rsa=(SignatureRSA)(c.newInstance());
 
 //      Class c=Class.forName(session.getConfig("signature.dsa"));
@@ -217,9 +251,9 @@ class Identity{
     return null;
   }
 
-  byte[] getSignature_dss(byte[] data){
+  byte[] getSignature_dss(Session session, byte[] data){
     try{      
-      Class c=Class.forName(session.getConfig("signature.dss"));
+      Class c=Class.forName(jsch.getConfig("signature.dss"));
       SignatureDSA dsa=(SignatureDSA)(c.newInstance());
       dsa.init();
       dsa.setPrvKey(prv_array, P_array, Q_array, G_array);
@@ -257,9 +291,16 @@ class Identity{
     byte[] iqmp_array;
 
     try{
-      cipher.init(Cipher.DECRYPT_MODE, key, iv);
-      byte[] plain=new byte[encoded_data.length];
-      cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+      byte[] plain;
+      if(encrypted){
+        cipher.init(Cipher.DECRYPT_MODE, key, iv);
+        plain=new byte[encoded_data.length];
+        cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+      }
+      else{
+	if(n_array!=null) return true;
+	plain=encoded_data;
+      }
 
       int index=0;
       int length=0;
@@ -370,9 +411,16 @@ class Identity{
 
   boolean decrypt_dss(){
     try{
-      cipher.init(Cipher.DECRYPT_MODE, key, iv);
-      byte[] plain=new byte[encoded_data.length];
-      cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+      byte[] plain;
+      if(encrypted){
+        cipher.init(Cipher.DECRYPT_MODE, key, iv);
+        plain=new byte[encoded_data.length];
+        cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+      }
+      else{
+	if(P_array!=null) return true;
+	plain=encoded_data;
+      }
 
       int index=0;
       int length=0;
@@ -446,6 +494,7 @@ class Identity{
     }
     catch(Exception e){
       //System.out.println(e);
+      e.printStackTrace();
       return false;
     }
     return true;
@@ -453,5 +502,8 @@ class Identity{
   private byte hexconv(byte c){
     if('0'<=c&&c<='9') return (byte)(c-'0');
     return (byte)(c-'a'+10);
+  }
+  public boolean isEncrypted(){
+    return encrypted;
   }
 }

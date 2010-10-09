@@ -23,11 +23,10 @@
 package com.jcraft.jsch;
 
 public interface UserInfo{
-  String getUserName();
   String getPassphrase();
   String getPassword();
-  boolean promptNameAndPassword(String message);
-  boolean promptNameAndPassphrase(String message);
+  boolean promptPassword(String message);
+  boolean promptPassphrase(String message);
   boolean promptYesNo(String message);
   void showMessage(String message);
 }

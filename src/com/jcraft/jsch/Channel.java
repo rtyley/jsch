@@ -23,6 +23,12 @@
 package com.jcraft.jsch;
 
 import java.net.*;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
+
 
 public class Channel implements Runnable{
   static int index=0; 
@@ -138,11 +144,22 @@ public class Channel implements Runnable{
     setRemotePacketSize(buf.getInt());
   }
 
-  public void setInputStream(java.io.InputStream in){
+  public void setInputStream(InputStream in){
     io.setInputStream(in);
   }
-  public void setOutputStream(java.io.OutputStream out){
+  public void setOutputStream(OutputStream out){
     io.setOutputStream(out);
+  }
+
+  public InputStream getInputStream() throws IOException {
+    PipedInputStream in=new PipedInputStream();
+    io.setOutputStream(new PassiveOutputStream(in));
+    return in;
+  }
+  public OutputStream getOutputStream() throws IOException {
+    PipedOutputStream out=new PipedOutputStream();
+    io.setInputStream(new PassiveInputStream(out));
+    return out;
   }
 
   void setLocalWindowSize(int foo){ this.lwsize=foo; }
@@ -154,10 +171,10 @@ public class Channel implements Runnable{
   public void run(){
   }
 
-  void write(byte[] foo) throws java.io.IOException {
+  void write(byte[] foo) throws IOException {
     write(foo, 0, foo.length);
   }
-  void write(byte[] foo, int s, int l) throws java.io.IOException {
+  void write(byte[] foo, int s, int l) throws IOException {
     if(eof)return;
     if(io.out!=null)
       io.put(foo, s, l);
@@ -201,8 +218,16 @@ public class Channel implements Runnable{
     thread=null;
     try{
       if(io!=null){
-//      if(io.in!=null)io.in.close();
-//      if(io.out!=null)io.out.close();
+	try{
+	  if(io.in!=null && (io.in instanceof PassiveInputStream))
+	    io.in.close();
+	}
+	catch(Exception ee){}
+	try{
+	  if(io.out!=null && (io.out instanceof PassiveOutputStream))
+	    io.out.close();
+	}
+	catch(Exception ee){}
       }
     }
     catch(Exception e){
@@ -229,6 +254,17 @@ public class Channel implements Runnable{
     public void run(){c.output_thread();}
   }
 */
+
+  class PassiveInputStream extends PipedInputStream{
+    PassiveInputStream(PipedOutputStream out) throws IOException{
+      super(out);
+    }
+  }
+  class PassiveOutputStream extends PipedOutputStream{
+    PassiveOutputStream(PipedInputStream in) throws IOException{
+      super(in);
+    }
+  }
 
   void setSession(Session session){
     this.session=session;

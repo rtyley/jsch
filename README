@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Thu Jan  9 14:11:59 UTC 2003
+Last modified: Tue Feb  4 04:48:43 UTC 2003
 
 
 Description
@@ -106,6 +106,7 @@ Please refer to a sample program 'examples/Compression.java'.
 
 TODO
 ====
+* generating RSA, DSA key pairs.
 * re-implementation with java.nio.
 * replacing cipher, hash by JCE with pure Java code.
   It seems BeeCrypt(http://www.virtualunlimited.com/products/beecrypt/),

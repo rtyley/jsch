@@ -146,7 +146,7 @@ public class ChannelSftp extends ChannelSession{
       str=buf.getString();         // filename
       home=cwd=new String(str);
       str=buf.getString();         // logname
-//    ATTR.getATTR(buf);           // attrs
+//    SftpATTRS.getATTR(buf);           // attrs
 
       lcwd=new File(".").getAbsolutePath();
 
@@ -157,8 +157,8 @@ public class ChannelSftp extends ChannelSession{
     //thread=null;
   }
 
-  public void quit(){ /*eof();*/ disconnect();}
-  public void exit(){ /*eof();*/ disconnect();}
+  public void quit(){ disconnect();}
+  public void exit(){ disconnect();}
   public String lcd(String path){
     if(!path.startsWith("/")){ path=lcwd+"/"+path; }
     if((new File(path)).isDirectory()){
@@ -388,7 +388,7 @@ public class ChannelSftp extends ChannelSession{
 //	System.out.println(new String(str));
 	  v.addElement(new String(str));
 
-	  ATTR.getATTR(buf);
+	  SftpATTRS.getATTR(buf);
 	  /*
           flags=buf.getInt();              // attrs
           i=0;
@@ -481,7 +481,7 @@ public class ChannelSftp extends ChannelSession{
       int type=buf.getByte();
       if(type!=SSH_FXP_ATTRS){ return false; }
       buf.getInt();
-      ATTR attr=ATTR.getATTR(buf);
+      SftpATTRS attr=SftpATTRS.getATTR(buf);
       return attr.isDir();
     }
     catch(Exception e){}
@@ -499,7 +499,7 @@ public class ChannelSftp extends ChannelSession{
       int type=buf.getByte();
       if(type!=SSH_FXP_ATTRS){ return false; }
       buf.getInt();
-      ATTR attr=ATTR.getATTR(buf);
+      SftpATTRS attr=SftpATTRS.getATTR(buf);
       attr.setUIDGID(attr.uid, gid); 
 
       sendSETSTAT(path.getBytes(), attr);
@@ -527,7 +527,7 @@ public class ChannelSftp extends ChannelSession{
       int type=buf.getByte();
       if(type!=SSH_FXP_ATTRS){ return false; }
       buf.getInt();
-      ATTR attr=ATTR.getATTR(buf);
+      SftpATTRS attr=SftpATTRS.getATTR(buf);
       attr.setUIDGID(uid, attr.gid); 
 
       sendSETSTAT(path.getBytes(), attr);
@@ -556,7 +556,7 @@ public class ChannelSftp extends ChannelSession{
       if(type!=SSH_FXP_ATTRS){ return false; }
 
       buf.getInt();
-      ATTR attr=ATTR.getATTR(buf);
+      SftpATTRS attr=SftpATTRS.getATTR(buf);
       attr.setPERMISSIONS(permissions); 
 
       sendSETSTAT(path.getBytes(), attr);
@@ -604,6 +604,39 @@ public class ChannelSftp extends ChannelSession{
     return false;
   }
 
+  public SftpATTRS stat(String path){
+    try{
+     if(!path.startsWith("/")){ path=cwd+"/"+path; }
+      sendSTAT(path.getBytes());
+      buf.rewind();
+      int i=io.in.read(buf.buffer, 0, buf.buffer.length);
+      int length=buf.getInt();
+      int type=buf.getByte();
+      if(type!=SSH_FXP_ATTRS){ return null; }
+      buf.getInt();
+      SftpATTRS attr=SftpATTRS.getATTR(buf);
+      return attr;
+    }
+    catch(Exception e){}
+    return null;
+  }
+  public SftpATTRS lstat(String path){
+    try{
+     if(!path.startsWith("/")){ path=cwd+"/"+path; }
+      sendLSTAT(path.getBytes());
+      buf.rewind();
+      int i=io.in.read(buf.buffer, 0, buf.buffer.length);
+      int length=buf.getInt();
+      int type=buf.getByte();
+      if(type!=SSH_FXP_ATTRS){ return null; }
+      buf.getInt();
+      SftpATTRS attr=SftpATTRS.getATTR(buf);
+      return attr;
+    }
+    catch(Exception e){}
+    return null;
+  }
+
   public String pwd(){ return cwd; }
   public String lpwd(){ return lcwd; }
   public String version(){ return version; }
@@ -621,7 +654,13 @@ public class ChannelSftp extends ChannelSession{
   private void sendSTAT(byte[] path) throws Exception{
     sendPacketPath(SSH_FXP_STAT, path);
   }
-  private void sendSETSTAT(byte[] path, ATTR attr) throws Exception{
+  private void sendLSTAT(byte[] path) throws Exception{
+    sendPacketPath(SSH_FXP_LSTAT, path);
+  }
+  private void sendFSTAT(byte[] handle) throws Exception{
+    sendPacketPath(SSH_FXP_FSTAT, handle);
+  }
+  private void sendSETSTAT(byte[] path, SftpATTRS attr) throws Exception{
     packet.reset();
     putHEAD(SSH_FXP_SETSTAT, 9+path.length+attr.length());
     buf.putInt(count++);
@@ -632,7 +671,7 @@ public class ChannelSftp extends ChannelSession{
   private void sendREMOVE(byte[] path) throws Exception{
     sendPacketPath(SSH_FXP_REMOVE, path);
   }
-  private void sendMKDIR(byte[] path, ATTR attr) throws Exception{
+  private void sendMKDIR(byte[] path, SftpATTRS attr) throws Exception{
     packet.reset();
     putHEAD(SSH_FXP_MKDIR, 9+path.length+(attr!=null?attr.length():4));
     buf.putInt(count++);
@@ -649,9 +688,6 @@ public class ChannelSftp extends ChannelSession{
   }
   private void sendREADLINK(byte[] path) throws Exception{
     sendPacketPath(SSH_FXP_READLINK, path);
-  }
-  private void sendLSTAT(byte[] path) throws Exception{
-    sendPacketPath(SSH_FXP_LSTAT, path);
   }
   private void sendOPENDIR(byte[] path) throws Exception{
     sendPacketPath(SSH_FXP_OPENDIR, path);
@@ -725,132 +761,4 @@ public class ChannelSftp extends ChannelSession{
     buf.putByte(type);
   }
 
-  /*
-  void write(byte[] foo){
-    write(foo, 0, foo.length);
-  }
-  void write(byte[] foo, int s, int l){
-    if(eof)return;
-    io.put(foo, s, l);
-  }
-  */
-
-/*
-  uint32   flags
-  uint64   size           present only if flag SSH_FILEXFER_ATTR_SIZE
-  uint32   uid            present only if flag SSH_FILEXFER_ATTR_UIDGID
-  uint32   gid            present only if flag SSH_FILEXFER_ATTR_UIDGID
-  uint32   permissions    present only if flag SSH_FILEXFER_ATTR_PERMISSIONS
-  uint32   atime          present only if flag SSH_FILEXFER_ACMODTIME
-  uint32   mtime          present only if flag SSH_FILEXFER_ACMODTIME
-  uint32   extended_count present only if flag SSH_FILEXFER_ATTR_EXTENDED
-  string   extended_type
-  string   extended_data
-    ...      more extended data (extended_type - extended_data pairs),
-             so that number of pairs equals extended_count
-*/
-  static class ATTR{
-    static final int S_IFDIR=0x4000;
-
-    int flags=0;
-    long size;
-    int uid;
-    int gid;
-    int permissions;
-    int atime;
-    int mtime;
-    String[] extended=null;
-
-    static ATTR getATTR(Buffer buf){
-      ATTR attr=new ATTR();	
-      attr.flags=buf.getInt();
-      if((attr.flags&SSH_FILEXFER_ATTR_SIZE)!=0){ attr.size=buf.getLong(); }
-      if((attr.flags&SSH_FILEXFER_ATTR_UIDGID)!=0){
-        attr.uid=buf.getInt(); attr.gid=buf.getInt();
-      }
-      if((attr.flags&SSH_FILEXFER_ATTR_PERMISSIONS)!=0){ 
-        attr.permissions=buf.getInt();
-      }
-      if((attr.flags&SSH_FILEXFER_ATTR_ACMODTIME)!=0){ 
-        attr.atime=buf.getInt();
-      }
-      if((attr.flags&SSH_FILEXFER_ATTR_ACMODTIME)!=0){ 
-        attr.mtime=buf.getInt(); 
-      }
-      if((attr.flags&SSH_FILEXFER_ATTR_EXTENDED)!=0){
-        int count=buf.getInt();
-        if(count>0){
-          attr.extended=new String[count*2];
-          for(int i=0; i<count; i++){
-            attr.extended[i*2]=new String(buf.getString());
-            attr.extended[i*2+1]=new String(buf.getString());
-	  }
-	}
-      }
-      return attr;
-    } 
-
-    int length(){
-      int len=4;
-
-      if((flags&SSH_FILEXFER_ATTR_SIZE)!=0){ len+=8; }
-      if((flags&SSH_FILEXFER_ATTR_UIDGID)!=0){ len+=8; }
-      if((flags&SSH_FILEXFER_ATTR_PERMISSIONS)!=0){ len+=4; }
-      if((flags&SSH_FILEXFER_ATTR_ACMODTIME)!=0){ len+=8; }
-      if((flags&SSH_FILEXFER_ATTR_EXTENDED)!=0){
-        len+=4;
-        int count=extended.length/2;
-        if(count>0){
-          for(int i=0; i<count; i++){
-            len+=4; len+=extended[i*2].length();
-	    len+=4; len+=extended[i*2+1].length();
-	  }
-	}
-      }
-      return len;
-    }
-    void dump(Buffer buf){
-      buf.putInt(flags);
-      if((flags&SSH_FILEXFER_ATTR_SIZE)!=0){ buf.putLong(size); }
-      if((flags&SSH_FILEXFER_ATTR_UIDGID)!=0){
-        buf.putInt(uid); buf.putInt(gid);
-      }
-      if((flags&SSH_FILEXFER_ATTR_PERMISSIONS)!=0){ 
-        buf.putInt(permissions);
-      }
-      if((flags&SSH_FILEXFER_ATTR_ACMODTIME)!=0){ buf.putInt(atime); }
-      if((flags&SSH_FILEXFER_ATTR_ACMODTIME)!=0){ buf.putInt(mtime); }
-      if((flags&SSH_FILEXFER_ATTR_EXTENDED)!=0){
-        int count=extended.length/2;
-        if(count>0){
-          for(int i=0; i<count; i++){
-            buf.putString(extended[i*2].getBytes());
-            buf.putString(extended[i*2+1].getBytes());
-	  }
-	}
-      }
-    }
-    void setSIZE(long size){
-      flags|=SSH_FILEXFER_ATTR_SIZE;
-      this.size=size;
-    }
-    void setUIDGID(int uid, int gid){
-      flags|=SSH_FILEXFER_ATTR_UIDGID;
-      this.uid=uid;
-      this.gid=gid;
-    }
-    void setACMODTIME(int atime, int mtime){
-      flags|=SSH_FILEXFER_ATTR_ACMODTIME;
-      this.atime=atime;
-      this.mtime=mtime;
-    }
-    void setPERMISSIONS(int permissions){
-      flags|=SSH_FILEXFER_ATTR_PERMISSIONS;
-      this.permissions=permissions;
-    }
-    boolean isDir(){
-      return ((flags&SSH_FILEXFER_ATTR_PERMISSIONS)!=0 && 
-	      ((permissions&S_IFDIR)!=0));
-    }      
-  }
 }

@@ -33,18 +33,19 @@ class UserAuthPassword extends UserAuth{
 
     Packet packet=session.packet;
     Buffer buf=session.buf;
-    String username=session.username;
+    final String username=session.username;
     String password=session.password;
+    String dest=username+"@"+session.host+((session.port==22) ? ""  : new Integer(session.port).toString());
 
     while(true){
-      if(username==null || password==null){
+      if(/*username==null ||*/ password==null){
 	if(userinfo==null) throw new JSchException("USERAUTH fail");
-	if(!userinfo.promptNameAndPassword("username&password")){
+	if(!userinfo.promptPassword("Password for "+dest)){
 	  break;
 	}
-	username=userinfo.getUserName();
+	//username=userinfo.getUserName();
 	password=userinfo.getPassword();
-	if(username==null || password==null){
+	if(/*username==null ||*/ password==null){
 	  break;
 	}
       }
@@ -84,7 +85,7 @@ class UserAuthPassword extends UserAuth{
 //      System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
 	throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
       }
-      username=null;
+      //username=null;
       password=null;
     }
    //throw new JSchException("USERAUTH fail");

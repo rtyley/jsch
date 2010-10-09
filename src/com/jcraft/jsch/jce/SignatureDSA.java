@@ -111,13 +111,30 @@ System.out.println("");
     System.arraycopy(sig, i, tmp, 0, j); sig=tmp;
 
     // ASN.1
+    int frst=((sig[0]&0x80)!=0?1:0);
+    int scnd=((sig[20]&0x80)!=0?1:0);
+    //System.out.println("frst: "+frst+", scnd: "+scnd);
+
+    int length=sig.length+6+frst+scnd;
+    tmp=new byte[length];
+    tmp[0]=(byte)0x30; tmp[1]=(byte)0x2c; 
+    tmp[1]+=frst; tmp[1]+=scnd;
+    tmp[2]=(byte)0x02; tmp[3]=(byte)0x14;
+    tmp[3]+=frst;
+    System.arraycopy(sig, 0, tmp, 4+frst, 20);
+    tmp[4+tmp[3]]=(byte)0x02; tmp[5+tmp[3]]=(byte)0x14;
+    tmp[5+tmp[3]]+=scnd;
+    System.arraycopy(sig, 20, tmp, 6+tmp[3]+scnd, 20);
+    sig=tmp;
+
+/*
     tmp=new byte[sig.length+6];
     tmp[0]=(byte)0x30; tmp[1]=(byte)0x2c; 
     tmp[2]=(byte)0x02; tmp[3]=(byte)0x14;
     System.arraycopy(sig, 0, tmp, 4, 20);
     tmp[24]=(byte)0x02; tmp[25]=(byte)0x14;
     System.arraycopy(sig, 20, tmp, 26, 20); sig=tmp;
-    
+*/  
     return signature.verify(sig);
   }
 }

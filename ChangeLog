@@ -3,6 +3,20 @@ ChangeLog of JSch
 Last modified: Tue Jan 28 14:26:27 UTC 2003
 
 
+Changes since version 0.0.12:	
+- fixed a bug in verifying DAS signatures.
+- added 'SftpATTR' class, which allow you to get attributes of remote files on 
+  sftp channel, and 'stat', 'lstat' method are added to 'ChannelSftp' class.
+- added 'getInputStream' and 'getOutputStream' methods Channel class, which 
+  return passive I/O streams.	 
+- 'setIdentity' method is deleted from 'Session' class and
+  'addIdentity' method is added to 'JSch' class
+- 'setUserName' method is deleted from 'Session' class and
+  'getSession' method of 'JSch' class is changed.
+- 'isConnected' method is added to 'Session' class.
+- 'UserInfo' interface is changed.
+
+	
 Changes since version 0.0.11:	
 - taking care of remote window size.
 - adding 'disconnect' method to 'Channel' and 'Session' classes.

@@ -81,10 +81,10 @@ loop:
 	  }
           sb.append((char)i);
 	}
-	/*
-System.out.println(host);
-System.out.println("|"+key+"|");
-	*/
+
+	//System.out.println(host);
+	//System.out.println("|"+key+"|");
+
 	HostKey hk = new HostKey(host, type, 
 				 Util.fromBase64(key.getBytes(), 0, 
 						 key.length()));

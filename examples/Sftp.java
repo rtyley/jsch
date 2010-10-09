@@ -8,12 +8,15 @@ public class Sftp{
   public static void main(String[] arg){
 
     try{
-      String host=null;
-      if(arg.length==1){ host=arg[0]; }
-      else{ host=JOptionPane.showInputDialog("Enter hostname", "localhost"); }
-
       JSch jsch=new JSch();
-      Session session=jsch.getSession(host, 22);
+
+      String host=JOptionPane.showInputDialog("Enter username@hostname",
+					      System.getProperty("user.name")+
+					      "@localhost"); 
+      String user=host.substring(0, host.indexOf('@'));
+      host=host.substring(host.indexOf('@')+1);
+
+      Session session=jsch.getSession(user, host, 22);
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
@@ -149,6 +152,19 @@ public class Sftp{
 	  else c.symlink(p1, p2);
 	  continue;
 	}
+	if(cmd.equals("stat") || cmd.equals("lstat")){
+          if(cmds.size()!=2) continue;
+	  String p1=(String)cmds.elementAt(1);
+	  SftpATTRS attrs=null;
+	  if(cmd.equals("stat")) attrs=c.stat(p1);
+	  else attrs=c.lstat(p1);
+	  if(attrs!=null){
+            out.println(attrs);
+	  }
+	  else{
+	  }
+	  continue;
+	}
 	if(cmd.equals("version")){
 	  out.println("SFTP protocol version "+c.version());
 	  continue;
@@ -159,6 +175,7 @@ public class Sftp{
 	}
         out.println("unimplemented command: "+cmd);
       }
+      session.disconnect();
     }
     catch(Exception e){
       System.out.println(e);
@@ -167,7 +184,6 @@ public class Sftp{
   }
 
   public static class MyUserInfo implements UserInfo{
-    public String getUserName(){ return username; }
     public String getPassword(){ return passwd; }
     public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
@@ -180,24 +196,17 @@ public class Sftp{
        return foo==0;
     }
   
-    String username;
     String passwd;
-
-    JLabel mainLabel=new JLabel("Username and Password");
-    JLabel userLabel=new JLabel("Username: ");
-    JLabel passwordLabel=new JLabel("Password: ");
-    JTextField usernameField=new JTextField(20);
     JTextField passwordField=(JTextField)new JPasswordField(20);
 
     public String getPassphrase(){ return null; }
-    public boolean promptNameAndPassphrase(String message){ return true; }
-    public boolean promptNameAndPassword(String message){
-      Object[] ob={userLabel,usernameField,passwordLabel,passwordField}; 
+    public boolean promptPassphrase(String message){ return true; }
+    public boolean promptPassword(String message){
+      Object[] ob={passwordField}; 
       int result=
 	  JOptionPane.showConfirmDialog(null, ob, message,
 					JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
-        username=usernameField.getText();
 	passwd=passwordField.getText();
 	return true;
       }
@@ -227,6 +236,7 @@ public class Sftp{
 "mkdir path                    Create remote directory\n"+
 "put local-path [remote-path]  Upload file\n"+
 "pwd                           Display remote working directory\n"+
+"stat path                     Display info about path\n"+
 "exit                          Quit sftp\n"+
 "quit                          Quit sftp\n"+
 "rename oldpath newpath        Rename remote file\n"+

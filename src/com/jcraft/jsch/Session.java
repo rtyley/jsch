@@ -27,7 +27,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.0.12";
+  static private final String version="JSCH-0.0.13";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -91,7 +91,7 @@ public class Session implements Runnable{
   private IO io;
   private Socket socket;
 
-  private String identity;
+  private boolean isConnected=false;
 
   InputStream in=null;
   OutputStream out=null;
@@ -109,14 +109,14 @@ public class Session implements Runnable{
   private UserInfo userinfo;
   private Channel channel;
 
-  private String host="127.0.0.1";
-  private int port=22;
+  String host="127.0.0.1";
+  int port=22;
 
   String username=null;
   String password=null;
-  String passphrase=null;
+  //String passphrase=null;
 
-  private JSch jsch;
+  JSch jsch;
 
 
   static{
@@ -288,7 +288,7 @@ public class Session implements Runnable{
 
       UserAuth us;
       boolean auth=false;
-      if(getIdentity()!=null){
+      if(jsch.identities.size()>0){
         us=new UserAuthPublicKey(userinfo);
         auth=us.start(this);
       }
@@ -305,11 +305,11 @@ public class Session implements Runnable{
       throw new JSchException("Auth fail");
     }
     catch(IOException e) {
-      System.out.println("Session.connect: "+e);
+      e.printStackTrace();
       throw new JSchException("Session.connect: "+e);
     }
     catch(Exception e) {
-      System.out.println("Session.connect: "+e);
+      e.printStackTrace();
       throw new JSchException("Session.connect: "+e);
     }
   }
@@ -581,6 +581,9 @@ public class Session implements Runnable{
   Runnable thread;
   public void run(){
     thread=this;
+
+    isConnected=true;
+
     byte[] foo;
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
@@ -731,6 +734,7 @@ public class Session implements Runnable{
       System.out.println("@2");
       e.printStackTrace();
     }
+    isConnected=false;
   }
 
   public void disconnect(){
@@ -804,7 +808,7 @@ public class Session implements Runnable{
       foo=config.get(name);
       if(foo instanceof String) return (String)foo;
     }
-    foo=JSch.config.get(name);
+    foo=jsch.getConfig(name);
     if(foo instanceof String) return (String)foo;
     return null;
   }
@@ -812,19 +816,14 @@ public class Session implements Runnable{
   public void setProxy(Proxy proxy){ this.proxy=proxy; }
   public void setHost(String host){ this.host=host; }
   public void setPort(int port){ this.port=port; }
-  public void setUserName(String foo){ this.username=foo; }
+  void setUserName(String foo){ this.username=foo; }
   public void setPassword(String foo){ this.password=foo; }
-  public void setIdentity(String foo){ setIdentity(foo, null); }
-  public void setIdentity(String foo, String bar){ 
-      this.identity=foo; this.passphrase=bar;
-  }
   public void setUserInfo(UserInfo userinfo){ this.userinfo=userinfo; }
   public void setInputStream(InputStream in){ this.in=in; }
   public void setOutputStream(OutputStream out){ this.out=out; }
   public void setX11Host(String host){ ChannelX11.setHost(host); }
   public void setX11Port(int port){ ChannelX11.setPort(port); }
   public void setX11Cookie(String cookie){ ChannelX11.setCookie(cookie); }
-  String getIdentity(){ return identity; }
   public void setConfig(java.util.Properties foo){
     if(config==null) config=new java.util.Properties();
     for(java.util.Enumeration e=foo.keys() ; e.hasMoreElements() ;) {
@@ -833,4 +832,5 @@ public class Session implements Runnable{
     }
   }
   public void setSocketFactory(SocketFactory foo){ socket_factory=foo;}
+  public boolean isConnected(){ return isConnected; }
 }

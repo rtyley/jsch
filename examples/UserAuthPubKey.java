@@ -8,12 +8,7 @@ public class UserAuthPubKey{
   public static void main(String[] arg){
 
     try{
-      String host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
-
       JSch jsch=new JSch();
-      Session session=jsch.getSession(host, 22);
-
-      //session.setUserName("username");
 
       JFileChooser chooser = new JFileChooser();
       chooser.setDialogTitle("Choose your privatekey(ex. ~/.ssh/id_dsa)");
@@ -22,10 +17,18 @@ public class UserAuthPubKey{
       if(returnVal == JFileChooser.APPROVE_OPTION) {
         System.out.println("You chose "+
 			   chooser.getSelectedFile().getAbsolutePath()+".");
-        session.setIdentity(chooser.getSelectedFile().getAbsolutePath()
-//			    , "passphrase"
-			    );
+        jsch.addIdentity(chooser.getSelectedFile().getAbsolutePath()
+//			 , "passphrase"
+			 );
       }
+
+      String host=JOptionPane.showInputDialog("Enter username@hostname",
+					      System.getProperty("user.name")+
+					      "@localhost"); 
+      String user=host.substring(0, host.indexOf('@'));
+      host=host.substring(host.indexOf('@')+1);
+
+      Session session=jsch.getSession(user, host, 22);
 
       // username and passphrase will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
@@ -46,8 +49,7 @@ public class UserAuthPubKey{
 
 
   public static class MyUserInfo implements UserInfo{
-    public String getUserName(){ return username; }
-    public String getPassword(){ return passwd; }
+    public String getPassword(){ return null; }
     public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
       int foo=JOptionPane.showOptionDialog(null, 
@@ -59,34 +61,24 @@ public class UserAuthPubKey{
        return foo==0;
     }
   
-    String username;
-    String passwd;
+    String passphrase;
+    JTextField passphraseField=(JTextField)new JPasswordField(20);
 
-    JLabel mainLabel=new JLabel("Username and Password");
-    JLabel userLabel=new JLabel("Username: ");
-    JLabel passwordLabel=new JLabel("Password: ");
-    JTextField usernameField=new JTextField(20);
-    JTextField passwordField=(JTextField)new JPasswordField(20);
-
-    public String getPassphrase(){ return null; }
-    public boolean promptNameAndPassphrase(String message){
-      mainLabel.setText("Please enter your user name and passphrase for "+message);
-      Object[] ob={userLabel,usernameField,passwordLabel,passwordField};
+    public String getPassphrase(){ return passphrase; }
+    public boolean promptPassphrase(String message){
+      Object[] ob={passphraseField};
       int result=
-	JOptionPane.showConfirmDialog(null, ob, "username&passphrase",
+	JOptionPane.showConfirmDialog(null, ob, message,
 				      JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
-        username=usernameField.getText();
-        passwd=passwordField.getText();
+        passphrase=passphraseField.getText();
         return true;
       }
       else{ return false; }
     }
-    public boolean promptNameAndPassword(String message){ return true; }
+    public boolean promptPassword(String message){ return true; }
     public void showMessage(String message){
       JOptionPane.showMessageDialog(null, message);
     }
   }
 }
-
-

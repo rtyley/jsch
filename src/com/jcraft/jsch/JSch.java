@@ -57,13 +57,16 @@ public class JSch{
     config.put("zlib", "com.jcraft.jsch.jcraft.Compression");
   }
   private static java.util.Vector pool=new java.util.Vector();
+  static java.util.Vector identities=new java.util.Vector();
   private KnownHosts known_hosts=null;
+
   public JSch(){
     known_hosts=new KnownHosts();
   }
-  public Session getSession(String host) throws JSchException { return getSession(host, 22); }
-  public Session getSession(String host, int port) throws JSchException {
+  public Session getSession(String username, String host) throws JSchException { return getSession(username, host, 22); }
+  public Session getSession(String username, String host, int port) throws JSchException {
     Session s=new Session(this); 
+    s.setUserName(username);
     s.setHost(host);
     s.setPort(port);
     pool.addElement(s);
@@ -71,4 +74,13 @@ public class JSch{
   }
   public void setKnownHosts(String foo){ known_hosts.setKnownHosts(foo); }
   public KnownHosts getKnownHosts(){ return known_hosts; }
+  public void addIdentity(String foo) throws Exception{
+    addIdentity(foo, null);
+  }
+  public void addIdentity(String foo, String bar) throws Exception{
+    Identity identity=new Identity(foo, this);
+    if(bar!=null) identity.setPassphrase(bar);
+    identities.addElement(identity);
+  }
+  String getConfig(String foo){ return (String)(config.get(foo)); }
 }

@@ -11,15 +11,20 @@ public class ViaHTTP{
     int proxy_port;
 
     try{
+      JSch jsch=new JSch();
+
+      String host=JOptionPane.showInputDialog("Enter username@hostname",
+					      System.getProperty("user.name")+
+					      "@localhost"); 
+      String user=host.substring(0, host.indexOf('@'));
+      host=host.substring(host.indexOf('@')+1);
+
+      Session session=jsch.getSession(user, host, 22);
+
       String proxy=JOptionPane.showInputDialog("Enter proxy server",
                                                  "hostname:port");
       proxy_host=proxy.substring(0, proxy.indexOf(':'));
       proxy_port=Integer.parseInt(proxy.substring(proxy.indexOf(':')+1));
-
-      String host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
-
-      JSch jsch=new JSch();
-      Session session=jsch.getSession(host, 22);
 
       session.setProxy(new ProxyHTTP(proxy_host, proxy_port));
 
@@ -41,9 +46,7 @@ public class ViaHTTP{
     }
   }
 
-
   public static class MyUserInfo implements UserInfo{
-    public String getUserName(){ return username; }
     public String getPassword(){ return passwd; }
     public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
@@ -56,24 +59,17 @@ public class ViaHTTP{
        return foo==0;
     }
   
-    String username;
     String passwd;
-
-    JLabel mainLabel=new JLabel("Username and Password");
-    JLabel userLabel=new JLabel("Username: ");
-    JLabel passwordLabel=new JLabel("Password: ");
-    JTextField usernameField=new JTextField(20);
     JTextField passwordField=(JTextField)new JPasswordField(20);
 
     public String getPassphrase(){ return null; }
-    public boolean promptNameAndPassphrase(String message){ return true; }
-    public boolean promptNameAndPassword(String message){
-      Object[] ob={userLabel,usernameField,passwordLabel,passwordField}; 
+    public boolean promptPassphrase(String message){ return true; }
+    public boolean promptPassword(String message){
+      Object[] ob={passwordField}; 
       int result=
 	  JOptionPane.showConfirmDialog(null, ob, message,
 					JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
-        username=usernameField.getText();
 	passwd=passwordField.getText();
 	return true;
       }
@@ -83,6 +79,7 @@ public class ViaHTTP{
       JOptionPane.showMessageDialog(null, message);
     }
   }
+
 }
 
 

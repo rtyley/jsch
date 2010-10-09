@@ -9,7 +9,7 @@ This directory contains some examples, which demonstrate how to use JSch
   This program enables you to connect to sshd server and get the shell prompt.
   $ CLASSPATH=.:../src javac Shell.java 
   $ CLASSPATH=.:../src java Shell
-  You will be asked hostname, username and passwd. 
+  You will be asked username, hostname and passwd. 
   If everything works fine, you will get the shell prompt. Output will
   be ugly because of lacks of terminal-emulation, but you can issue commands.
 
@@ -17,7 +17,7 @@ This directory contains some examples, which demonstrate how to use JSch
   This program will demonstrate X11 forwarding.
   $ CLASSPATH=.:../src javac X11Forwarding.java 
   $ CLASSPATH=.:../src java X11Forwarding
-  You will be asked hostname, displayname, username and passwd. 
+  You will be asked username, hostname, displayname and passwd. 
   If your X server does not run at 127.0.0.1, please enter correct
   displayname. If everything works fine, you will get the shell prompt.
   Try X applications; for example, xlogo.
@@ -26,7 +26,7 @@ This directory contains some examples, which demonstrate how to use JSch
   This program will demonstrate remote exec.
   $ CLASSPATH=.:../src javac Exec.java 
   $ CLASSPATH=.:../src java Exec
-  You will be asked hostname, displayname, username. passwd and command.
+  You will be asked username, hostname, displayname, passwd and command.
   If everything works fine, given command will be invoked 
   on the remote side and outputs will be printed out. In this sample,
   X forwarding is enabled, so you can give an X client as a command.
@@ -35,7 +35,7 @@ This directory contains some examples, which demonstrate how to use JSch
   This program will demonstrate the ssh session via HTTP proxy.
   $ CLASSPATH=.:../src javac ViaHTTP.java 
   $ CLASSPATH=.:../src java ViaHTTP
-  You will be asked hostname, proxy-server, username and passwd. 
+  You will be asked username, hostname, proxy-server and passwd. 
   If everything works fine, you will get the shell prompt.
 
 - PortForwardingR.java
@@ -44,7 +44,7 @@ This directory contains some examples, which demonstrate how to use JSch
   the given host and port  on the local side.
   $ CLASSPATH=.:../src javac PortForwardingR.java
   $ CLASSPATH=.:../src java PortForwardingR
-  You will be asked hostname, port:host:hostport, username and passwd. 
+  You will be asked username, hostname, port:host:hostport and passwd. 
   If everything works fine, you will get the shell prompt.
   Try the port on remote host.
 
@@ -54,7 +54,7 @@ This directory contains some examples, which demonstrate how to use JSch
   the given remote host and port on the remote side.
   $ CLASSPATH=.:../src javac PortForwardingL.java
   $ CLASSPATH=.:../src java PortForwardingL
-  You will be asked hostname, port:host:hostport, username and passwd. 
+  You will be asked username, hostname, port:host:hostport and passwd. 
   If everything works fine, you will get the shell prompt.
   Try the port on localhost.
 
@@ -65,7 +65,7 @@ This directory contains some examples, which demonstrate how to use JSch
   but you don't have to assign and open a local tcp port.
   $ CLASSPATH=.:../src javac StreamForwarding.java
   $ CLASSPATH=.:../src java StreamForwarding
-  You will be asked hostname, host:hostport, username and passwd. 
+  You will be asked username, hostname, host:hostport and passwd. 
   If everything works fine, System.in and System.out streams will be
   forwared to remote port and you can send messages from command line.
 
@@ -73,14 +73,14 @@ This directory contains some examples, which demonstrate how to use JSch
   This program will demonstrate the user authentification by public key.
   $ CLASSPATH=.:../src javac UserAuthPubKey.java
   $ CLASSPATH=.:../src java UserAuthPubKey
-  You will be asked hostname, privatekey(id_dsa), username and passphrase. 
+  You will be asked username, hostname, privatekey(id_dsa) and passphrase. 
   If everything works fine, you will get the shell prompt
 
 - Compression.java
   This program will demonstrate the packet compression.
   $ CLASSPATH=.:../src javac Compression.java
   $ CLASSPATH=.:../src java Compression
-  You will be asked hostname, username and passwd. 
+  You will be asked username, hostname and passwd. 
   If everything works fine, you will get the shell prompt. 
   In this program, all data from sshd server to jsch will be
   compressed.
@@ -88,24 +88,24 @@ This directory contains some examples, which demonstrate how to use JSch
 - ScpTo.java
   This program will demonstrate the file transfer from local to remote.
   $ CLASSPATH=.:../src javac ScpTo.java
-  $ CLASSPATH=.:../src java ScpTo file1 remotehost:file2
-  You will be asked username and passwd. 
+  $ CLASSPATH=.:../src java ScpTo file1 user@remotehost:file2
+  You will be asked passwd. 
   If everything works fine, a local file 'file1' will copied to
   'file2' on 'remotehost'.
 
 - ScpFrom.java
   This program will demonstrate the file transfer from remote to local
   $ CLASSPATH=.:../src javac ScpFrom.java
-  $ CLASSPATH=.:../src java ScpFrom remotehost:file1 file2
-  You will be asked username and passwd. 
+  $ CLASSPATH=.:../src java ScpFrom user@remotehost:file1 file2
+  You will be asked passwd. 
   If everything works fine, a file 'file1' on 'remotehost' will copied to
   local 'file1'.
 
 - Sftp.java
   This program will demonstrate the sftp protocol support.
   $ CLASSPATH=.:../src javac Sftp.java
-  $ CLASSPATH=.:../src java Sftp remotehost
-  You will be asked username and passwd. 
+  $ CLASSPATH=.:../src java Sftp
+  You will be asked username, host and passwd. 
   If everything works fine, you will get a prompt 'sftp>'. 
   'help' command will show available command.
   In current implementation, the destination path for 'get' and 'put'
@@ -115,7 +115,7 @@ This directory contains some examples, which demonstrate how to use JSch
   This program will demonstrate the 'known_hosts' file handling.
   $ CLASSPATH=.:../src javac KnownHosts.java
   $ CLASSPATH=.:../src java KnownHosts
-  You will be asked hostname, a path for 'known_hosts', username and passwd. 
+  You will be asked username, hostname, a path for 'known_hosts' and passwd. 
   If everything works fine, you will get the shell prompt.
   In current implementation, jsch only reads 'known_hosts' for checking
   and does not modify it.
