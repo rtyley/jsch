@@ -61,6 +61,7 @@ public class JSch{
     config.put("signature.dss", "com.jcraft.jsch.jce.SignatureDSA");
     config.put("signature.rsa", "com.jcraft.jsch.jce.SignatureRSA");
     config.put("keypairgen.dsa",   "com.jcraft.jsch.jce.KeyPairGenDSA");
+    config.put("keypairgen.rsa",   "com.jcraft.jsch.jce.KeyPairGenRSA");
     config.put("random",        "com.jcraft.jsch.jce.Random");
 
     config.put("zlib",          "com.jcraft.jsch.jcraft.Compression");

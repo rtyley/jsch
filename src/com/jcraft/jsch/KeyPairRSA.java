@@ -29,35 +29,45 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-public class KeyPairDSA extends KeyPair{
-  private byte[] P_array;
-  private byte[] Q_array;
-  private byte[] G_array;
-  private byte[] pub_array;
+public class KeyPairRSA extends KeyPair{
   private byte[] prv_array;
+  private byte[] pub_array;
+  private byte[] n_array;
+
+  private byte[] p_array;  // prime p
+  private byte[] q_array;  // prime q
+  private byte[] ep_array; // prime exponent p
+  private byte[] eq_array; // prime exponent q
+  private byte[] c_array;  // coefficient
+
   private int key_size=0;
-  public KeyPairDSA(JSch jsch, int key_size) throws JSchException{
+  public KeyPairRSA(JSch jsch, int key_size) throws JSchException{
     super(jsch, key_size);
     this.key_size=key_size;
     try{
-      Class c=Class.forName(jsch.getConfig("keypairgen.dsa"));
-      KeyPairGenDSA keypairgen=(KeyPairGenDSA)(c.newInstance());
+      Class c=Class.forName(jsch.getConfig("keypairgen.rsa"));
+      KeyPairGenRSA keypairgen=(KeyPairGenRSA)(c.newInstance());
       keypairgen.init(key_size);
-      P_array=keypairgen.getP();
-      Q_array=keypairgen.getQ();
-      G_array=keypairgen.getG();
-      pub_array=keypairgen.getY();
-      prv_array=keypairgen.getX();
+      pub_array=keypairgen.getE();
+      prv_array=keypairgen.getD();
+      n_array=keypairgen.getN();
+
+      p_array=keypairgen.getP();
+      q_array=keypairgen.getQ();
+      ep_array=keypairgen.getEP();
+      eq_array=keypairgen.getEQ();
+      c_array=keypairgen.getC();
+
       keypairgen=null;
     }
     catch(Exception e){
-      System.err.println("KeyPairDSA: "+e); 
+      System.err.println("KeyPairRSA: "+e); 
       throw new JSchException(e.toString());
     }
   }
 
-  private static final byte[] begin="-----BEGIN DSA PRIVATE KEY-----".getBytes();
-  private static final byte[] end="-----END DSA PRIVATE KEY-----".getBytes();
+  private static final byte[] begin="-----BEGIN RSA PRIVATE KEY-----".getBytes();
+  private static final byte[] end="-----END RSA PRIVATE KEY-----".getBytes();
 
   byte[] getBegin(){ return begin; }
   byte[] getEnd(){ return end; }
@@ -65,11 +75,14 @@ public class KeyPairDSA extends KeyPair{
   byte[] getPrivateKey(){
     int content=
       1+countLength(1) + 1 +                           // INTEGER
-      1+countLength(P_array.length) + P_array.length + // INTEGER  P
-      1+countLength(Q_array.length) + Q_array.length + // INTEGER  Q
-      1+countLength(G_array.length) + G_array.length + // INTEGER  G
+      1+countLength(n_array.length) + n_array.length + // INTEGER  N
       1+countLength(pub_array.length) + pub_array.length + // INTEGER  pub
-      1+countLength(prv_array.length) + prv_array.length;  // INTEGER  prv
+      1+countLength(prv_array.length) + prv_array.length+  // INTEGER  prv
+      1+countLength(p_array.length) + p_array.length+      // INTEGER  p
+      1+countLength(q_array.length) + q_array.length+      // INTEGER  q
+      1+countLength(ep_array.length) + ep_array.length+    // INTEGER  ep
+      1+countLength(eq_array.length) + eq_array.length+    // INTEGER  eq
+      1+countLength(c_array.length) + c_array.length;      // INTEGER  c
 
     int total=
       1+countLength(content)+content;   // SEQUENCE
@@ -78,39 +91,42 @@ public class KeyPairDSA extends KeyPair{
     int index=0;
     index=writeSEQUENCE(plain, index, content);
     index=writeINTEGER(plain, index, new byte[1]);  // 0
-    index=writeINTEGER(plain, index, P_array);
-    index=writeINTEGER(plain, index, Q_array);
-    index=writeINTEGER(plain, index, G_array);
+    index=writeINTEGER(plain, index, n_array);
     index=writeINTEGER(plain, index, pub_array);
     index=writeINTEGER(plain, index, prv_array);
+    index=writeINTEGER(plain, index, p_array);
+    index=writeINTEGER(plain, index, q_array);
+    index=writeINTEGER(plain, index, ep_array);
+    index=writeINTEGER(plain, index, eq_array);
+    index=writeINTEGER(plain, index, c_array);
     return plain;
   }
 
   byte[] getPublicKeyBlob(){
-    Buffer buf=new Buffer(sshdss.length+4+
-			  P_array.length+4+ 
-			  Q_array.length+4+ 
-			  G_array.length+4+ 
-			  pub_array.length+4);
-    buf.putString(sshdss);
-    buf.putString(P_array);
-    buf.putString(Q_array);
-    buf.putString(G_array);
+    Buffer buf=new Buffer(sshrsa.length+4+
+			  pub_array.length+4+ 
+			  n_array.length+4);
+    buf.putString(sshrsa);
     buf.putString(pub_array);
+    buf.putString(n_array);
     return buf.buffer;
   }
 
-  private static final byte[] sshdss="ssh-dss".getBytes();
-  byte[] getKeyTypeName(){return sshdss;}
-  public int getKeyType(){return DSA;}
+  private static final byte[] sshrsa="ssh-rsa".getBytes();
+  byte[] getKeyTypeName(){return sshrsa;}
+  public int getKeyType(){return RSA;}
 
   public int getKeySize(){return key_size; }
   public void dispose(){
     super.dispose();
-    P_array=null;
-    Q_array=null;
-    G_array=null;
     pub_array=null;
     prv_array=null;
+    n_array=null;
+
+    p_array=null;
+    q_array=null;
+    ep_array=null;
+    eq_array=null;
+    c_array=null;
   }
 }

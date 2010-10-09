@@ -7,13 +7,24 @@ import java.io.*;
 
 class KeyGen{
   public static void main(String[] arg){
-    if(arg.length<2){
-      System.err.println("usage: java KeyGen output_keyfile comment");
+    if(arg.length<3){
+      System.err.println(
+"usage: java KeyGen rsa output_keyfile comment\n"+
+"       java KeyGen dsa  output_keyfile comment");
       System.exit(-1);
     }
-
-    String filename=arg[0];
-    String comment=arg[1];
+    String _type=arg[0];
+    int type=0;
+    if(_type.equals("rsa")){type=KeyPair.RSA;}
+    else if(_type.equals("dsa")){type=KeyPair.DSA;}
+    else {
+      System.err.println(
+"usage: java KeyGen rsa output_keyfile comment\n"+
+"       java KeyGen dsa  output_keyfile comment");
+      System.exit(-1);
+    }
+    String filename=arg[1];
+    String comment=arg[2];
 
     JSch jsch=new JSch();
 
@@ -28,10 +39,11 @@ class KeyGen{
     }
 
     try{
-      KeyPair kpair=KeyPair.genKeyPair(jsch, KeyPair.DSA);
+      KeyPair kpair=KeyPair.genKeyPair(jsch, type);
       kpair.setPassphrase(passphrase.getBytes());
       kpair.writePrivateKey(filename);
       kpair.writePublicKey(filename+".pub", comment);
+      System.out.println("Finger print: "+kpair.getFingerPrint());
       kpair.dispose();
     }
     catch(Exception e){

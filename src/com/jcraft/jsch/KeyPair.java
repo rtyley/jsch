@@ -33,7 +33,7 @@ import java.io.FileOutputStream;
 
 public abstract class KeyPair{
   public static final int DSA=0;
-  public static final int RSA=0;
+  public static final int RSA=1;
 
   private static final byte[] cr="\n".getBytes();
 
@@ -44,11 +44,15 @@ public abstract class KeyPair{
     if(type==DSA){
       return new KeyPairDSA(jsch, key_size);
     }
+    else if(type==RSA){
+      return new KeyPairRSA(jsch, key_size);
+    }
     return null;
   }
 
   abstract byte[] getBegin();
   abstract byte[] getEnd();
+  abstract int getKeySize();
 
   abstract byte[] getPrivateKey();
 
@@ -69,7 +73,7 @@ public abstract class KeyPair{
   static byte[][] header={"Proc-Type: 4,ENCRYPTED".getBytes(),
 			  "DEK-Info: DES-EDE3-CBC,".getBytes()};
 
-  private void writePrivateKey(java.io.OutputStream out){
+  public void writePrivateKey(java.io.OutputStream out){
     byte[] plain=getPrivateKey();
     byte[] encoded=encrypt(plain);
     byte[] prv=Util.toBase64(encoded, 0, encoded.length);
@@ -108,13 +112,14 @@ public abstract class KeyPair{
   private static byte[] space=" ".getBytes();
 
   abstract byte[] getPublicKeyBlob();
-  abstract byte[] getType();
+  abstract byte[] getKeyTypeName();
+  public abstract int getKeyType();
 
-  private void writePublicKey(java.io.OutputStream out, String comment){
+  public void writePublicKey(java.io.OutputStream out, String comment){
     byte[] pubblob=getPublicKeyBlob();
     byte[] pub=Util.toBase64(pubblob, 0, pubblob.length);
     try{
-      out.write(getType()); out.write(space);
+      out.write(getKeyTypeName()); out.write(space);
       out.write(pub, 0, pub.length); out.write(space);
       out.write(comment.getBytes());
       out.write(cr);
@@ -133,6 +138,16 @@ public abstract class KeyPair{
     FileOutputStream fos=new FileOutputStream(name);
     writePrivateKey(fos);
     fos.close();
+  }
+
+  public String getFingerPrint(){
+    HASH hash=null;
+    try{
+      Class c=Class.forName(jsch.getConfig("md5"));
+      hash=(HASH)(c.newInstance());
+    }
+    catch(Exception e){ System.err.println("getFingerPrint: "+e); }
+    return getKeySize()+" "+Util.getFingerPrint(hash, getPublicKeyBlob());
   }
 
   private byte[] encrypt(byte[] plain){
@@ -276,7 +291,7 @@ public abstract class KeyPair{
   } 
 
   public void setPassphrase(String passphrase){
-    if(passphrase==null && passphrase.length()==0){
+    if(passphrase==null || passphrase.length()==0){
       setPassphrase((byte[])null);
     }
     else{

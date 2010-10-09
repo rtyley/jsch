@@ -1,7 +1,15 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Dec  3 23:27:53 UTC 2003
+Last modified: Thu Dec 11 15:03:40 UTC 2003
 
+	
+Changes since version 0.1.11:	
+- RSA keypair generation.
+- added the method 'getFingerPrint' to KeyPair class,
+  which will return the finger print of the public key.
+- fixed a bug in generating non-ciphered private key.
+
+	
 Changes since version 0.1.10:	
 - fixed a bug in the password authentication, sneaked in
   0.1.9. By this bug, the password authentication had failed every time.

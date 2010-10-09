@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Wed Dec  3 14:23:21 UTC 2003
+Last modified: Thu Dec 11 15:04:08 UTC 2003
 
 
 Description
@@ -67,7 +67,7 @@ Features
   The unofficial patch for sshd of openssh will be find in the thread
   http://marc.theaimsgroup.com/?l=openssh-unix-dev&m=104295745607575&w=2
 * remote exec.
-* generating DSA keys.
+* generating DSA and RSA key pairs.
 * SSH File Transfer Protocol(version 0, 1, 2, 3)
 * packet compression.
   JZlib(http://www.jcraft.com/jzlib/) has been used.
@@ -99,7 +99,7 @@ this functionality.
 
 Generating Authentication Keys
 ==============================
-JSch allows you to generate DSA keys, which are in OpenSSH format.
+JSch allows you to generate DSA and RSA key pairs, which are in OpenSSH format.
 Please refer to 'examples/KeyGen.java'.
 
 
@@ -153,7 +153,6 @@ Current release has supported following properties,
 
 TODO
 ====
-* generating RSA keys
 * re-implementation with java.nio.
 * replacing cipher, hash by JCE with pure Java code.
 * SSH File Transfer Protocol version 4.

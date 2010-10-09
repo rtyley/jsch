@@ -496,6 +496,7 @@ class Identity{
 	q_array=buf.getMPIntBits();
         return true;
       }
+
       index++; // SEQUENCE
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -512,6 +513,10 @@ class Identity{
       }
       index+=length;
 
+//System.out.println("int: len="+length);
+//System.out.print(Integer.toHexString(plain[index-1]&0xff)+":");
+//System.out.println("");
+
       index++;
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -521,7 +526,13 @@ class Identity{
       n_array=new byte[length];
       System.arraycopy(plain, index, n_array, 0, length);
       index+=length;
-
+/*
+System.out.println("int: N len="+length);
+for(int i=0; i<n_array.length; i++){
+System.out.print(Integer.toHexString(n_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
       index++;
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -531,7 +542,13 @@ class Identity{
       e_array=new byte[length];
       System.arraycopy(plain, index, e_array, 0, length);
       index+=length;
-
+/*
+System.out.println("int: E len="+length);
+for(int i=0; i<e_array.length; i++){
+System.out.print(Integer.toHexString(e_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
       index++;
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -541,6 +558,13 @@ class Identity{
       d_array=new byte[length];
       System.arraycopy(plain, index, d_array, 0, length);
       index+=length;
+/*
+System.out.println("int: D len="+length);
+for(int i=0; i<d_array.length; i++){
+System.out.print(Integer.toHexString(d_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
 
       index++;
       length=plain[index++]&0xff;
@@ -551,7 +575,13 @@ class Identity{
       p_array=new byte[length];
       System.arraycopy(plain, index, p_array, 0, length);
       index+=length;
-
+/*
+System.out.println("int: P len="+length);
+for(int i=0; i<p_array.length; i++){
+System.out.print(Integer.toHexString(p_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
       index++;
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -561,7 +591,13 @@ class Identity{
       q_array=new byte[length];
       System.arraycopy(plain, index, q_array, 0, length);
       index+=length;
-
+/*
+System.out.println("int: q len="+length);
+for(int i=0; i<q_array.length; i++){
+System.out.print(Integer.toHexString(q_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
       index++;
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -571,7 +607,13 @@ class Identity{
       dmp1_array=new byte[length];
       System.arraycopy(plain, index, dmp1_array, 0, length);
       index+=length;
-
+/*
+System.out.println("int: dmp1 len="+length);
+for(int i=0; i<dmp1_array.length; i++){
+System.out.print(Integer.toHexString(dmp1_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
       index++;
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -581,7 +623,13 @@ class Identity{
       dmq1_array=new byte[length];
       System.arraycopy(plain, index, dmq1_array, 0, length);
       index+=length;
-
+/*
+System.out.println("int: dmq1 len="+length);
+for(int i=0; i<dmq1_array.length; i++){
+System.out.print(Integer.toHexString(dmq1_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
       index++;
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -591,6 +639,13 @@ class Identity{
       iqmp_array=new byte[length];
       System.arraycopy(plain, index, iqmp_array, 0, length);
       index+=length;
+/*
+System.out.println("int: iqmp len="+length);
+for(int i=0; i<iqmp_array.length; i++){
+System.out.print(Integer.toHexString(iqmp_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
     }
     catch(Exception e){
       //System.out.println(e);
