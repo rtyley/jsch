@@ -102,7 +102,7 @@ loop:
     }
   }
 
-  String getKnownHosts(){ return known_hosts; }
+  String getKnownHostsFile(){ return known_hosts; }
 
   int check(String host, byte[] key){
     String foo; 
@@ -148,6 +148,25 @@ loop:
     }
     hk=new HostKey(host, type, key);
     pool.addElement(hk);
+  }
+  void sync() throws IOException { sync(known_hosts); }
+  void sync(String foo) throws IOException {
+    if(foo==null) return;
+    FileOutputStream fos=new FileOutputStream(foo);
+    dump(fos);
+    fos.close();
+  }
+  void dump(OutputStream out) throws IOException {
+    try{
+      HostKey hk;
+      for(int i=0; i<pool.size(); i++){
+        hk=(HostKey)(pool.elementAt(i));
+        hk.dump(out);
+      }
+    }
+    catch(Exception e){
+      System.out.println(e);
+    }
   }
   private int getType(byte[] key){
     if(key[8]=='d') return SSHDSS;
@@ -203,7 +222,7 @@ loop:
     HostKey(String host, int type, byte[] key){
       this.host=host; this.type=type; this.key=key;
     }
-    void dump(OutputStream out) throws IOException{
+   void dump(OutputStream out) throws IOException{
       out.write(host.getBytes());
       out.write(space);
       if(type==SSHDSS) out.write(sshdss);

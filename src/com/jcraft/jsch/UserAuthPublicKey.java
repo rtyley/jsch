@@ -41,7 +41,6 @@ class UserAuthPublicKey extends UserAuth{
   public boolean start(Session session) throws Exception{
     super.start(session);
 
-//    Identity identity=new Identity(session.getIdentity(), session.jsch);
     Vector identities=JSch.identities;
 
     Packet packet=session.packet;
@@ -51,11 +50,9 @@ class UserAuthPublicKey extends UserAuth{
     final String username=session.username;
 
     for(int i=0; i<identities.size(); i++){
-
     Identity identity=(Identity)(JSch.identities.elementAt(i));
     byte[] pubkeyblob=identity.getPublicKeyBlob();
-
-    if(pubkeyblob!=null/* && username!=null*/){
+    if(pubkeyblob!=null){
       // send
       // byte      SSH_MSG_USERAUTH_REQUEST(50)
       // string    user name
@@ -92,24 +89,25 @@ class UserAuthPublicKey extends UserAuth{
       }
     }
 
+    int count=5;
     while(true){
-      if(/*username==null ||*/
-	 (identity.isEncrypted() && passphrase==null)){
+      if((identity.isEncrypted() && passphrase==null)){
 	if(userinfo==null) throw new JSchException("USERAUTH fail");
-	if((/*username==null ||*/ identity.isEncrypted()) &&
+	if(identity.isEncrypted() &&
 	   !userinfo.promptPassphrase("Passphrase for "+identity.identity)){
 	  //throw new JSchException("USERAUTH cancel");
 	  break;
 	}
-	//username=userinfo.getUserName();
 	passphrase=userinfo.getPassphrase();
       }
-      if(/*username!=null &&*/ (!identity.isEncrypted() || passphrase!=null)){
+
+      if(!identity.isEncrypted() || passphrase!=null){
 	if(identity.setPassphrase(passphrase))
-        break;
+          break;
       }
       passphrase=null;
-      //username=null;
+      count--;
+      if(count==0)break;
     }
 
     if(identity.isEncrypted()) continue;
@@ -135,7 +133,6 @@ class UserAuthPublicKey extends UserAuth{
     byte[] tmp=new byte[buf.index-5];
     System.arraycopy(buf.buffer, 5, tmp, 0, tmp.length);
     buf.putString(identity.getSignature(session, tmp));
-    
     session.write(packet);
 
     // receive

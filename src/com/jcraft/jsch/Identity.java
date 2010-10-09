@@ -56,14 +56,17 @@ class Identity{
 //  private String algname="ssh-dss";
   private String algname="ssh-rsa";
 
-  static final int RSA=0;
-  static final int DSS=1;
-  private int type=0;
+  private static final int ERROR=0;
+  private static final int RSA=1;
+  private static final int DSS=2;
+  private static final int UNKNOWN=3;
+  private int type=ERROR;
+
   private byte[] publickeyblob=null;
 
   private boolean encrypted=true;
 
-  Identity(String identity, JSch jsch){
+  Identity(String identity, JSch jsch) throws JSchException{
     this.identity=identity;
     this.jsch=jsch;
     try{
@@ -87,10 +90,14 @@ class Identity{
           i+=6;	    
           if(buf[i]=='D'&& buf[i+1]=='S'&& buf[i+2]=='A'){ type=DSS; }
 	  else if(buf[i]=='R'&& buf[i+1]=='S'&& buf[i+2]=='A'){ type=RSA; }
-	  else{
-            System.out.println("invalid format: "+identity);
+	  else if(buf[i]=='S'&& buf[i+1]=='S'&& buf[i+2]=='H'){ // FSecure
+	    type=UNKNOWN;
 	  }
-          i+=2;
+	  else{
+            //System.out.println("invalid format: "+identity);
+	    throw new JSchException("invaid privatekey: "+identity);
+	  }
+          i+=3;
 	  continue;
 	}
         if(buf[i]=='C'&& buf[i+1]=='B'&& buf[i+2]=='C'&& buf[i+3]==','){
@@ -116,6 +123,11 @@ class Identity{
 	}
 	i++;
       }
+
+      if(type==ERROR){
+	throw new JSchException("invaid privatekey: "+identity);
+      }
+
       int start=i;
       while(i<len){
         if(buf[i]==0x0a){
@@ -127,26 +139,109 @@ class Identity{
         i++;
       }
       encoded_data=Util.fromBase64(buf, start, i-start);
-//      if(encoded_data.length%8!=0){
-//        byte[] foo=new byte[encoded_data.length/8*8];
-//        System.arraycopy(encoded_data, 0, foo, 0, foo.length);
-//        encoded_data=foo;
-//      }
+
+      if(encoded_data.length>4 &&            // FSecure
+	 encoded_data[0]==(byte)0x3f &&
+	 encoded_data[1]==(byte)0x6f &&
+	 encoded_data[2]==(byte)0xf9 &&
+	 encoded_data[3]==(byte)0xeb){
+
+	Buffer _buf=new Buffer(encoded_data);
+	_buf.getInt();  // 0x3f6ff9be
+	_buf.getInt();
+	byte[]_type=_buf.getString();
+	//System.out.println("type: "+new String(_type)); 
+	byte[] _cipher=_buf.getString();
+	String cipher=new String(_cipher);
+	//System.out.println("cipher: "+cipher); 
+	if(cipher.equals("3des-cbc")){
+	  /*
+	  _buf.getByte(iv, 0, 4);
+	   byte[] foo=new byte[encoded_data.length-_buf.getOffSet()];
+	   _buf.getByte(foo);
+	   encoded_data=foo;
+	   encrypted=true;
+	  */
+	  throw new JSchException("unknown privatekey format: "+identity);
+	}
+	else if(cipher.equals("none")){
+  	   _buf.getInt();
+  	   _buf.getInt();
+  	   _buf.getInt();
+
+           encrypted=false;
+
+	   byte[] foo=new byte[encoded_data.length-_buf.getOffSet()];
+	   _buf.getByte(foo);
+	   encoded_data=foo;
+	}
+
+      }
 
       file=new File(identity+".pub");
       fis=new FileInputStream(identity+".pub");
       buf=new byte[(int)(file.length())];
       len=fis.read(buf, 0, buf.length);
       fis.close();
-      i=0;
-      while(i<len){ if(buf[i]==' ')break; i++;} i++;
-      if(i>=len) return;
-      start=i;
-      while(i<len){ if(buf[i]==' ')break; i++;}
-      publickeyblob=Util.fromBase64(buf, start, i-start);
+
+      if(buf.length>4 &&             // FSecure's public key
+	 buf[0]=='-' && buf[1]=='-' && buf[2]=='-' && buf[3]=='-'){
+
+	i=0;
+	do{i++;}while(buf.length>i && buf[i]!=0x0a);
+	if(buf.length<=i) return;
+
+	while(true){
+	  if(buf[i]==0x0a){
+	    boolean inheader=false;
+	    for(int j=i+1; j<buf.length; j++){
+	      if(buf[j]==0x0a) break;
+	      if(buf[j]==':'){inheader=true; break;}
+	    }
+	    if(!inheader){
+	      i++; 
+	      break;
+	    }
+	  }
+	  i++;
+	}
+	if(buf.length<=i) return;
+
+	start=i;
+	while(i<len){
+	  if(buf[i]==0x0a){
+	    System.arraycopy(buf, i+1, buf, i, len-i-1);
+	    len--;
+	    continue;
+	  }
+	  if(buf[i]=='-'){  break; }
+	  i++;
+	}
+	publickeyblob=Util.fromBase64(buf, start, i-start);
+
+	if(type==UNKNOWN){
+	  if(publickeyblob[8]=='d'){
+	    type=DSS;
+	  }
+	  else if(publickeyblob[8]=='r'){
+	    type=RSA;
+	  }
+	}
+      }
+      else{
+	i=0;
+	while(i<len){ if(buf[i]==' ')break; i++;} i++;
+	if(i>=len) return;
+	start=i;
+	while(i<len){ if(buf[i]==' ')break; i++;}
+	publickeyblob=Util.fromBase64(buf, start, i-start);
+      }
+
     }
     catch(Exception e){
-      //System.out.println(e);
+      System.out.println(e);
+      if(e instanceof JSchException) throw (JSchException)e;
+      throw new JSchException(e.toString());
     }
 
   }
@@ -156,36 +251,42 @@ class Identity{
     return "ssh-dss"; 
   }
 
-  boolean setPassphrase(String _passphrase) throws Exception{
+  boolean setPassphrase(String _passphrase) throws JSchException{
     /*
       hash is MD5
       h(0) <- hash(passphrase, iv);
       h(n) <- hash(h(n-1), passphrase, iv);
       key <- (h(0),...,h(n))[0,..,key.length];
     */
-    if(encrypted){
-      if(_passphrase==null) return false;
-      byte[] passphrase=_passphrase.getBytes();
-      int hsize=hash.getBlockSize();
-      byte[] hn=new byte[key.length/hsize*hsize+
-			 (key.length%hsize==0?0:hsize)];
-      byte[] tmp=null;
-      for(int index=0; index+hsize<=hn.length;){
-	if(tmp!=null){ hash.update(tmp, 0, tmp.length); }
-	hash.update(passphrase, 0, passphrase.length);
-	hash.update(iv, 0, iv.length);
-	tmp=hash.digest();
-	System.arraycopy(tmp, 0, hn, index, tmp.length);
-	index+=tmp.length;
+    try{
+      if(encrypted){
+	if(_passphrase==null) return false;
+	byte[] passphrase=_passphrase.getBytes();
+	int hsize=hash.getBlockSize();
+	byte[] hn=new byte[key.length/hsize*hsize+
+			   (key.length%hsize==0?0:hsize)];
+	byte[] tmp=null;
+	for(int index=0; index+hsize<=hn.length;){
+	  if(tmp!=null){ hash.update(tmp, 0, tmp.length); }
+	  hash.update(passphrase, 0, passphrase.length);
+	  hash.update(iv, 0, iv.length);
+	  tmp=hash.digest();
+	  System.arraycopy(tmp, 0, hn, index, tmp.length);
+	  index+=tmp.length;
+	}
+	System.arraycopy(hn, 0, key, 0, key.length); 
       }
-      System.arraycopy(hn, 0, key, 0, key.length); 
+      if(decrypt()){
+	encrypted=false;
+	return true;
+      }
+      P_array=Q_array=G_array=pub_array=prv_array=null;
+      return false;
     }
-    if(decrypt()){
-      encrypted=false;
-      return true;
+    catch(Exception e){
+      if(e instanceof JSchException) throw (JSchException)e;
+      throw new JSchException(e.toString());
     }
-    P_array=Q_array=G_array=pub_array=prv_array=null;
-    return false;
   }
 
   byte[] getPublicKeyBlob(){
@@ -259,6 +360,29 @@ class Identity{
   }
 
   byte[] getSignature_dss(Session session, byte[] data){
+/*
+    byte[] foo;
+    int i;
+    System.out.print("P ");
+    foo=P_array;
+    for(i=0;  i<foo.length; i++){
+      System.out.print(Integer.toHexString(foo[i]&0xff)+":");
+    }
+    System.out.println("");
+    System.out.print("Q ");
+    foo=Q_array;
+    for(i=0;  i<foo.length; i++){
+      System.out.print(Integer.toHexString(foo[i]&0xff)+":");
+    }
+    System.out.println("");
+    System.out.print("G ");
+    foo=G_array;
+    for(i=0;  i<foo.length; i++){
+      System.out.print(Integer.toHexString(foo[i]&0xff)+":");
+    }
+    System.out.println("");
+*/
+
     try{      
       Class c=Class.forName(jsch.getConfig("signature.dss"));
       SignatureDSA dsa=(SignatureDSA)(c.newInstance());
@@ -281,6 +405,7 @@ class Identity{
       return buf.buffer;
     }
     catch(Exception e){
+      System.out.println("e "+e);
     }
     return null;
   }
@@ -423,10 +548,26 @@ class Identity{
         cipher.init(Cipher.DECRYPT_MODE, key, iv);
         plain=new byte[encoded_data.length];
         cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+/*
+for(int i=0; i<plain.length; i++){
+System.out.print(Integer.toHexString(plain[i]&0xff)+":");
+}
+System.out.println("");
+*/
       }
       else{
 	if(P_array!=null) return true;
 	plain=encoded_data;
+      }
+
+      if(plain[0]!=0x30){              // FSecure
+	Buffer buf=new Buffer(plain);
+	P_array=buf.getMPIntBits();
+        G_array=buf.getMPIntBits();
+	Q_array=buf.getMPIntBits();
+	pub_array=buf.getMPIntBits();
+	prv_array=buf.getMPIntBits();
+        return true;
       }
 
       int index=0;

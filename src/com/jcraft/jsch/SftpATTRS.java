@@ -29,6 +29,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.text.DateFormat;
+
 /*
   uint32   flags
   uint64   size           present only if flag SSH_FILEXFER_ATTR_SIZE
@@ -44,6 +48,73 @@ package com.jcraft.jsch;
              so that number of pairs equals extended_count
 */
 public class SftpATTRS {
+
+  static final int S_ISUID = 04000; // set user ID on execution
+  static final int S_ISGID = 02000; // set group ID on execution
+  static final int S_ISVTX = 01000; // sticky bit   ****** NOT DOCUMENTED *****
+
+  static final int S_IRUSR = 00400; // read by owner
+  static final int S_IWUSR = 00200; // write by owner
+  static final int S_IXUSR = 00100; // execute/search by owner
+  static final int S_IREAD = 00400; // read by owner
+  static final int S_IWRITE= 00200; // write by owner
+  static final int S_IEXEC = 00100; // execute/search by owner
+
+  static final int S_IRGRP = 00040; // read by group
+  static final int S_IWGRP = 00020; // write by group
+  static final int S_IXGRP = 00010; // execute/search by group
+
+  static final int S_IROTH = 00004; // read by others
+  static final int S_IWOTH = 00002; // write by others
+  static final int S_IXOTH = 00001; // execute/search by others
+
+  String getPermissionsString() {
+    StringBuffer buf = new StringBuffer(10);
+
+    if(isDir()) buf.append('d');
+    else buf.append('-');
+
+    if((permissions & S_IRUSR)!=0) buf.append('r');
+    else buf.append('-');
+
+    if((permissions & S_IWUSR)!=0) buf.append('w');
+    else buf.append('-');
+
+    if((permissions & S_ISUID)!=0) buf.append('s');
+    else if ((permissions & S_IXUSR)!=0) buf.append('x');
+    else buf.append('-');
+
+    if((permissions & S_IRGRP)!=0) buf.append('r');
+    else buf.append('-');
+
+    if((permissions & S_IWGRP)!=0) buf.append('w');
+    else buf.append('-');
+
+    if((permissions & S_ISGID)!=0) buf.append('s');
+    else if((permissions & S_IXGRP)!=0) buf.append('x');
+    else buf.append('-');
+
+    if((permissions & S_IROTH) != 0) buf.append('r');
+    else buf.append('-');
+
+    if((permissions & S_IWOTH) != 0) buf.append('w');
+    else buf.append('-');
+
+    if((permissions & S_IXOTH) != 0) buf.append('x');
+    else buf.append('-');
+    return (buf.toString());
+  }
+
+  public String  getAtimeString(){
+    DateFormat locale=new SimpleDateFormat();
+    return (locale.format(new Date(atime)));
+  }
+
+  public String  getMtimeString(){
+    Date date= new Date(((long)mtime)*1000);
+    return (date.toString());
+  }
+
   public static final int SSH_FILEXFER_ATTR_SIZE=         0x00000001;
   public static final int SSH_FILEXFER_ATTR_UIDGID=       0x00000002;
   public static final int SSH_FILEXFER_ATTR_PERMISSIONS=  0x00000004;
@@ -149,11 +220,11 @@ public class SftpATTRS {
     flags|=SSH_FILEXFER_ATTR_PERMISSIONS;
     this.permissions=permissions;
   }
-  boolean isDir(){
+
+  public boolean isDir(){
     return ((flags&SSH_FILEXFER_ATTR_PERMISSIONS)!=0 && 
 	    ((permissions&S_IFDIR)!=0));
   }      
-
   public int getFlags() { return flags; }
   public long getSize() { return size; }
   public int getUId() { return uid; }
@@ -163,6 +234,10 @@ public class SftpATTRS {
   public int getMTime() { return mtime; }
   public String[] getExtended() { return extended; }
 
+  public String toString() {
+    return (getPermissionsString()+" "+getUId()+" "+getGId()+" "+getSize()+" "+getMtimeString());
+  }
+  /*
   public String toString(){
     return (((flags&SSH_FILEXFER_ATTR_SIZE)!=0) ? ("size:"+size+" ") : "")+
            (((flags&SSH_FILEXFER_ATTR_UIDGID)!=0) ? ("uid:"+uid+",gid:"+gid+" ") : "")+
@@ -170,5 +245,5 @@ public class SftpATTRS {
            (((flags&SSH_FILEXFER_ATTR_ACMODTIME)!=0) ? ("atime:"+atime+",mtime:"+mtime+" ") : "")+
            (((flags&SSH_FILEXFER_ATTR_EXTENDED)!=0) ? ("extended:?"+" ") : "");
   }
-
+  */
 }

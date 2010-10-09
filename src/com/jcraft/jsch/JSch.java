@@ -32,24 +32,27 @@ package com.jcraft.jsch;
 public class JSch{
   static java.util.Properties config=new java.util.Properties();
   static{
-    config.put("random", "com.jcraft.jsch.jce.Random");
 //  config.put("kex", "diffie-hellman-group-exchange-sha1");
-    config.put("kex", "diffie-hellman-group1-sha1");
-    config.put("dh", "com.jcraft.jsch.jce.DH");
+    config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group-exchange-sha1");
     config.put("server_host_key", "ssh-rsa,ssh-dss");
-//  config.put("server_host_key", "ssh-dss,ssh-rsa");
-    config.put("cipher.s2c", "blowfish-cbc");
-    config.put("cipher.c2s", "blowfish-cbc");
-    config.put("mac.s2c", "hmac-md5");
-    config.put("mac.c2s", "hmac-md5");
+//  config.put("cipher.s2c", "blowfish-cbc");
+//  config.put("cipher.c2s", "blowfish-cbc");
+    config.put("cipher.s2c", "3des-cbc,blowfish-cbc");
+    config.put("cipher.c2s", "3des-cbc,blowfish-cbc");
+//  config.put("mac.s2c", "hmac-md5");
+//  config.put("mac.c2s", "hmac-md5");
+    config.put("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
+    config.put("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
     config.put("compression.s2c", "none");
     config.put("compression.c2s", "none");
     config.put("lang.s2c", "");
     config.put("lang.c2s", "");
 
-    config.put("diffie-hellman-group-exchange-sha1", "com.jcraft.jsch.jce.DHGEX");
-    config.put("diffie-hellman-group1-sha1", "com.jcraft.jsch.jce.DHG1");
-
+    config.put("diffie-hellman-group-exchange-sha1", 
+                                "com.jcraft.jsch.jce.DHGEX");
+    config.put("diffie-hellman-group1-sha1", 
+	                        "com.jcraft.jsch.jce.DHG1");
+    config.put("dh",            "com.jcraft.jsch.jce.DH");
     config.put("3des-cbc",      "com.jcraft.jsch.jce.TripleDESCBC");
     config.put("blowfish-cbc",  "com.jcraft.jsch.jce.BlowfishCBC");
     config.put("hmac-sha1",     "com.jcraft.jsch.jce.HMACSHA1");
@@ -61,7 +64,8 @@ public class JSch{
     config.put("signature.dss", "com.jcraft.jsch.jce.SignatureDSA");
     config.put("signature.rsa", "com.jcraft.jsch.jce.SignatureRSA");
 
-    config.put("zlib", "com.jcraft.jsch.jcraft.Compression");
+    config.put("random",        "com.jcraft.jsch.jce.Random");
+    config.put("zlib",          "com.jcraft.jsch.jcraft.Compression");
   }
   private static java.util.Vector pool=new java.util.Vector();
   static java.util.Vector identities=new java.util.Vector();
@@ -81,10 +85,10 @@ public class JSch{
   }
   public void setKnownHosts(String foo){ known_hosts.setKnownHosts(foo); }
   public KnownHosts getKnownHosts(){ return known_hosts; }
-  public void addIdentity(String foo) throws Exception{
+  public void addIdentity(String foo) throws JSchException{
     addIdentity(foo, null);
   }
-  public void addIdentity(String foo, String bar) throws Exception{
+  public void addIdentity(String foo, String bar) throws JSchException{
     Identity identity=new Identity(foo, this);
     if(bar!=null) identity.setPassphrase(bar);
     identities.addElement(identity);

@@ -56,6 +56,7 @@ class Util{
     return bar;
   }
   static byte[] toBase64(byte[] buf, int start, int length){
+
     byte[] tmp=new byte[length*2];
     int i,j,k;
     
@@ -64,9 +65,9 @@ class Util{
     for(j=start; j<foo; j+=3){
       k=(buf[j]>>>2)&0x3f;
       tmp[i++]=b64[k];
-      k=(buf[j]&0x03)<<4|(buf[j+1]>>>4)&0x3f;
+      k=(buf[j]&0x03)<<4|(buf[j+1]>>>4)&0x0f;
       tmp[i++]=b64[k];
-      k=(buf[j+1]&0x0f)<<2|(buf[j+2]>>>6)&0x3f;
+      k=(buf[j+1]&0x0f)<<2|(buf[j+2]>>>6)&0x03;
       tmp[i++]=b64[k];
       k=buf[j+2]&0x3f;
       tmp[i++]=b64[k];
@@ -84,7 +85,7 @@ class Util{
     else if(foo==2){
       k=(buf[j]>>>2)&0x3f;
       tmp[i++]=b64[k];
-      k=(buf[j]&0x03)<<4|(buf[j+1]>>>4)&0x3f;
+      k=(buf[j]&0x03)<<4|(buf[j+1]>>>4)&0x0f;
       tmp[i++]=b64[k];
       k=((buf[j+1]&0x0f)<<2)&0x3f;
       tmp[i++]=b64[k];
@@ -93,5 +94,7 @@ class Util{
     byte[] bar=new byte[i];
     System.arraycopy(tmp, 0, bar, 0, i);
     return bar;
+
+//    return sun.misc.BASE64Encoder().encode(buf);
   }
 }

@@ -107,6 +107,7 @@ Please refer to a sample program 'examples/Compression.java'.
 TODO
 ====
 * generating RSA, DSA key pairs.
+* filename globbing on sftp session.
 * re-implementation with java.nio.
 * replacing cipher, hash by JCE with pure Java code.
 * error handling.

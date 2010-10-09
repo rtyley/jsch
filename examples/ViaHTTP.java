@@ -32,6 +32,11 @@ public class ViaHTTP{
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
 
+      //java.util.Properties config=new java.util.Properties();
+      //config.put("compression.s2c", "zlib,non");
+      //config.put("compression.c2s", "zlib,none");
+      //session.setConfig(config);
+
       session.connect();
 
       Channel channel=session.openChannel("shell");

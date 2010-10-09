@@ -1,4 +1,4 @@
-JSch 0.0.* were released under the GNU LGPL license.  Later, we have switched 
+JSch 0.0.* was released under the GNU LGPL license.  Later, we have switched 
 over to a BSD-style license. 
 
 ------------------------------------------------------------------------------

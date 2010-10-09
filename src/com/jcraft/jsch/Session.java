@@ -97,6 +97,7 @@ public class Session implements Runnable{
 
   private IO io;
   private Socket socket;
+  private int timeout=0;
 
   private boolean isConnected=false;
 
@@ -150,6 +151,7 @@ public class Session implements Runnable{
     try	{
       int i, j;
       int pad=0;
+
       if(proxy==null){
         InputStream in;
         OutputStream out;
@@ -173,6 +175,8 @@ public class Session implements Runnable{
         io.setOutputStream(proxy.getOutputStream());
       }
 
+      isConnected=true;
+
       i=0;
       while(true){
         j=io.getByte();
@@ -191,123 +195,57 @@ public class Session implements Runnable{
       }
 
       V_S=new byte[i]; System.arraycopy(buf.buffer, 0, V_S, 0, i);
-
-      //System.out.println("V_S: "+new String(V_S));
+      //System.out.println("V_S: ("+i+") ["+new String(V_S)+"]");
 
       io.put(V_C, 0, V_C.length); io.put("\n".getBytes(), 0, 1);
 
       buf=read(buf);
       //System.out.println("read: 20 ? "+buf.buffer[5]);
-      j=buf.getInt();
-      I_S=new byte[j-1-buf.getByte()];
-      System.arraycopy(buf.buffer, buf.s, I_S, 0, I_S.length);
-
-      // byte      SSH_MSG_KEXINIT(20)
-      // byte[16]  cookie (random bytes)
-      // string    kex_algorithms
-      // string    server_host_key_algorithms
-      // string    encryption_algorithms_client_to_server
-      // string    encryption_algorithms_server_to_client
-      // string    mac_algorithms_client_to_server
-      // string    mac_algorithms_server_to_client
-      // string    compression_algorithms_client_to_server
-      // string    compression_algorithms_server_to_client
-      // string    languages_client_to_server
-      // string    languages_server_to_client
-      packet.reset();
-      buf.putByte((byte) SSH_MSG_KEXINIT);
-      random.fill(buf.buffer, buf.index, 16); buf.skip(16);
-      buf.putString(getConfig("kex").getBytes());
-      buf.putString(getConfig("server_host_key").getBytes());
-      buf.putString(getConfig("cipher.c2s").getBytes());
-      buf.putString(getConfig("cipher.s2c").getBytes());
-      buf.putString(getConfig("mac.c2s").getBytes());
-      buf.putString(getConfig("mac.s2c").getBytes());
-      buf.putString(getConfig("compression.c2s").getBytes());
-      buf.putString(getConfig("compression.s2c").getBytes());
-      buf.putString(getConfig("lang.c2s").getBytes());
-      buf.putString(getConfig("lang.s2c").getBytes());
-      buf.putByte((byte)0);
-      buf.putInt(0);
-      I_C=new byte[buf.getLength()];
-      buf.getByte(I_C);
-      write(packet);
-
-      KeyExchange kex=null;
-      try{
-	Class c=Class.forName(getConfig(getConfig("kex")));
-        kex=(KeyExchange)(c.newInstance());
+      if(buf.buffer[5]!=SSH_MSG_KEXINIT){
+	throw new JSchException("invalid protocol: "+buf.buffer[5]);
       }
-      catch(Exception e){ System.err.println(e); }
+      KeyExchange kex=receive_kexinit(buf);
 
-      kex.init(V_S, V_C, I_S, I_C);
-      boolean result=kex.start(this);
-      if(!result){
-        //System.out.println("verify: "+result);
-        throw new JSchException("verify: "+result);
-      }
-      byte[] K_S=kex.getHostKey();
-      i=jsch.getKnownHosts().check(host, K_S);
-      if(i==KnownHosts.CHANGED){
-        String message=
-"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
-"@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n"+
-"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
-"IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!      \n"+
-"Someone could be eavesdropping on you right now (man-in-the-middle attack)!\n"+
-"It is also possible that the "+kex.getKeyType()+" host key has just been changed.\n"+
-"The fingerprint for the "+kex.getKeyType()+" key sent by the remote host is\n"+
-	  kex.getFingerPrint()+".\n"+
-"Please contact your system administrator.\n"+
-"Add correct host key in "+jsch.getKnownHosts().getKnownHosts()+" to get rid of this message.";
-      if(userinfo!=null){
-	  userinfo.showMessage(message);
-      }
-      throw new JSchException("HostKey has been changed");
-      }
-
-      if(i!=KnownHosts.OK){
-	  if(userinfo!=null){
-	      boolean foo=userinfo.promptYesNo("The authenticity of host '"+host+"' can't be established.\n"+
-					       kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
-                                         "Are you sure you want to continue connecting (yes/no)?"
-					       );
-	      if(!foo){
-		  throw new JSchException("reject HostKey");
-	      }
-	      jsch.getKnownHosts().insert(host, K_S);
+      boolean result;
+      while(true){
+	buf=read(buf);
+	if(kex.getState()==buf.buffer[5]){
+	  result=kex.next(this, buf);
+	  if(!result){
+	    //System.out.println("verify: "+result);
+	    throw new JSchException("verify: "+result);
 	  }
-	  else{
-	      if(i==KnownHosts.NOT_INCLUDED) throw new JSchException("UnknownHostKey");
-	      else  throw new JSchException("HostKey has been changed.");
-	  }
+	}
+	else{
+	  throw new JSchException("invalid protocol(kex): "+buf.buffer[5]);
+	}
+	if(kex.getState()==KeyExchange.STATE_END){
+	  break;
+	}
       }
 
-      byte[] K=kex.getK();
-      byte[] H=kex.getH();
-      HASH hash=kex.getHash();
+      checkHost(host, kex);
 
-      if(session_id==null){
-        session_id=new byte[H.length];
-	System.arraycopy(H, 0, session_id, 0, H.length);
-      }
-
-      //  receive SSH_MSG_NEWKEYS(21)
+      // receive SSH_MSG_NEWKEYS(21)
       buf=read(buf);
       //System.out.println("read: 21 ? "+buf.buffer[5]);
-
-      //  send SSH_MSG_NEWKEYS(21)
-      packet.reset();
-      buf.putByte((byte)0x15);
-      write(packet);
-
-      updateKeys(hash, K, H, session_id);
+      if(buf.buffer[5]==SSH_MSG_NEWKEYS){
+	receive_newkeys(buf, kex);
+      }
+      else{
+	throw new JSchException("invalid protocol(newkyes): "+buf.buffer[5]);
+      }
 
       UserAuth us;
       boolean auth=false;
       if(jsch.identities.size()>0){
-        us=new UserAuthPublicKey(userinfo);
-        auth=us.start(this);
+	try{
+          us=new UserAuthPublicKey(userinfo);
+          auth=us.start(this);
+	}
+	catch(Exception ee){
+	  //System.out.println("ee: "+ee);
+	}
       }
       if(auth){
         (new Thread(this)).start();
@@ -321,19 +259,192 @@ public class Session implements Runnable{
       }
       throw new JSchException("Auth fail");
     }
-    catch(IOException e) {
+    catch(Exception e) {
+      if(isConnected){
+	try{
+	  packet.reset();
+	  buf.putByte((byte)SSH_MSG_DISCONNECT);
+	  buf.putInt(3);
+	  buf.putString(e.toString().getBytes());
+	  buf.putString("en".getBytes());
+	  write(packet);
+	  disconnect();
+	}
+	catch(Exception ee){
+	}
+      }
+      isConnected=false;
       e.printStackTrace();
+      if(e instanceof JSchException) throw (JSchException)e;
       throw new JSchException("Session.connect: "+e);
     }
-    catch(Exception e) {
-      e.printStackTrace();
-      throw new JSchException("Session.connect: "+e);
+  }
+
+  private KeyExchange receive_kexinit(Buffer buf) throws Exception {
+    int j=buf.getInt();
+    if(j!=buf.getLength()){    // packet was compressed and
+      buf.getByte();           // j is the size of deflated packet.
+      I_S=new byte[buf.index-5];
+    }
+    else{
+      I_S=new byte[j-1-buf.getByte()];
+    }
+    System.arraycopy(buf.buffer, buf.s, I_S, 0, I_S.length);
+/*
+try{
+byte[] tmp=new byte[I_S.length];
+System.arraycopy(I_S, 0, tmp, 0, I_S.length);
+Buffer tmpb=new Buffer(tmp);
+System.out.println("I_S: len="+I_S.length);
+tmpb.setOffSet(17);
+System.out.println("kex: "+new String(tmpb.getString()));
+System.out.println("server_host_key: "+new String(tmpb.getString()));
+System.out.println("cipher.c2s: "+new String(tmpb.getString()));
+System.out.println("cipher.s2c: "+new String(tmpb.getString()));
+System.out.println("mac.c2s: "+new String(tmpb.getString()));
+System.out.println("mac.s2c: "+new String(tmpb.getString()));
+System.out.println("compression.c2s: "+new String(tmpb.getString()));
+System.out.println("compression.s2c: "+new String(tmpb.getString()));
+System.out.println("lang.c2s: "+new String(tmpb.getString()));
+System.out.println("lang.s2c: "+new String(tmpb.getString()));
+System.out.println("?: "+(tmpb.getByte()&0xff));
+System.out.println("??: "+tmpb.getInt());
+}
+catch(Exception e){
+System.out.println(e);
+}
+*/
+
+    send_kexinit();
+    String[] guess=KeyExchange.guess(I_S, I_C);
+    if(guess==null){
+      throw new JSchException("Algorithm negotiation fail");
+    }
+
+    KeyExchange kex=null;
+    try{
+      Class c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_KEX_ALGS]));
+      kex=(KeyExchange)(c.newInstance());
+    }
+    catch(Exception e){ System.err.println(e); }
+    kex.guess=guess;
+    kex.init(this, V_S, V_C, I_S, I_C);
+    return kex;
+  }
+
+  private boolean in_kex=false;
+  public void rekey() throws Exception {
+    send_kexinit();
+  }
+  private void send_kexinit() throws Exception {
+    if(in_kex) return;
+    in_kex=true;
+
+    // byte      SSH_MSG_KEXINIT(20)
+    // byte[16]  cookie (random bytes)
+    // string    kex_algorithms
+    // string    server_host_key_algorithms
+    // string    encryption_algorithms_client_to_server
+    // string    encryption_algorithms_server_to_client
+    // string    mac_algorithms_client_to_server
+    // string    mac_algorithms_server_to_client
+    // string    compression_algorithms_client_to_server
+    // string    compression_algorithms_server_to_client
+    // string    languages_client_to_server
+    // string    languages_server_to_client
+    packet.reset();
+    buf.putByte((byte) SSH_MSG_KEXINIT);
+    random.fill(buf.buffer, buf.index, 16); buf.skip(16);
+    buf.putString(getConfig("kex").getBytes());
+    buf.putString(getConfig("server_host_key").getBytes());
+    buf.putString(getConfig("cipher.c2s").getBytes());
+    buf.putString(getConfig("cipher.s2c").getBytes());
+    buf.putString(getConfig("mac.c2s").getBytes());
+    buf.putString(getConfig("mac.s2c").getBytes());
+    buf.putString(getConfig("compression.c2s").getBytes());
+    buf.putString(getConfig("compression.s2c").getBytes());
+    buf.putString(getConfig("lang.c2s").getBytes());
+    buf.putString(getConfig("lang.s2c").getBytes());
+    buf.putByte((byte)0);
+    buf.putInt(0);
+
+    buf.setOffSet(5);
+    I_C=new byte[buf.getLength()];
+    buf.getByte(I_C);
+
+    write(packet);
+  }
+
+  private void send_newkeys() throws Exception {
+    // send SSH_MSG_NEWKEYS(21)
+    packet.reset();
+    buf.putByte((byte)SSH_MSG_NEWKEYS);
+    write(packet);
+  }
+
+  private void checkHost(String host, KeyExchange kex) throws JSchException {
+    byte[] K_S=kex.getHostKey();
+    int i=jsch.getKnownHosts().check(host, K_S);
+    if(i==KnownHosts.CHANGED){
+      String message=
+"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
+"@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n"+
+"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
+"IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!      \n"+
+"Someone could be eavesdropping on you right now (man-in-the-middle attack)!\n"+
+"It is also possible that the "+kex.getKeyType()+" host key has just been changed.\n"+
+"The fingerprint for the "+kex.getKeyType()+" key sent by the remote host is\n"+
+	  kex.getFingerPrint()+".\n"+
+"Please contact your system administrator.\n"+
+"Add correct host key in "+jsch.getKnownHosts().getKnownHostsFile()+" to get rid of this message.";
+      if(userinfo!=null){
+	userinfo.showMessage(message);
+      }
+      throw new JSchException("HostKey has been changed");
+      }
+
+    if(i!=KnownHosts.OK){
+      if(userinfo!=null){
+	boolean foo=userinfo.promptYesNo("The authenticity of host '"+host+"' can't be established.\n"+
+					 kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
+                                         "Are you sure you want to continue connecting (yes/no)?"
+					 );
+	if(!foo){
+	  throw new JSchException("reject HostKey");
+	}
+	jsch.getKnownHosts().insert(host, K_S);
+	String bar=jsch.getKnownHosts().getKnownHostsFile();
+	if(bar!=null){
+          foo=true;
+	  if(!new File(bar).exists()){
+            foo=false;
+	    foo=userinfo.promptYesNo(jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
+				     "Are you sure you want to create it (yes/no)?"
+				     );
+	  }
+	  if(foo){
+	    try{
+	      jsch.getKnownHosts().sync(bar);
+	    }
+	    catch(Exception e){
+	      System.out.println(e);
+	    }
+	  }
+	}
+      }
+      else{
+	if(i==KnownHosts.NOT_INCLUDED) throw new JSchException("UnknownHostKey");
+	else  throw new JSchException("HostKey has been changed.");
+      }
     }
   }
 
 //public void start(){ (new Thread(this)).start();  }
 
-  public Channel openChannel(String type){
+  public Channel openChannel(String type) throws JSchException{
+    if(!isConnected){
+      throw new JSchException("session is down");
+    }
     try{
       Channel channel=Channel.getChannel(type);
       addChannel(channel);
@@ -346,9 +457,9 @@ public class Session implements Runnable{
     return null;
   }
 
-
   // encode will bin invoked in write with synchronization.
   public void encode(Packet packet) throws Exception{
+    //System.out.println("encode: "+packet.buffer.buffer[5]);
     if(deflater!=null){
       packet.buffer.index=deflater.compress(packet.buffer.buffer, 
 					    5, packet.buffer.index);
@@ -430,7 +541,11 @@ public class Session implements Runnable{
                            " "+reason_code+
 			   " "+new String(description)+
 			   " "+new String(language_tag));
-	break;
+	throw new JSchException("SSH_MSG_DISCONNECT:"+
+				" "+reason_code+
+				" "+new String(description)+
+				" "+new String(language_tag));
+	//break;
       }
       else if(type==SSH_MSG_IGNORE){
       }
@@ -462,8 +577,23 @@ public class Session implements Runnable{
     return session_id;
   }
 
-  private void updateKeys(HASH hash,
-			  byte[] K, byte[] H, byte[] session_id) throws Exception{
+  private void receive_newkeys(Buffer buf, KeyExchange kex) throws Exception {
+    send_newkeys();
+    in_kex=false;
+    updateKeys(kex);
+  }
+  private void updateKeys(KeyExchange kex) throws Exception{
+    byte[] K=kex.getK();
+    byte[] H=kex.getH();
+    HASH hash=kex.getHash();
+
+    String[] guess=kex.guess;
+
+    if(session_id==null){
+      session_id=new byte[H.length];
+      System.arraycopy(H, 0, session_id, 0, H.length);
+    }
+
     /*
       Initial IV client to server:     HASH (K || H || "A" || session_id)
       Initial IV server to client:     HASH (K || H || "B" || session_id)
@@ -506,7 +636,7 @@ public class Session implements Runnable{
     try{
       Class c;
   
-      c=Class.forName(getConfig(getConfig("cipher.s2c")));
+      c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_ENC_ALGS_STOC]));
       s2ccipher=(Cipher)(c.newInstance());
       while(s2ccipher.getBlockSize()>Es2c.length){
         buf.reset();
@@ -522,12 +652,12 @@ public class Session implements Runnable{
       }
       s2ccipher.init(Cipher.DECRYPT_MODE, Es2c, IVs2c);
 
-      c=Class.forName(getConfig(getConfig("mac.s2c")));
+      c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_MAC_ALGS_STOC]));
       s2cmac=(MAC)(c.newInstance());
       s2cmac.init(MACs2c);
       mac_buf=new byte[s2cmac.getBlockSize()];
 
-      c=Class.forName(getConfig(getConfig("cipher.c2s")));
+      c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_ENC_ALGS_CTOS]));
       c2scipher=(Cipher)(c.newInstance());
       while(c2scipher.getBlockSize()>Ec2s.length){
         buf.reset();
@@ -543,12 +673,12 @@ public class Session implements Runnable{
       }
       c2scipher.init(Cipher.ENCRYPT_MODE, Ec2s, IVc2s);
 
-      c=Class.forName(getConfig(getConfig("mac.c2s")));
+      c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_MAC_ALGS_CTOS]));
       c2smac=(MAC)(c.newInstance());
       c2smac.init(MACc2s);
 
-      if(!getConfig("compression.c2s").equals("none")){
-	String foo=getConfig(getConfig("compression.c2s"));
+      if(!guess[KeyExchange.PROPOSAL_COMP_ALGS_CTOS].equals("none")){
+	String foo=getConfig(guess[KeyExchange.PROPOSAL_COMP_ALGS_CTOS]);
 	if(foo!=null){
 	  try{
 	    c=Class.forName(foo);
@@ -560,8 +690,13 @@ public class Session implements Runnable{
 	  }
 	}
       }
-      if(!getConfig("compression.s2c").equals("none")){
-	String foo=getConfig(getConfig("compression.s2c"));
+      else{
+	if(deflater!=null){
+	  deflater=null;
+	}
+      }
+      if(!guess[KeyExchange.PROPOSAL_COMP_ALGS_STOC].equals("none")){
+	String foo=getConfig(guess[KeyExchange.PROPOSAL_COMP_ALGS_STOC]);
 	if(foo!=null){
 	  try{
 	    c=Class.forName(foo);
@@ -571,6 +706,11 @@ public class Session implements Runnable{
 	  catch(Exception ee){
 	    System.err.println(foo+" isn't accessible.");
 	  }
+	}
+      }
+      else{
+	if(inflater!=null){
+	  inflater=null;
 	}
       }
     }
@@ -599,8 +739,6 @@ public class Session implements Runnable{
   public void run(){
     thread=this;
 
-    isConnected=true;
-
     byte[] foo;
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
@@ -608,6 +746,7 @@ public class Session implements Runnable{
     Channel channel;
     int[] start=new int[1];
     int[] length=new int[1];
+    KeyExchange kex=null;
 
     try{
       while(thread!=null){
@@ -615,7 +754,28 @@ public class Session implements Runnable{
 	int msgType=buf.buffer[5]&0xff;
 //      if(msgType!=94)
 //        System.out.println("read: 94 ? "+msgType);
+
+	if(kex!=null && kex.getState()==msgType){
+	  boolean result=kex.next(this, buf);
+	  if(!result){
+	    throw new JSchException("verify: "+result);
+	  }
+	  continue;
+	}
+
         switch(msgType){
+
+	case SSH_MSG_KEXINIT:
+System.out.println("KEXINIT");
+	  kex=receive_kexinit(buf);
+	  break;
+
+	case SSH_MSG_NEWKEYS:
+System.out.println("NEWKEYS");
+	  receive_newkeys(buf, kex);
+	  kex=null;
+	  break;
+
 	case SSH_MSG_CHANNEL_DATA:
           buf.getInt(); 
           buf.getByte(); 
@@ -850,4 +1010,17 @@ public class Session implements Runnable{
   }
   public void setSocketFactory(SocketFactory foo){ socket_factory=foo;}
   public boolean isConnected(){ return isConnected; }
+  public int getTimeout(){ return timeout; }
+  public void setTimeout(int foo) throws JSchException {
+    if(socket==null){
+      throw new JSchException("session is not established");
+    }
+    try{
+      socket.setSoTimeout(foo);
+      timeout=foo;
+    }
+    catch(Exception e){
+      throw new JSchException(e.toString());
+    }
+  }
 }

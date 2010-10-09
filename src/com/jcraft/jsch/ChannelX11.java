@@ -91,11 +91,12 @@ System.out.println("");
     return foo;
   }
 
+  Socket socket = null;
   ChannelX11(){
     super();
     type="x11".getBytes();
     try{ 
-      Socket socket = new Socket(host, port);
+      socket=new Socket(host, port);
       socket.setTcpNoDelay(true);
       io=new IO();
       io.setInputStream(socket.getInputStream());
@@ -167,4 +168,32 @@ System.out.println("");
     io.put(foo, s, l);
   }
 
+  public void disconnect(){
+    close();
+    thread=null;
+    try{
+      if(io!=null){
+	try{
+	  if(io.in!=null)
+	    io.in.close();
+	}
+	catch(Exception ee){}
+	try{
+	  if(io.out!=null)
+	    io.out.close();
+	}
+	catch(Exception ee){}
+      }
+      try{
+	if(socket!=null)
+	  socket.close();
+      }
+      catch(Exception ee){}
+    }
+    catch(Exception e){
+      e.printStackTrace();
+    }
+    io=null;
+    Channel.del(this);
+  }
 }

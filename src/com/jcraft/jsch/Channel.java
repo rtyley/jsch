@@ -109,7 +109,10 @@ public class Channel implements Runnable{
   void init(){
   }
 
-  public void connect(){
+  public void connect() throws JSchException{
+    if(!session.isConnected()){
+      throw new JSchException("session is down");
+    }
     try{
       Buffer buf=new Buffer(100);
       Packet packet=new Packet(buf);
@@ -188,6 +191,8 @@ public class Channel implements Runnable{
   }
 
   void eof(){
+//System.out.println("EOF!!!!");
+//Thread.dumpStack();
     if(eof)return;
     close=eof;
     try{
@@ -205,6 +210,7 @@ public class Channel implements Runnable{
   }
 
   void close(){
+//System.out.println("close!!!!");
     if(close)return;
     close=true;
     try{

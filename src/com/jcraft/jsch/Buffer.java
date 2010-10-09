@@ -39,6 +39,11 @@ public class Buffer{
     index=0;
     s=0;
   }
+  public Buffer(byte[] buffer){
+    this.buffer=buffer;
+    index=0;
+    s=0;
+  }
   public Buffer(){ this(1024*10*2); }
   public void putByte(byte foo){
     buffer[index++]=foo;
@@ -102,6 +107,12 @@ public class Buffer{
   public int getLength(){
     return index-s;
   }
+  public int getOffSet(){
+    return s;
+  }
+  public void setOffSet(int s){
+    this.s=s;
+  }
   public long getLong(){
     long foo = getInt()&0xffffffffL;
     foo = ((foo<<32)) | (getInt()&0xffffffffL);
@@ -136,6 +147,19 @@ public class Buffer{
     int i=getInt();
     byte[] foo=new byte[i];
     getByte(foo, 0, i);
+    return foo;
+  }
+  public byte[] getMPIntBits() {
+    int bits=getInt();
+    int bytes=(bits+7)/8;
+    byte[] foo=new byte[bytes];
+    getByte(foo, 0, bytes);
+    if((foo[0]&0x80)!=0){
+      byte[] bar=new byte[foo.length+1];
+      bar[0]=0; // ??
+      System.arraycopy(foo, 0, bar, 1, foo.length);
+      foo=bar;
+    }
     return foo;
   }
   public byte[] getString() {

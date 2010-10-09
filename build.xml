@@ -11,6 +11,7 @@ you can integrate its functionality into your own Java programs
   <property name="build" location="build"/>
   <property name="exabuild" location="examples"/>
   <property name="dist"  location="dist"/>
+  <property name="javadoc" location="javadoc"/>
   <path id="project.cp">
     <pathelement location="${build}"/>
   </path>
@@ -24,7 +25,12 @@ you can integrate its functionality into your own Java programs
   <target name="compile" depends="init"
         description="compile the source " >
     <!-- Compile the java code from ${src} into ${build} -->
-    <javac srcdir="${src}" destdir="${build}"/>
+    <available property="jzlib.available"
+               classname="com.jcraft.jzlib.ZStream"/>
+    <javac srcdir="${src}" destdir="${build}">
+      <exclude name="com/jcraft/jsch/jcraft/Compression.java"
+               unless="jzlib.available"/>
+    </javac>
   </target>
   <target name="run" depends="compile">
     <java classname="Login" classpathref="project.cp"/>
@@ -57,5 +63,14 @@ you can integrate its functionality into your own Java programs
     <!-- Delete the ${build} and ${dist} directory trees -->
     <delete dir="${build}"/>
     <delete dir="${dist}"/>
+    <delete dir="${javadoc}"/>
+  </target>
+
+  <target name="javadoc">
+  	<javadoc sourcepath="${src}"
+		destdir="${javadoc}"
+	>
+		<packageset dir="${src}"/>
+	</javadoc>
   </target>
 </project>

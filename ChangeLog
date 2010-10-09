@@ -1,7 +1,28 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Feb 11 14:58:24 UTC 2003
+Last modified: Wed Feb 26 09:25:31 UTC 2003
 
+
+Changes since version 0.1.0:	
+- added 'rekey' method to 'Session' class for key re-exchanging.
+- added 'rekey' and 'compression' command to 'examples/Sftp.java'.
+- added new 'get' and 'put' methods to 'ChannelSftp'.
+  Those methods will operate I/O streams.
+- methods in 'ChannelSftp' will throw 'SftpException'	
+- 'ChannelSftp.Ssh_exp_name' is added for the output of 'ls'.
+  Thanks to Graeme Vetterlein.
+- added 'setTimeout' and 'getTimeout' methods to 'Session' class.
+- guess will be done in the algorithm negotiation step.
+- FSecure's DSA private key has been supported partially.
+- hostkeys will be saved into 'known_hosts' file.
+- fixed a bug in 'Util.toBase64' method.	
+- 'Identity' will reject unrecognized keys.
+- 'build.xml' will check if jzlib is available or not. 
+  Thanks to Stefan Bodewig.	
+- added javadoc target in 'build.xml'.
+  Thanks to Robert Anderson.
+	
+	
 Changes since version 0.0.13:	
 - fixed a bug in connecting to Fsecure's sshd on Windows.
 - the license is changed to BSD style.	

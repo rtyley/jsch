@@ -22,8 +22,8 @@ public class Compression{
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
       java.util.Properties config=new java.util.Properties();
-      config.put("compression.s2c", "zlib");
-      //config.put("compression.c2s", "zlib");
+      config.put("compression.s2c", "zlib,none");
+      //config.put("compression.c2s", "zlib,none");
       session.setConfig(config);
       session.connect();
 
