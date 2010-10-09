@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -113,12 +114,13 @@ System.out.println("");
 	if(i<=0){
           break;
 	}
+	if(close)break;
         packet.reset();
         buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-	session.write(packet);
+	session.write(packet, this, i);
       }
     }
     catch(Exception e){
@@ -126,7 +128,8 @@ System.out.println("");
     }
     thread=null;
   }
-  void write(byte[] foo, int s, int l){
+
+  void write(byte[] foo, int s, int l) throws java.io.IOException {
     if(eof)return;
 
     if(init){

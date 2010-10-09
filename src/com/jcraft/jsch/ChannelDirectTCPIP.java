@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -90,7 +91,7 @@ public class ChannelDirectTCPIP extends Channel{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null){
+      while(thread!=null && io.in!=null){
         i=io.in.read(buf.buffer, 
 		     14, 
 		     buf.buffer.length-14
@@ -99,17 +100,20 @@ public class ChannelDirectTCPIP extends Channel{
 	if(i<=0){
           break;
 	}
+	if(close)break;
         packet.reset();
         buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-	session.write(packet);
+	session.write(packet, this, i);
       }
     }
     catch(Exception e){
     }
     thread=null;
+//System.out.println("connect end");
+
 /*
     try{
       packet.reset();
@@ -122,6 +126,29 @@ public class ChannelDirectTCPIP extends Channel{
 */
 //    close();
   }
+
+
+//  void close(){
+//    System.out.println("close");
+//    disconnect();
+//  }
+
+  public void disconnect(){
+    close();
+    thread=null;
+    try{
+      if(io!=null){
+      if(io.in!=null)io.in.close();
+      if(io.out!=null)io.out.close();
+      }
+    }
+    catch(Exception e){
+      e.printStackTrace();
+    }
+    io=null;
+    Channel.del(this);
+  }
+
 
   public void setInputStream(InputStream in){
     io.setInputStream(in);

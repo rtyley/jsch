@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -47,27 +48,42 @@ public class ProxyHTTP implements Proxy{
     this.user=user;
     this.passwd=passwd;
   }
-  public void connect(String host, int port) throws Exception{
+  public void connect(Session session, String host, int port) throws JSchException{
     this.host=host;
     this.port=port;
-    socket=new Socket(proxy_host, proxy_port);    
-    socket.setTcpNoDelay(true);
-    in=socket.getInputStream();
-    out=socket.getOutputStream();
-    out.write(("CONNECT "+host+":"+port+" HTTP/1.0\n").getBytes());
+    try{
+      SocketFactory socket_factory=session.socket_factory;
+      if(socket_factory==null){
+        socket=new Socket(proxy_host, proxy_port);    
+        in=socket.getInputStream();
+        out=socket.getOutputStream();
+      }
+      else{
+        socket=socket_factory.createSocket(proxy_host, proxy_port);
+        in=socket_factory.getInputStream(socket);
+        out=socket_factory.getOutputStream(socket);
+      }
+      socket.setTcpNoDelay(true);
+      out.write(("CONNECT "+host+":"+port+" HTTP/1.0\n").getBytes());
 
-    out.write("\n".getBytes());
-    out.flush();
+      out.write("\n".getBytes());
+      out.flush();
 
-    int foo;
-    while(true){
-      foo=in.read(); if(foo!=13) continue;
-      foo=in.read(); if(foo!=10) continue;
-      foo=in.read(); if(foo!=13) continue;      
-      foo=in.read(); if(foo!=10) continue;
-      break;
+      int foo;
+      while(true){
+        foo=in.read(); if(foo!=13) continue;
+        foo=in.read(); if(foo!=10) continue;
+        foo=in.read(); if(foo!=13) continue;      
+        foo=in.read(); if(foo!=10) continue;
+        break;
+      }
     }
-
+    catch(Exception e){
+      try{ if(socket!=null)socket.close(); }
+      catch(Exception eee){
+      }
+      throw new JSchException("ProxyHTTP: "+e.toString());
+    }
   }
   public InputStream getInputStream(){ return in; }
   public OutputStream getOutputStream(){ return out; }

@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  

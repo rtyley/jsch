@@ -58,6 +58,9 @@ Features
 * connection through SOCKS5 proxy.
 * port forwarding.
 * stream forwarding.
+* signal sending.
+  The unofficial patch for sshd of openssh will be find in the thread
+  http://marc.theaimsgroup.com/?l=openssh-unix-dev&m=104295745607575&w=2
 * remote exec.
 * SSH File Transfer Protocol
 * packet compression.

@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 import com.jcraft.jsch.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -74,11 +75,12 @@ public class Sftp{
 	  else c.lcd(path);
 	  continue;
 	}
-	if(cmd.equals("rm") || cmd.equals("rmdir")){
+	if(cmd.equals("rm") || cmd.equals("rmdir") || cmd.equals("mkdir")){
           if(cmds.size()<2) continue;
 	  String path=(String)cmds.elementAt(1);
           if(cmd.equals("rm")) c.rm(path);
-	  else c.rmdir(path);
+	  else if(cmd.equals("rmdir")) c.rmdir(path);
+	  else c.mkdir(path);
 	  continue;
 	}
 	if(cmd.equals("chgrp") || cmd.equals("chown") || cmd.equals("chmod")){
@@ -165,9 +167,9 @@ public class Sftp{
   }
 
   public static class MyUserInfo implements UserInfo{
-    public String getName(){ return username; }
+    public String getUserName(){ return username; }
     public String getPassword(){ return passwd; }
-    public boolean prompt(String str){
+    public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
       int foo=JOptionPane.showOptionDialog(null, 
              str,
@@ -178,28 +180,21 @@ public class Sftp{
        return foo==0;
     }
   
-    public boolean retry(){ 
-      passwd=null;
-      passwordField.setText("");
-      return true;
-    }
-  
     String username;
     String passwd;
+
     JLabel mainLabel=new JLabel("Username and Password");
     JLabel userLabel=new JLabel("Username: ");
     JLabel passwordLabel=new JLabel("Password: ");
     JTextField usernameField=new JTextField(20);
     JTextField passwordField=(JTextField)new JPasswordField(20);
 
-    MyUserInfo(){ }
-
-    public String getPassphrase(String message){ return null; }
+    public String getPassphrase(){ return null; }
     public boolean promptNameAndPassphrase(String message){ return true; }
     public boolean promptNameAndPassword(String message){
       Object[] ob={userLabel,usernameField,passwordLabel,passwordField}; 
       int result=
-	  JOptionPane.showConfirmDialog(null, ob, "username&passwd", 
+	  JOptionPane.showConfirmDialog(null, ob, message,
 					JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
         username=usernameField.getText();
@@ -207,6 +202,9 @@ public class Sftp{
 	return true;
       }
       else{ return false; }
+    }
+    public void showMessage(String message){
+      JOptionPane.showMessageDialog(null, message);
     }
   }
 

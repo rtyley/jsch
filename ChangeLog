@@ -1,9 +1,26 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Thu Jan  9 14:03:03 UTC 2003
+Last modified: Tue Jan 28 14:26:27 UTC 2003
 
+
+Changes since version 0.0.11:	
+- taking care of remote window size.
+- adding 'disconnect' method to 'Channel' and 'Session' classes.
+- signal sending support.
+- 'mkdir' command for sftp.
+- 'fromBase64' method has been moved to Util class and 'toBase64' method has
+   also been added to that class.
+- 'KnownHosts' class for checking host-key in 'known_host' file.
+- 'examples/KnownHosts.java' has been added.
+- 'setUserName' and 'setPassword' methods have been added to Session class.
+- 'UserInfo' interface has been changed.
+- The implementation of compression has moved to 'com.jcraft.jsch.jcraft'
+  package.
+- fixed a bug in handling 'SSH_MSG_CHANNEL_REQUET' request.
+- fixed a bug in sending multiple requests on a single session.
 	
-Changes since version 0.0.9:	
+	
+Changes since version 0.0.10:	
 - Diffie-Hellman key exchange 'diffie-hellman-group1-sha1' is supported.
   Refer to 'src/com/jcraft/jsch/jce/DHG1.java'.
   Thanks to Mitsugu Kitano, whose feedback was very helpful.

@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -77,6 +78,7 @@ public class Channel implements Runnable{
   Runnable thread=null;
 
   boolean eof=false;
+  boolean close=false;
 
   Session session;
 
@@ -90,7 +92,6 @@ public class Channel implements Runnable{
   int getRecipient(){
     return recipient;
   }
-  void setEOF(){eof=true;}
 
   void init(){
   }
@@ -102,7 +103,7 @@ public class Channel implements Runnable{
       // send
       // byte   SSH_MSG_CHANNEL_OPEN(90)
       // string channel type         //
-     // uint32 sender channel       // 0
+      // uint32 sender channel       // 0
       // uint32 initial window size  // 0x100000(65536)
       // uint32 maxmum packet size   // 0x4000(16384)
       packet.reset();
@@ -147,59 +148,74 @@ public class Channel implements Runnable{
   void setLocalWindowSize(int foo){ this.lwsize=foo; }
   void setLocalPacketSize(int foo){ this.lmpsize=foo; }
   void setRemoteWindowSize(int foo){ this.rwsize=foo; }
+  void addRemoteWindowSize(int foo){ this.rwsize+=foo; }
   void setRemotePacketSize(int foo){ this.rmpsize=foo; }
 
   public void run(){
   }
 
-  void write(byte[] foo){
+  void write(byte[] foo) throws java.io.IOException {
     write(foo, 0, foo.length);
   }
-  void write(byte[] foo, int s, int l){
+  void write(byte[] foo, int s, int l) throws java.io.IOException {
     if(eof)return;
-    io.put(foo, s, l);
+    if(io.out!=null)
+      io.put(foo, s, l);
   }
 
   void eof(){
     if(eof)return;
-    setEOF();
+    close=eof;
     try{
       Buffer buf=new Buffer(100);
       Packet packet=new Packet(buf);
       packet.reset();
-      buf.putByte((byte)96);
+      buf.putByte((byte)Session.SSH_MSG_CHANNEL_EOF);
       buf.putInt(getRecipient());
       session.write(packet);
     }
     catch(Exception e){
-      System.out.println(e);
+      //System.out.println("Channel.eof");
+      //e.printStackTrace();
     }
   }
 
   void close(){
+    if(close)return;
+    close=true;
     try{
       Buffer buf=new Buffer(100);
       Packet packet=new Packet(buf);
       packet.reset();
-      buf.putByte((byte)97);
+      buf.putByte((byte)Session.SSH_MSG_CHANNEL_CLOSE);
       buf.putInt(getRecipient());
       session.write(packet);
     }
     catch(Exception e){
-      System.out.println(e);
+      e.printStackTrace();
     }
+  }
+
+  public void disconnect(){
+    close();
     thread=null;
     try{
       if(io!=null){
-        io.in.close();
-        io.out.close();
+//      if(io.in!=null)io.in.close();
+//      if(io.out!=null)io.out.close();
       }
     }
     catch(Exception e){
-      System.out.println(e);
+      e.printStackTrace();
     }
     io=null;
     Channel.del(this);
+  }
+
+  public void sendSignal(String foo) throws Exception {
+    RequestSignal request=new RequestSignal();
+    request.setSignal(foo);
+    request.request(session, this);
   }
 
 //  public String toString(){

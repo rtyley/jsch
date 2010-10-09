@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -107,7 +108,7 @@ class Identity{
         if(buf[i]=='-'){  break; }
         i++;
       }
-      encoded_data=fromBase64(buf, start, i-start);
+      encoded_data=Util.fromBase64(buf, start, i-start);
       if(encoded_data.length%8!=0){
         byte[] foo=new byte[encoded_data.length/8*8];
         System.arraycopy(encoded_data, 0, foo, 0, foo.length);
@@ -449,30 +450,7 @@ class Identity{
     }
     return true;
   }
-
-  static final byte[] b64 ="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".getBytes();
-  byte val(byte foo){
-    if(foo == '=') return 0;
-    for(int j=0; j<b64.length; j++){
-      if(foo==b64[j]) return (byte)j;
-    }
-    return 0;
-  }
-  byte[] fromBase64(byte[] buf, int start, int length){
-    byte[] foo=new byte[length];
-    int j=0;
-    int l=length;
-    for (int i=start;i<start+length;i+=4){
-      foo[j]=(byte)((val(buf[i])<<2)|((val(buf[i+1])&0x30)>>>4));
-      foo[j+1]=(byte)(((val(buf[i+1])&0x0f)<<4)|((val(buf[i+2])&0x3c)>>>2));
-      foo[j+2]=(byte)(((val(buf[i+2])&0x03)<<6)|(val(buf[i+3])&0x3f));
-      j+=3;
-    }
-    byte[] bar=new byte[j];
-    System.arraycopy(foo, 0, bar, 0, j);
-    return bar;
-  }
-  byte hexconv(byte c){
+  private byte hexconv(byte c){
     if('0'<=c&&c<='9') return (byte)(c-'0');
     return (byte)(c-'a'+10);
   }

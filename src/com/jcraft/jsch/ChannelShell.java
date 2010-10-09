@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -59,16 +60,17 @@ public class ChannelShell extends ChannelSession{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null){
+      while(thread!=null && io.in!=null){
         i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
 	if(i==0)continue;
 	if(i==-1)break;
+	if(close)break;
         packet.reset();
-        buf.putByte((byte)94);
+        buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-	session.write(packet);
+	session.write(packet, this, i);
       }
     }
     catch(Exception e){

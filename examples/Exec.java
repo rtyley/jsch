@@ -1,7 +1,10 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 import com.jcraft.jsch.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+
+import java.io.*;
 
 public class Exec{
   public static void main(String[] arg){
@@ -10,8 +13,8 @@ public class Exec{
     int xport=0;
 
     try{
-      String host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
 
+      String host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
       String display=JOptionPane.showInputDialog("Enter display name", xhost+":"+xport);
       xhost=display.substring(0, display.indexOf(':'));
       xport=Integer.parseInt(display.substring(display.indexOf(':')+1));
@@ -32,16 +35,21 @@ public class Exec{
       Channel channel=session.openChannel("exec");
       ((ChannelExec)channel).setCommand(command);
       channel.setXForwarding(true);
+
+      channel.setInputStream(System.in);
+      channel.setOutputStream(System.out);
+
       channel.connect();
     }
     catch(Exception e){
       System.out.println(e);
     }
   }
+
   public static class MyUserInfo implements UserInfo{
-    public String getName(){ return username; }
+    public String getUserName(){ return username; }
     public String getPassword(){ return passwd; }
-    public boolean prompt(String str){
+    public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
       int foo=JOptionPane.showOptionDialog(null, 
              str,
@@ -52,28 +60,21 @@ public class Exec{
        return foo==0;
     }
   
-    public boolean retry(){ 
-      passwd=null;
-      passwordField.setText("");
-      return true;
-    }
-  
     String username;
     String passwd;
+
     JLabel mainLabel=new JLabel("Username and Password");
     JLabel userLabel=new JLabel("Username: ");
     JLabel passwordLabel=new JLabel("Password: ");
     JTextField usernameField=new JTextField(20);
     JTextField passwordField=(JTextField)new JPasswordField(20);
-  
-    MyUserInfo(){ }
 
-    public String getPassphrase(String message){ return null; }
+    public String getPassphrase(){ return null; }
     public boolean promptNameAndPassphrase(String message){ return true; }
     public boolean promptNameAndPassword(String message){
       Object[] ob={userLabel,usernameField,passwordLabel,passwordField}; 
       int result=
-	  JOptionPane.showConfirmDialog(null, ob, "username&passwd", 
+	  JOptionPane.showConfirmDialog(null, ob, message,
 					JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
         username=usernameField.getText();
@@ -81,6 +82,9 @@ public class Exec{
 	return true;
       }
       else{ return false; }
+    }
+    public void showMessage(String message){
+      JOptionPane.showMessageDialog(null, message);
     }
   }
 }

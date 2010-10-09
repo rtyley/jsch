@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -29,10 +30,12 @@ class ChannelSession extends Channel{
     io=new IO();
   }
 
+  /*
   public void init(){
     io.setInputStream(session.in);
     io.setOutputStream(session.out);
   }
+  */
 
   public void run(){
     thread=this;
@@ -40,7 +43,7 @@ class ChannelSession extends Channel{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null){
+      while(thread!=null && io.in!=null){
         i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
 	if(i==0)continue;
 	if(i==-1)break;
@@ -49,7 +52,7 @@ class ChannelSession extends Channel{
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-	session.write(packet);
+	session.write(packet, this, i);
       }
     }
     catch(Exception e){

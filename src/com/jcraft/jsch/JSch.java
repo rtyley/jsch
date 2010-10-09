@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -29,6 +30,7 @@ public class JSch{
     config.put("kex", "diffie-hellman-group1-sha1");
     config.put("dh", "com.jcraft.jsch.jce.DH");
     config.put("server_host_key", "ssh-rsa,ssh-dss");
+//  config.put("server_host_key", "ssh-dss,ssh-rsa");
     config.put("cipher.s2c", "blowfish-cbc");
     config.put("cipher.c2s", "blowfish-cbc");
     config.put("mac.s2c", "hmac-md5");
@@ -51,20 +53,22 @@ public class JSch{
     config.put("md5",           "com.jcraft.jsch.jce.MD5");
     config.put("signature.dss", "com.jcraft.jsch.jce.SignatureDSA");
     config.put("signature.rsa", "com.jcraft.jsch.jce.SignatureRSA");
+
+    config.put("zlib", "com.jcraft.jsch.jcraft.Compression");
   }
   private static java.util.Vector pool=new java.util.Vector();
+  private KnownHosts known_hosts=null;
   public JSch(){
+    known_hosts=new KnownHosts();
   }
-  public Session getSession(String host){ return getSession(host, 22); }
-  public Session getSession(String host, int port){
-    Session s=new Session(); 
+  public Session getSession(String host) throws JSchException { return getSession(host, 22); }
+  public Session getSession(String host, int port) throws JSchException {
+    Session s=new Session(this); 
     s.setHost(host);
     s.setPort(port);
     pool.addElement(s);
     return s;
   }
-
-  static boolean isKnownHost(String host, byte[] key){
-    return false;
-  }
+  public void setKnownHosts(String foo){ known_hosts.setKnownHosts(foo); }
+  public KnownHosts getKnownHosts(){ return known_hosts; }
 }

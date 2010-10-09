@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -22,8 +23,8 @@
 package com.jcraft.jsch;
 
 import java.io.*;
-interface Proxy{
-  void connect(String host, int port) throws Exception;
+public interface Proxy{
+  void connect(Session session, String host, int port) throws Exception;
   InputStream getInputStream();
   OutputStream getOutputStream();
   void close();

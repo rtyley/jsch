@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -95,40 +96,33 @@ public class ChannelSftp extends ChannelSession{
     io=new IO();
   }
 
+  /*
   public void init(){
     io.setInputStream(session.in);
     io.setOutputStream(session.out);
   }
+  */
+
   public void start(){
     try{
-      Request request;
-      request=new RequestSftp();
-      request.request(session, this);
-    }
-    catch(Exception e){
-    }
-    (new Thread(this)).start(); 
-  }
-  public void run(){
-    thread=this;
-    buf=new Buffer();
-    packet=new Packet(buf);
-    int i=0;
-    int j=0;
-    int length;
-    int type;
-    byte[] str;
-
-    try{
-      PrintStream pr=((io.out instanceof PrintStream)?
-                      (PrintStream)io.out:
-		      new PrintStream(io.out));
-      InputStream in=io.in;
 
       PipedOutputStream pos=new PipedOutputStream();
       io.setOutputStream(pos);
       PipedInputStream pis=new PipedInputStream(pos);
       io.setInputStream(pis);
+
+      Request request;
+      request=new RequestSftp();
+      request.request(session, this);
+
+      thread=this;
+      buf=new Buffer();
+      packet=new Packet(buf);
+      int i=0;
+      int j=0;
+      int length;
+      int type;
+      byte[] str;
 
       // send SSH_FXP_INIT
       sendINIT();
@@ -156,19 +150,15 @@ public class ChannelSftp extends ChannelSession{
 
       lcwd=new File(".").getAbsolutePath();
 
-      while(thread!=null && interactive){
-        i=in.read(buf.buffer, 0, buf.buffer.length);
-	pr.println(new String(buf.buffer, 0, i));
-      }
-
     }
     catch(Exception e){
-      System.out.println(e);
+      //System.out.println(e);
     }
-    thread=null;
+    //thread=null;
   }
-  public void quit(){ eof(); }
-  public void exit(){ eof(); }
+
+  public void quit(){ /*eof();*/ disconnect();}
+  public void exit(){ /*eof();*/ disconnect();}
   public String lcd(String path){
     if(!path.startsWith("/")){ path=lcwd+"/"+path; }
     if((new File(path)).isDirectory()){
@@ -597,17 +587,23 @@ public class ChannelSftp extends ChannelSession{
     catch(Exception e){}
     return false;
   }
-/*
+
   public boolean mkdir(String path){
     try{
      if(!path.startsWith("/")){ path=cwd+"/"+path; }
-      sendMKDIR(path.getBytes());
-      return true;
+      sendMKDIR(path.getBytes(), null);
+      buf.rewind();
+      int i=io.in.read(buf.buffer, 0, buf.buffer.length);
+      int length=buf.getInt();
+      int type=buf.getByte();
+      if(type!=SSH_FXP_STATUS){ return false; }
+      buf.getInt();
+      if(buf.getInt()==SSH_FX_OK) return true;
     }
     catch(Exception e){}
     return false;
   }
-*/
+
   public String pwd(){ return cwd; }
   public String lpwd(){ return lcwd; }
   public String version(){ return version; }
@@ -616,7 +612,7 @@ public class ChannelSftp extends ChannelSession{
     packet.reset();
     putHEAD(SSH_FXP_INIT, 5);
     buf.putInt(3);                // version 3
-   session.write(packet);
+   session.write(packet, this, 5+4);
   }
 
   private void sendREALPATH(byte[] path) throws Exception{
@@ -631,10 +627,19 @@ public class ChannelSftp extends ChannelSession{
     buf.putInt(count++);
     buf.putString(path);             // path
     attr.dump(buf);
-    session.write(packet);
+    session.write(packet, this, 9+path.length+attr.length()+4);
   }
   private void sendREMOVE(byte[] path) throws Exception{
     sendPacketPath(SSH_FXP_REMOVE, path);
+  }
+  private void sendMKDIR(byte[] path, ATTR attr) throws Exception{
+    packet.reset();
+    putHEAD(SSH_FXP_MKDIR, 9+path.length+(attr!=null?attr.length():4));
+    buf.putInt(count++);
+    buf.putString(path);             // path
+    if(attr!=null) attr.dump(buf);
+    else buf.putInt(0);
+    session.write(packet, this, 9+path.length+(attr!=null?attr.length():4)+4);
   }
   private void sendRMDIR(byte[] path) throws Exception{
     sendPacketPath(SSH_FXP_RMDIR, path);
@@ -673,14 +678,14 @@ public class ChannelSftp extends ChannelSession{
     buf.putString(path);
     buf.putInt(mode);
     buf.putInt(0);           // attrs
-    session.write(packet);
+    session.write(packet, this, 17+path.length+4);
   }
   private void sendPacketPath(byte fxp, byte[] path) throws Exception{
     packet.reset();
     putHEAD(fxp, 9+path.length);
     buf.putInt(count++);
     buf.putString(path);             // path
-    session.write(packet);
+    session.write(packet, this, 9+path.length+4);
   }
   private void sendPacketPath(byte fxp, byte[] p1, byte[] p2) throws Exception{
     packet.reset();
@@ -688,7 +693,7 @@ public class ChannelSftp extends ChannelSession{
     buf.putInt(count++);
     buf.putString(p1);
     buf.putString(p2);
-    session.write(packet);
+    session.write(packet, this, 13+p1.length+p2.length+4);
   }
 
   private void sendWRITE(byte[] handle, long offset, 
@@ -699,7 +704,7 @@ public class ChannelSftp extends ChannelSession{
     buf.putString(handle);
     buf.putLong(offset);
     buf.putString(data, start, length);
-    session.write(packet);
+    session.write(packet, this, 21+handle.length+length+4);
   }
 
   private void sendREAD(byte[] handle, long offset, int length) throws Exception{
@@ -709,17 +714,18 @@ public class ChannelSftp extends ChannelSession{
     buf.putString(handle);
     buf.putLong(offset);
     buf.putInt(length);
-    session.write(packet);
+    session.write(packet, this, 21+handle.length+4);
   }
 
   private void putHEAD(byte type, int length) throws Exception{
-    buf.putByte((byte)94);
+    buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
     buf.putInt(recipient);
     buf.putInt(length+4);
     buf.putInt(length);
     buf.putByte(type);
   }
 
+  /*
   void write(byte[] foo){
     write(foo, 0, foo.length);
   }
@@ -727,6 +733,7 @@ public class ChannelSftp extends ChannelSession{
     if(eof)return;
     io.put(foo, s, l);
   }
+  */
 
 /*
   uint32   flags

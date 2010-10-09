@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 import com.jcraft.jsch.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -16,7 +17,7 @@ public class PortForwardingR{
       JSch jsch=new JSch();
       Session session=jsch.getSession(host, 22);
 
-      String foo=JOptionPane.showInputDialog("Please enter -R", 
+      String foo=JOptionPane.showInputDialog("Enter -R port:host:hostport", 
 					     "port:host:hostport");
       rport=Integer.parseInt(foo.substring(0, foo.indexOf(':')));
       foo=foo.substring(foo.indexOf(':')+1);
@@ -40,10 +41,12 @@ public class PortForwardingR{
       System.out.println(e);
     }
   }
+
+
   public static class MyUserInfo implements UserInfo{
-    public String getName(){ return username; }
+    public String getUserName(){ return username; }
     public String getPassword(){ return passwd; }
-    public boolean prompt(String str){
+    public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
       int foo=JOptionPane.showOptionDialog(null, 
              str,
@@ -54,28 +57,21 @@ public class PortForwardingR{
        return foo==0;
     }
   
-    public boolean retry(){ 
-      passwd=null;
-      passwordField.setText("");
-      return true;
-    }
-  
     String username;
     String passwd;
+
     JLabel mainLabel=new JLabel("Username and Password");
     JLabel userLabel=new JLabel("Username: ");
     JLabel passwordLabel=new JLabel("Password: ");
     JTextField usernameField=new JTextField(20);
     JTextField passwordField=(JTextField)new JPasswordField(20);
-  
-    MyUserInfo(){ }
 
-    public String getPassphrase(String message){ return null; }
+    public String getPassphrase(){ return null; }
     public boolean promptNameAndPassphrase(String message){ return true; }
     public boolean promptNameAndPassword(String message){
       Object[] ob={userLabel,usernameField,passwordLabel,passwordField}; 
       int result=
-	  JOptionPane.showConfirmDialog(null, ob, "username&passwd", 
+	  JOptionPane.showConfirmDialog(null, ob, message,
 					JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
         username=usernameField.getText();
@@ -83,6 +79,9 @@ public class PortForwardingR{
 	return true;
       }
       else{ return false; }
+    }
+    public void showMessage(String message){
+      JOptionPane.showMessageDialog(null, message);
     }
   }
 }

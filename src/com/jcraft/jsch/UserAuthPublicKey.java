@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -37,16 +38,23 @@ class UserAuthPublicKey extends UserAuth{
     Packet packet=session.packet;
     Buffer buf=session.buf;
 
+    String passphrase=session.passphrase;
+    String username=session.username;
+
     while(true){
-      if(!userinfo.promptNameAndPassphrase("??")){
-        throw new JSchException("USERAUTH cancel");
+      if(passphrase==null || username==null){
+	if(userinfo==null) throw new JSchException("USERAUTH fail");
+	if(!userinfo.promptNameAndPassphrase("??")){
+	  throw new JSchException("USERAUTH cancel");
+	}
+	username=userinfo.getUserName();
+	passphrase=userinfo.getPassphrase();
       }
-      if(identity.setPassphrase(userinfo.getPassphrase(session.getIdentity()).getBytes())){
+      if(username!=null && passphrase!=null && identity.setPassphrase(passphrase.getBytes())){
         break;
       }
-      if(!userinfo.retry()){
-        throw new JSchException("USERAUTH cansel");
-      }
+      passphrase=null;
+      username=null;
     }
 
     byte[] pubkeyblob=identity.getPublicKeyBlob();
@@ -55,12 +63,12 @@ class UserAuthPublicKey extends UserAuth{
     // byte      SSH_MSG_USERAUTH_REQUEST(50)
     // string    user name
     // string    service name ("ssh-connection")
-    // string    "password"
+    // string    "publickey"
     // boolen    FALSE
     // string    plaintext password (ISO-10646 UTF-8)
     packet.reset();
     buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
-    buf.putString(userinfo.getName().getBytes());
+    buf.putString(username.getBytes());
     buf.putString("ssh-connection".getBytes());
     buf.putString("publickey".getBytes());
     buf.putByte((byte)0);
@@ -94,7 +102,7 @@ class UserAuthPublicKey extends UserAuth{
     // string    plaintext password (ISO-10646 UTF-8)
     packet.reset();
     buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
-    buf.putString(userinfo.getName().getBytes());
+    buf.putString(username.getBytes());
     buf.putString("ssh-connection".getBytes());
     buf.putString("publickey".getBytes());
     buf.putByte((byte)1);

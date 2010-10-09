@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -22,11 +23,11 @@
 package com.jcraft.jsch;
 
 public interface UserInfo{
-  String getName();
-  String getPassphrase(String message);
+  String getUserName();
+  String getPassphrase();
   String getPassword();
   boolean promptNameAndPassword(String message);
   boolean promptNameAndPassphrase(String message);
-  boolean prompt(String str);
-  boolean retry();
+  boolean promptYesNo(String message);
+  void showMessage(String message);
 }

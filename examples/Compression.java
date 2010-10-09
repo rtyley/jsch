@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 import com.jcraft.jsch.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -17,21 +18,26 @@ public class Compression{
       session.setUserInfo(ui);
       java.util.Properties config=new java.util.Properties();
       config.put("compression.s2c", "zlib");
-    //config.put("compression.c2s", "zlib");
+      //config.put("compression.c2s", "zlib");
       session.setConfig(config);
       session.connect();
 
       Channel channel=session.openChannel("shell");
+
+      channel.setInputStream(System.in);
+      channel.setOutputStream(System.out);
+
       channel.connect();
     }
     catch(Exception e){
       System.out.println(e);
     }
   }
+
   public static class MyUserInfo implements UserInfo{
-    public String getName(){ return username; }
+    public String getUserName(){ return username; }
     public String getPassword(){ return passwd; }
-    public boolean prompt(String str){
+    public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
       int foo=JOptionPane.showOptionDialog(null, 
              str,
@@ -42,28 +48,21 @@ public class Compression{
        return foo==0;
     }
   
-    public boolean retry(){ 
-      passwd=null;
-      passwordField.setText("");
-      return true;
-    }
-  
     String username;
     String passwd;
+
     JLabel mainLabel=new JLabel("Username and Password");
     JLabel userLabel=new JLabel("Username: ");
     JLabel passwordLabel=new JLabel("Password: ");
     JTextField usernameField=new JTextField(20);
     JTextField passwordField=(JTextField)new JPasswordField(20);
-  
-    MyUserInfo(){ }
 
-    public String getPassphrase(String message){ return null; }
+    public String getPassphrase(){ return null; }
     public boolean promptNameAndPassphrase(String message){ return true; }
     public boolean promptNameAndPassword(String message){
       Object[] ob={userLabel,usernameField,passwordLabel,passwordField}; 
       int result=
-	  JOptionPane.showConfirmDialog(null, ob, "username&passwd", 
+	  JOptionPane.showConfirmDialog(null, ob, message,
 					JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
         username=usernameField.getText();
@@ -71,6 +70,9 @@ public class Compression{
 	return true;
       }
       else{ return false; }
+    }
+    public void showMessage(String message){
+      JOptionPane.showMessageDialog(null, message);
     }
   }
 }

@@ -1,3 +1,4 @@
+/* -*-mode:java; c-basic-offset:2; -*- */
 /* JSch
  * Copyright (C) 2002 ymnk, JCraft,Inc.
  *  
@@ -52,14 +53,22 @@ public class ProxySOCKS5 implements Proxy{
     this.user=user;
     this.passwd=passwd;
   }
-  public void connect(String host, int port) throws JSchException{
+  public void connect(Session session, String host, int port) throws JSchException{
     this.host=host;
     this.port=port;
     try{
-      socket=new Socket(proxy_host, proxy_port);    
+      SocketFactory socket_factory=session.socket_factory;
+      if(socket_factory==null){
+        socket=new Socket(proxy_host, proxy_port);    
+        in=socket.getInputStream();
+        out=socket.getOutputStream();
+      }
+      else{
+        socket=socket_factory.createSocket(proxy_host, proxy_port);
+        in=socket_factory.getInputStream(socket);
+        out=socket_factory.getOutputStream(socket);
+      }
       socket.setTcpNoDelay(true);
-      in=socket.getInputStream();
-      out=socket.getOutputStream();
 
       byte[] buf=new byte[1024];
       int index=0;

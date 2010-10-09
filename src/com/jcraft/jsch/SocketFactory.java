@@ -22,41 +22,12 @@
 
 package com.jcraft.jsch;
 
+import java.net.*;
 import java.io.*;
 
-public class IO{
-  InputStream in;
-  OutputStream out;
-
-  void setOutputStream(OutputStream out){
-    this.out=out;
-  }
-  void setInputStream(InputStream in){
-    this.in=in;
-  }
-  public void put(Packet p) throws IOException, java.net.SocketException {
-    out.write(p.buffer.buffer, 0, p.buffer.index);
-    out.flush();
-  }
-  void put(byte[] array, int begin, int length) throws IOException {
-    out.write(array, begin, length);
-    out.flush();
-  }
-
-  int getByte() throws IOException {
-    return in.read()&0xff;
-  }
-
-  void getByte(byte[] array) throws IOException {
-    getByte(array, 0, array.length);
-  }
-
-  void getByte(byte[] array, int begin, int length) throws IOException {
-    do {
-      int completed = in.read(array, begin, length);
-      begin+=completed;
-      length-=completed;
-      }
-    while (length>0);
-  }
+public interface SocketFactory{
+  public Socket createSocket(String host, int port)throws IOException,
+							  UnknownHostException;
+  public InputStream getInputStream(Socket socket)throws IOException;
+  public OutputStream getOutputStream(Socket socket)throws IOException;
 }
