@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.madgag</groupId>
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>4</version>
+  </parent>
+  <artifactId>jsch</artifactId>
+  <version>0.1.43.0-UNOFFICIAL-BUILD-SNAPSHOT</version>
+  <name>JSch</name>
+
+  <description>JSch is a pure Java implementation of SSH2 - this is a spork by Roberto Tyley for experimental purposes</description>
+  <url>http://www.jcraft.com/jsch/</url>
+
+  <scm>
+    <connection>scm:git:git@github.com:rtyley/jsch.git</connection>
+    <developerConnection>scm:git:git@github.com:rtyley/jsch.git</developerConnection>
+    <url>git@github.com:rtyley/jsch.git</url>
+  </scm>
+
+  <organization>
+    <name>jcraft</name>
+    <url>http://www.jcraft.com/jsch</url>
+  </organization>
+
+  <licenses>
+    <license>
+      <name>BSD</name>
+      <url>http://www.jcraft.com/jsch/LICENSE.txt</url>
+    </license>
+  </licenses>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.jcraft</groupId>
+      <artifactId>jzlib</artifactId>
+      <version>1.0.7</version>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+    <plugins>
+      <plugin>
+        <inherited>true</inherited>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>  
+    </plugins>
+  </build>
+</project>
