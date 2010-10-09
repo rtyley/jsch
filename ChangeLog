@@ -1,6 +1,10 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Dec  3 14:19:48 UTC 2003
+Last modified: Wed Dec  3 23:27:53 UTC 2003
+
+Changes since version 0.1.10:	
+- fixed a bug in the password authentication, sneaked in
+  0.1.9. By this bug, the password authentication had failed every time.
 
 	
 Changes since version 0.1.9:	

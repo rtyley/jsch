@@ -63,9 +63,9 @@ class UserAuthPassword extends UserAuth{
       }
 
       byte[] _password=null;
-      try{ _password=username.getBytes("UTF-8"); }
+      try{ _password=password.getBytes("UTF-8"); }
       catch(java.io.UnsupportedEncodingException e){
-	_password=username.getBytes();
+	_password=password.getBytes();
       }
 
       // send

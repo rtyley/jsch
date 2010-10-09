@@ -43,14 +43,14 @@ class UserAuthKeyboardInteractive extends UserAuth{
     String dest=username+"@"+session.host+((session.port==22) ? ""  : new Integer(session.port).toString());
 
     boolean cancel=false;
+
+    byte[] _username=null;
+    try{ _username=username.getBytes("UTF-8"); }
+    catch(java.io.UnsupportedEncodingException e){
+      _username=username.getBytes();
+    }
+
     while(true){
-
-      byte[] _username=null;
-      try{ _username=username.getBytes("UTF-8"); }
-      catch(java.io.UnsupportedEncodingException e){
-	_username=username.getBytes();
-      }
-
       // send
       // byte      SSH_MSG_USERAUTH_REQUEST(50)
       // string    user name (ISO-10646 UTF-8, as defined in [RFC-2279])
@@ -68,6 +68,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
       buf.putString("".getBytes());
       session.write(packet);
 
+      boolean firsttime=true;
       loop:
       while(true){
 	// receive
@@ -77,7 +78,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	catch(java.io.IOException e){
 	  return false;
 	}
-	//System.out.println("read: 52 ? "+    buf.buffer[5]);
+//System.out.println("read: 52 ? "+    buf.buffer[5]);
 	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
 	  return true;
 	}
@@ -97,14 +98,14 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  buf.getInt(); buf.getByte(); buf.getByte(); 
 	  byte[] foo=buf.getString();
 	  int partial_success=buf.getByte();
-	  //System.out.println(new String(foo)+
-	  //                  " partial_success:"+(partial_success!=0));
-
-	  cancel=true;  // ??
-
+//	  System.out.println(new String(foo)+
+//			     " partial_success:"+(partial_success!=0));
+	  if(firsttime)
+	    cancel=true;  // ??
 	  break;
 	}
 	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_INFO_REQUEST){
+	  firsttime=false;
 	  buf.getInt(); buf.getByte(); buf.getByte();
 	  String name=new String(buf.getString());
 	  String instruction=new String(buf.getString());
@@ -135,6 +136,10 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  // string    response[1] (ISO-10646 UTF-8)
 	  // ...
 	  // string    response[num-responses] (ISO-10646 UTF-8)
+//if(response!=null)
+//System.out.println("response.length="+response.length);
+//else
+//System.out.println("response is null");
 	  packet.reset();
 	  buf.putByte((byte)Session.SSH_MSG_USERAUTH_INFO_RESPONSE);
 	  if(response==null ||  // cancel
@@ -146,10 +151,12 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  else{
 	    buf.putInt(num);
 	    for(int i=0; i<num; i++){
+//System.out.println("response: |"+response[i]+"| <- replace here with **** if you need");
 	      buf.putString(response[i].getBytes());
 	    }
 	  }
 	  session.write(packet);
+//System.out.println("continue loop");
 	  continue loop;
 	}
 	throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
