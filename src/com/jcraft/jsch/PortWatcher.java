@@ -34,6 +34,13 @@ import java.io.*;
 
 class PortWatcher implements Runnable{
   private static java.util.Vector pool=new java.util.Vector();
+  private static InetAddress anyLocalAddress=null;
+  static{
+    // 0.0.0.0
+    try{ anyLocalAddress=InetAddress.getByAddress(new byte[4]); }
+    catch(UnknownHostException e){
+    }
+  }
 
   Session session;
   int lport;
@@ -71,7 +78,8 @@ class PortWatcher implements Runnable{
       for(int i=0; i<pool.size(); i++){
 	PortWatcher p=(PortWatcher)(pool.elementAt(i));
 	if(p.session==session && p.lport==lport){
-	  if(p.boundaddress.isAnyLocalAddress() ||
+	  if(/*p.boundaddress.isAnyLocalAddress() ||*/
+             (anyLocalAddress!=null &&  p.boundaddress.equals(anyLocalAddress)) ||
 	     p.boundaddress.equals(addr))
 	  return p;
 	}

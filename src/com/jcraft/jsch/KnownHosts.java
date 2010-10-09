@@ -86,6 +86,12 @@ loop:
 	  if(j==-1){ break loop;}
 	  if(j==0x0d){ continue; }
 	  if(j==0x0a){ break; }
+          if(buf.length<=bufl){
+            if(bufl>1024*10) break;   // too long...
+            byte[] newbuf=new byte[buf.length*2];
+            System.arraycopy(buf, 0, newbuf, 0, buf.length);
+            buf=newbuf;
+          }
           buf[bufl++]=(byte)j;
 	}
 

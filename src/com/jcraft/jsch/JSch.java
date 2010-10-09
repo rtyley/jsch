@@ -70,6 +70,8 @@ public class JSch{
     config.put("keypairgen.rsa",   "com.jcraft.jsch.jce.KeyPairGenRSA");
     config.put("random",        "com.jcraft.jsch.jce.Random");
 
+    config.put("none",           "com.jcraft.jsch.CipherNone");
+
     config.put("aes128-cbc",    "com.jcraft.jsch.jce.AES128CBC");
     config.put("aes192-cbc",    "com.jcraft.jsch.jce.AES192CBC");
     config.put("aes256-cbc",    "com.jcraft.jsch.jce.AES256CBC");

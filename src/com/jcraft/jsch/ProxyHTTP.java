@@ -67,13 +67,12 @@ public class ProxyHTTP implements Proxy{
     this.user=user;
     this.passwd=passwd;
   }
-  public void connect(Session session, String host, int port) throws JSchException{
+  public void connect(SocketFactory socket_factory, String host, int port, int timeout) throws JSchException{
     this.host=host;
     this.port=port;
     try{
-      SocketFactory socket_factory=session.socket_factory;
       if(socket_factory==null){
-        socket=new Socket(proxy_host, proxy_port);    
+        socket=Util.createSocket(proxy_host, proxy_port, timeout);    
         in=socket.getInputStream();
         out=socket.getOutputStream();
       }
@@ -82,23 +81,26 @@ public class ProxyHTTP implements Proxy{
         in=socket_factory.getInputStream(socket);
         out=socket_factory.getOutputStream(socket);
       }
+      if(timeout>0){
+        socket.setSoTimeout(timeout);
+      }
       socket.setTcpNoDelay(true);
 
-      out.write(("CONNECT "+host+":"+port+" HTTP/1.0\n").getBytes());
+      out.write(("CONNECT "+host+":"+port+" HTTP/1.0\r\n").getBytes());
 
       if(user!=null && passwd!=null){
 	byte[] code=(user+":"+passwd).getBytes();
 	code=Util.toBase64(code, 0, code.length);
 	out.write("Proxy-Authorization: Basic ".getBytes());
 	out.write(code);
-	out.write("\n".getBytes());
+	out.write("\r\n".getBytes());
       }
 
-      out.write("\n".getBytes());
+      out.write("\r\n".getBytes());
       out.flush();
 
-      int foo;
-      while(true){
+      int foo=0;
+      while(foo>=0){
         foo=in.read(); if(foo!=13) continue;
         foo=in.read(); if(foo!=10) continue;
         foo=in.read(); if(foo!=13) continue;      
@@ -118,6 +120,7 @@ public class ProxyHTTP implements Proxy{
   }
   public InputStream getInputStream(){ return in; }
   public OutputStream getOutputStream(){ return out; }
+  public Socket getSocket(){ return socket; }
   public void close(){
     try{
       if(in!=null)in.close();

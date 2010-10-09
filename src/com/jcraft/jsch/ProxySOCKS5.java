@@ -72,13 +72,13 @@ public class ProxySOCKS5 implements Proxy{
     this.user=user;
     this.passwd=passwd;
   }
-  public void connect(Session session, String host, int port) throws JSchException{
+  public void connect(SocketFactory socket_factory, String host, int port, int timeout) throws JSchException{
     this.host=host;
     this.port=port;
     try{
-      SocketFactory socket_factory=session.socket_factory;
       if(socket_factory==null){
-        socket=new Socket(proxy_host, proxy_port);    
+        socket=Util.createSocket(proxy_host, proxy_port, timeout);
+        //socket=new Socket(proxy_host, proxy_port);    
         in=socket.getInputStream();
         out=socket.getOutputStream();
       }
@@ -86,6 +86,9 @@ public class ProxySOCKS5 implements Proxy{
         socket=socket_factory.createSocket(proxy_host, proxy_port);
         in=socket_factory.getInputStream(socket);
         out=socket_factory.getOutputStream(socket);
+      }
+      if(timeout>0){
+        socket.setSoTimeout(timeout);
       }
       socket.setTcpNoDelay(true);
 
@@ -311,6 +314,7 @@ public class ProxySOCKS5 implements Proxy{
   }
   public InputStream getInputStream(){ return in; }
   public OutputStream getOutputStream(){ return out; }
+  public Socket getSocket(){ return socket; }
   public void close(){
     try{
       if(in!=null)in.close();

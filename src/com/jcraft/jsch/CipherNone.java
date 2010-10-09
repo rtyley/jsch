@@ -29,50 +29,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
-
-public class ChannelShell extends ChannelSession{
-  boolean xforwading=false;
-  boolean pty=true;
-  public void setXForwarding(boolean foo){ xforwading=foo; }
-  public void setPty(boolean foo){ pty=foo; }
-  public void start() throws JSchException{
-    try{
-      Request request;
-      if(xforwading){
-        request=new RequestX11();
-        request.request(session, this);
-      }
-
-      if(pty){
-        request=new RequestPtyReq();
-        request.request(session, this);
-      }
-
-      request=new RequestShell();
-      request.request(session, this);
-    }
-    catch(Exception e){
-      throw new JSchException("ChannelShell");
-    }
-    thread=new Thread(this);
-    thread.setName("Shell for "+session.host);
-    thread.start();
+public class CipherNone implements Cipher{
+  private static final int ivsize=8;
+  private static final int bsize=16;
+  public int getIVSize(){return ivsize;} 
+  public int getBlockSize(){return bsize;}
+  public void init(int mode, byte[] key, byte[] iv) throws Exception{
   }
-  //public void finalize() throws Throwable{ super.finalize(); }
-  public void init(){
-    io.setInputStream(session.in);
-    io.setOutputStream(session.out);
-  }
-  public void setPtySize(int col, int row, int wp, int hp){
-    //if(thread==null) return;
-    try{
-      RequestWindowChange request=new RequestWindowChange();
-      request.setSize(col, row, wp, hp);
-      request.request(session, this);
-    }
-    catch(Exception e){
-      System.out.println("ChannelShell.setPtySize: "+e);
-    }
+  public void update(byte[] foo, int s1, int len, byte[] bar, int s2) throws Exception{
   }
 }

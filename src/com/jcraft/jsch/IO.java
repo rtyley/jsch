@@ -80,8 +80,8 @@ public class IO{
   void getByte(byte[] array, int begin, int length) throws IOException {
     do{
       int completed = in.read(array, begin, length);
-      if(completed<=0){
-	throw new IOException("");
+      if(completed<0){
+	throw new IOException("End of IO Stream Read");
       }
       begin+=completed;
       length-=completed;

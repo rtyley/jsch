@@ -86,8 +86,10 @@ public abstract class Channel implements Runnable{
   int recipient=-1;
   byte[] type="foo".getBytes();
   int lwsize_max=0x100000;
+//int lwsize_max=0x20000;  // 32*1024*4
   int lwsize=lwsize_max;  // local initial window size
   int lmpsize=0x4000;     // local maximum packet size
+//int lmpsize=0x8000;     // local maximum packet size
 
   int rwsize=0;         // remote initial window size
   int rmpsize=0;        // remote maximum packet size

@@ -42,14 +42,16 @@ public class Exec{
       ((ChannelExec)channel).setCommand(command);
       channel.setXForwarding(true);
 
-      channel.setInputStream(System.in);
+      //channel.setInputStream(System.in);
+      channel.setInputStream(null);
+
       //channel.setOutputStream(System.out);
 
       //FileOutputStream fos=new FileOutputStream("/tmp/stderr");
       //((ChannelExec)channel).setErrStream(fos);
       ((ChannelExec)channel).setErrStream(System.err);
 
-      InputStream in = channel.getInputStream();
+      InputStream in=channel.getInputStream();
 
       channel.connect();
 

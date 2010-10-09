@@ -1,7 +1,21 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Oct 11 16:18:54 UTC 2005
+Last modified: Thu Feb 16 16:16:04 UTC 2006
 
+	
+Changes since version 0.1.24:		
+- bugfix: remote port forwarding is not established. FIXED. 
+- bugfix: failed to parse known_hosts file if it has a long public key blob.
+ 	  FIXED.
+- bugfix: sftp put/get operations keep failing.  FIXED.
+- bugfix: ChannelShell.setXForwarding always set xforwarding to be true. FIXED.
+- change: ChannelShell.setPty is added.
+- change: Proxy interface is free from session object.
+- change: added examples/ScpToNoneCipher.java to demonstrate NONE Cipher switching.
+- feature: added NONE Cipher switching support.
+- feature: timeout check will be enabled for proxy connections.
+
+	
 Changes since version 0.1.23:		
 - bugfix: there was resource leak problems in closing local port forwardings.
   	  FIXED. 
@@ -16,7 +30,7 @@ Changes since version 0.1.23:
 	                              ServerSocketFactory ssf)
 
 Changes since version 0.1.22:		
-- bugfix: there was a freeze problem at fails on key-exchanging. FIXED. 
+- bugfix: there was a freeze problem at fails on key-exchanging. FIXED.
 - bugfix: race-condition forcefully disconnects session in closing channels.
 	  FIXED. 
 

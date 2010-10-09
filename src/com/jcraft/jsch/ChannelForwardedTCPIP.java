@@ -37,6 +37,7 @@ public class ChannelForwardedTCPIP extends Channel{
   static java.util.Vector pool=new java.util.Vector();
 
   static private final int LOCAL_WINDOW_SIZE_MAX=0x20000;
+//static private final int LOCAL_WINDOW_SIZE_MAX=0x100000;
   static private final int LOCAL_MAXIMUM_PACKET_SIZE=0x4000;
 
   SocketFactory factory=null;
@@ -61,6 +62,7 @@ public class ChannelForwardedTCPIP extends Channel{
         Object[] foo=getPort(session, rport);
         daemon.setArg((Object[])foo[3]);
         new Thread(daemon).start();
+        connected=true;
         return;
       }
       else{
@@ -70,6 +72,7 @@ public class ChannelForwardedTCPIP extends Channel{
         socket.setTcpNoDelay(true);
         io.setInputStream(socket.getInputStream());
         io.setOutputStream(socket.getOutputStream());
+        connected=true;
       }
     }
     catch(Exception e){

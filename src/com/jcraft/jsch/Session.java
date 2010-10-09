@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.24";
+  static private final String version="JSCH-0.1.25";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -102,6 +102,8 @@ public class Session implements Runnable{
   private int timeout=0;
 
   private boolean isConnected=false;
+
+  private boolean isAuthed=false;
 
   private Thread connectThread=null;
 
@@ -174,71 +176,7 @@ public class Session implements Runnable{
         InputStream in;
         OutputStream out;
 	if(socket_factory==null){
-	  if(connectTimeout==0){
-	    socket=new Socket(host, port);
-	  }
-	  else{
-	    final Socket[] sockp=new Socket[1];
-	    final Thread currentThread=Thread.currentThread();
-	    final Exception[] ee=new Exception[1];
-//	    final boolean[] done=new boolean[1];
-//	    done[0]=false;
-	    String message="";
-	    Thread tmp=new Thread(new Runnable(){
-		public void run(){
-                  sockp[0]=null;
-		  try{
-		    sockp[0]=new Socket(host, port);
-                    /*
-		    if(done[0]){ 
-		      if(sockp[0]!=null){
-			sockp[0].close();
-			sockp[0]=null;
-		      }
-		    }
-		    else currentThread.interrupt();
-                    */
-		  }
-		  catch(Exception e){
-		    ee[0]=e;
-                    /*
-		    currentThread.interrupt();
-                    */
-		    if(sockp[0]!=null && sockp[0].isConnected()){
-		      try{
-			sockp[0].close();
-		      }
-                      catch(Exception eee){}
-		    }
-                    sockp[0]=null;
-		  }
-		}
-	      });
-	    tmp.setName("Opening Socket "+host);
-	    tmp.start();
-	    try{ 
-	      //Thread.sleep(connectTimeout); 
-              tmp.join(connectTimeout);
-	      message="timeout: ";
-	    }
-	    catch(java.lang.InterruptedException eee){
-//	      tmp.interrupt();
-//	      tmp=null;
-	    }
-//	    done[0]=true;
-	    if(sockp[0]!=null && sockp[0].isConnected()){
-	      socket=sockp[0];
-	    }
-	    else{
-	      message+="socket is not established";
-	      if(ee[0]!=null){
-		message=ee[0].toString();
-	      }
-	      tmp.interrupt();
-              tmp=null;
-	      throw new JSchException(message);
-	    }
-	  }
+          socket=Util.createSocket(host, port, connectTimeout);
 	  in=socket.getInputStream();
 	  out=socket.getOutputStream();
 	}
@@ -247,19 +185,22 @@ public class Session implements Runnable{
 	  in=socket_factory.getInputStream(socket);
 	  out=socket_factory.getOutputStream(socket);
 	}
-	if(timeout>0){
-	  socket.setSoTimeout(timeout);
-	}
+	//if(timeout>0){ socket.setSoTimeout(timeout); }
         socket.setTcpNoDelay(true);
         io.setInputStream(in);
         io.setOutputStream(out);
       }
       else{
 	synchronized(proxy){
-	  proxy.connect(this, host, port);
+          proxy.connect(socket_factory, host, port, connectTimeout);
 	  io.setInputStream(proxy.getInputStream());
 	  io.setOutputStream(proxy.getOutputStream());
+          socket=proxy.getSocket();
 	}
+      }
+
+      if(connectTimeout>0 && socket!=null){
+        socket.setSoTimeout(connectTimeout);
       }
 
       isConnected=true;
@@ -309,11 +250,10 @@ public class Session implements Runnable{
       }
       KeyExchange kex=receive_kexinit(buf);
 
-      boolean result;
       while(true){
 	buf=read(buf);
 	if(kex.getState()==buf.buffer[5]){
-	  result=kex.next(buf);
+          boolean result=kex.next(buf);
 	  if(!result){
 	    //System.out.println("verify: "+result);
             in_kex=false;
@@ -417,7 +357,12 @@ public class Session implements Runnable{
         break;
       }
 
+      if(connectTimeout>0 || timeout>0){
+        socket.setSoTimeout(timeout);
+      }
+
       if(auth){
+        isAuthed=true;
 	connectThread=new Thread(this);
 	connectThread.setName("Connect thread "+host+" session");
 	connectThread.start();
@@ -488,6 +433,12 @@ System.out.println(e);
     String[] guess=KeyExchange.guess(I_S, I_C);
     if(guess==null){
       throw new JSchException("Algorithm negotiation fail");
+    }
+
+    if(!isAuthed &&
+       (guess[KeyExchange.PROPOSAL_ENC_ALGS_CTOS].equals("none") ||
+        (guess[KeyExchange.PROPOSAL_ENC_ALGS_STOC].equals("none")))){
+      throw new JSchException("NONE Cipher should not be chosen before authentification is successed.");
     }
 
     KeyExchange kex=null;
@@ -1003,7 +954,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	packet.unshift(command, recipient, s, length);
       }
 
-      try{Thread.sleep(10);}
+//      try{Thread.sleep(10);}
+      try{Thread.sleep(100);}
       catch(java.lang.InterruptedException e){};
     }
     _write(packet);
