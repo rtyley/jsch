@@ -52,6 +52,9 @@ public abstract class Channel implements Runnable{
     if(type.equals("x11")){
       return new ChannelX11();
     }
+    if(type.equals("auth-agent@openssh.com")){
+      return new ChannelAgentForwarding();
+    }
     if(type.equals("direct-tcpip")){
       return new ChannelDirectTCPIP();
     }
@@ -255,6 +258,7 @@ public abstract class Channel implements Runnable{
           if(packet==null){
             init();
           }
+
           if(closed){
             throw new java.io.IOException("Already closed");
           }
@@ -280,6 +284,9 @@ public abstract class Channel implements Runnable{
         }
 
         public void flush() throws java.io.IOException{
+          if(closed){
+            throw new java.io.IOException("Already closed");
+          }
           if(dataLen==0)
             return;
           packet.reset();
@@ -303,7 +310,7 @@ public abstract class Channel implements Runnable{
             init();
           }
           if(closed){
-            throw new java.io.IOException("Already closed");
+            return;
           }
           if(dataLen>0){
             flush();

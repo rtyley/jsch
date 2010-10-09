@@ -43,6 +43,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
     if(session.port!=22){
       dest+=(":"+session.port);
     }
+    byte[] password=session.password;
 
     boolean cancel=false;
 
@@ -153,7 +154,16 @@ class UserAuthKeyboardInteractive extends UserAuth{
                 }
               }
 	    }
+            else if(password!=null && 
+                    prompt.length==1 &&
+                    !echo[0] &&
+                    prompt[0].toLowerCase().startsWith("password:")){
+              response=new byte[1][];
+              response[0]=password;
+              password=null;
+            }
 	  }
+
 	  // byte      SSH_MSG_USERAUTH_INFO_RESPONSE(61)
 	  // int       num-responses
 	  // string    response[1] (ISO-10646 UTF-8)

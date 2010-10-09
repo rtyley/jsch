@@ -196,10 +196,17 @@ public abstract class KeyPair{
 
     byte[] key=genKey(passphrase, iv);
     byte[] encoded=plain;
-    int bsize=cipher.getBlockSize();
-    if(encoded.length%bsize!=0){
+
+    // PKCS#5Padding
+    {
+      //int bsize=cipher.getBlockSize();
+      int bsize=cipher.getIVSize();
       byte[] foo=new byte[(encoded.length/bsize+1)*bsize];
       System.arraycopy(encoded, 0, foo, 0, encoded.length);
+      int padding=bsize-encoded.length%bsize;
+      for(int i=foo.length-1; (foo.length-padding)<=i; i--){
+        foo[i]=(byte)padding;
+      }
       encoded=foo;
     }
 

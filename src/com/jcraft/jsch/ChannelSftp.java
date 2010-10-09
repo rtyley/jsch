@@ -661,11 +661,17 @@ public class ChannelSftp extends ChannelSession{
       _offset[0]=offset;
       OutputStream out = new OutputStream(){
         private boolean init=true;
+        private boolean isClosed=false;
         private int[] ackid=new int[1];
         private int startid=0;
         private int _ackid=0;
         private int ackcount=0;
+        private int writecount=0;
         private Header header=new Header();          
+
+        public void write(byte[] d) throws java.io.IOException{
+          write(d, 0, d.length);
+        }
 
         public void write(byte[] d, int s, int len) throws java.io.IOException{
           if(init){
@@ -674,10 +680,15 @@ public class ChannelSftp extends ChannelSession{
             init=false;
           }
 
+          if(isClosed){
+            throw new IOException("stream already closed");
+          }
+
           try{
             int _len=len;
             while(_len>0){
               int sent=sendWRITE(handle, _offset[0], d, s, _len);
+              writecount++;
               _offset[0]+=sent;
               s+=sent;
               _len-=sent;
@@ -705,16 +716,22 @@ public class ChannelSftp extends ChannelSession{
           catch(IOException e){ throw e; }
           catch(Exception e){ throw new IOException(e.toString());  }
         }
+
         byte[] _data=new byte[1];
         public void write(int foo) throws java.io.IOException{
           _data[0]=(byte)foo;
           write(_data, 0, 1);
         }
-        public void close() throws java.io.IOException{
+
+        public void flush() throws java.io.IOException{
+
+          if(isClosed){
+            throw new IOException("stream already closed");
+          }
+
           if(!init){
             try{
-              int _ackcount=seq-startid;
-              while(_ackcount>ackcount){
+              while(writecount>ackcount){
                 if(!checkStatus(null, header)){
                   break;
                 }
@@ -725,13 +742,20 @@ public class ChannelSftp extends ChannelSession{
               throw new IOException(e.toString());
             }
           }
+        }
 
+        public void close() throws java.io.IOException{
+          if(isClosed){
+            return;
+          }
+          flush();
           if(monitor!=null)monitor.end();
           try{ _sendCLOSE(handle, header); }
           catch(IOException e){ throw e; }
           catch(Exception e){
             throw new IOException(e.toString());
           }
+          isClosed=true;
         }
       };
       return out;

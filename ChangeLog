@@ -1,8 +1,26 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Nov  1 14:43:13 UTC 2006
+Last modified: Wed Jan 17 02:38:39 UTC 2007
 
+	
+Changes since version 0.1.30:		
+- bugfix: a problem in padding for ciphered private key.  
+	PKCS#5 padding should be used.                             FIXED.
+- bugfix: crash in parsing invalid public key file.                FIXED.
+- bugfix: a public key may not have a comment.                     FIXED.
+- bugfix: output stream from ChannelSftp#put will hang if it is closed
+	  twice.                                                   FIXED.
+- feature: agent forwarding. To enable this functionality,
+	Channel{Exec,Shell,Sftp}#setAgentForwarding(boolean enable) are added.
+- feature: ChannelShell#setTerminalMode(byte[] terminal_mode) is added.
+- feature: Session#setDaemonThread(boolean true) to run internal threads as
+	   daemon threads.
+- feature: an option "PreferredAuthentications" is added.
+	   The default value is "gssapi-with-mic,publickey,keyboard-interactive,password".
+- change: if alias-name is given, non-standard TCP port number will not be
+	  saved in 'known_hosts' file.
 
+	
 Changes since version 0.1.29:		
 - bugfix: ChannelSftp#cd() will not throw an exception even if
 	  a file is given.                                           FIXED.

@@ -38,7 +38,9 @@ public class Exec{
 
       Channel channel=session.openChannel("exec");
       ((ChannelExec)channel).setCommand(command);
-      channel.setXForwarding(true);
+
+      // X Forwarding
+      // channel.setXForwarding(true);
 
       //channel.setInputStream(System.in);
       channel.setInputStream(null);

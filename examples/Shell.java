@@ -33,6 +33,9 @@ public class Shell{
 
       Channel channel=session.openChannel("shell");
 
+      // Enable agent-forwarding.
+      //((ChannelShell)channel).setAgentForwarding(true);
+
       channel.setInputStream(System.in);
       channel.setOutputStream(System.out);
 

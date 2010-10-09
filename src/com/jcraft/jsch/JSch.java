@@ -96,6 +96,7 @@ public class JSch{
     config.put("StrictHostKeyChecking",  "ask");
     config.put("HashKnownHosts",  "no");
     //config.put("HashKnownHosts",  "yes");
+    config.put("PreferredAuthentications", "gssapi-with-mic,publickey,keyboard-interactive,password");
   }
   java.util.Vector pool=new java.util.Vector();
   java.util.Vector identities=new java.util.Vector();

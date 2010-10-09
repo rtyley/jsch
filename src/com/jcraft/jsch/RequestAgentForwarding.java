@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2006 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -29,50 +29,25 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class RequestPtyReq extends Request{
-  private String ttype="vt100";
-  private int tcol=80;
-  private int trow=24;
-  private int twp=640;
-  private int thp=480;
-
-  private byte[] terminal_mode="".getBytes();
-
-  void setCode(String cookie){
-  }
-
-  void setTType(String ttype){
-    this.ttype=ttype;
-  }
-  
-  void setTerminalMode(byte[] termianl_mode){
-    this.terminal_mode=terminal_mode;
-  }
-
-  void setTSize(int tcol, int trow, int twp, int thp){
-    this.tcol=tcol;
-    this.trow=trow;
-    this.twp=twp;
-    this.thp=thp;
-  }
-
+class RequestAgentForwarding extends Request{
   public void request(Session session, Channel channel) throws Exception{
     super.request(session, channel);
+
+    setReply(false);
 
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
+    // byte      SSH_MSG_CHANNEL_REQUEST(98)
+    // uint32 recipient channel
+    // string request type        // "auth-agent-req@openssh.com"
+    // boolean want reply         // 0
     packet.reset();
     buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
     buf.putInt(channel.getRecipient());
-    buf.putString("pty-req".getBytes());
+    buf.putString("auth-agent-req@openssh.com".getBytes());
     buf.putByte((byte)(waitForReply() ? 1 : 0));
-    buf.putString(ttype.getBytes());
-    buf.putInt(tcol);
-    buf.putInt(trow);
-    buf.putInt(twp);
-    buf.putInt(thp);
-    buf.putString(terminal_mode);
     write(packet);
+    session.agent_forwarding=true;
   }
 }

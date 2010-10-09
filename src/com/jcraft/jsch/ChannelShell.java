@@ -32,21 +32,31 @@ package com.jcraft.jsch;
 import java.util.*;
 
 public class ChannelShell extends ChannelSession{
-  private boolean xforwading=false;
+
   private boolean pty=true;
-  private Hashtable env=null;
+
   private String ttype="vt100";
   private int tcol=80;
   private int trow=24;
   private int twp=640;
   private int thp=480;
+  private byte[] terminal_mode=null;
 
-  public void setXForwarding(boolean foo){ xforwading=foo; }
-  public void setPty(boolean foo){ pty=foo; }
-  public void setEnv(Hashtable foo){ env=foo; }
+  public void setPty(boolean enable){ 
+    pty=enable; 
+  }
+  public void setTerminalMode(byte[] terminal_mode){
+    this.terminal_mode=terminal_mode;
+  }
   public void start() throws JSchException{
     try{
       Request request;
+
+      if(agent_forwarding){
+        request=new RequestAgentForwarding();
+        request.request(session, this);
+      }
+
       if(xforwading){
         request=new RequestX11();
         request.request(session, this);
@@ -56,6 +66,9 @@ public class ChannelShell extends ChannelSession{
         request=new RequestPtyReq();
         ((RequestPtyReq)request).setTType(ttype);
         ((RequestPtyReq)request).setTSize(tcol, trow, twp, thp);
+        if(terminal_mode!=null){
+          ((RequestPtyReq)request).setTerminalMode(terminal_mode);
+        }
         request.request(session, this);
       }
 
@@ -82,6 +95,9 @@ public class ChannelShell extends ChannelSession{
     if(io.in!=null){
       thread=new Thread(this);
       thread.setName("Shell for "+session.host);
+      if(session.daemon_thread){
+        thread.setDaemon(session.daemon_thread);
+      }
       thread.start();
     }
   }

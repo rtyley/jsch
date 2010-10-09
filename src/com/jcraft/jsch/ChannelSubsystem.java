@@ -61,6 +61,9 @@ public class ChannelSubsystem extends ChannelSession{
     if(io.in!=null){
       thread=new Thread(this);
       thread.setName("Subsystem for "+session.host);
+      if(session.daemon_thread){
+        thread.setDaemon(session.daemon_thread);
+      }
       thread.start();
     }
   }

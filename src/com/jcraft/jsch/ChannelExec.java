@@ -32,16 +32,18 @@ package com.jcraft.jsch;
 import java.util.*;
 
 public class ChannelExec extends ChannelSession{
-  boolean xforwading=false;
   boolean pty=false;
-  Hashtable env=null;
   String command="";
-  public void setXForwarding(boolean foo){ xforwading=foo; }
+
   public void setPty(boolean foo){ pty=foo; }
-  public void setEnv(Hashtable foo){ env=foo; }
   public void start() throws JSchException{
     try{
       Request request;
+
+      if(agent_forwarding){
+        request=new RequestAgentForwarding();
+        request.request(session, this);
+      }
 
       if(xforwading){
         request=new RequestX11();
@@ -76,6 +78,9 @@ public class ChannelExec extends ChannelSession{
     if(io.in!=null){
       thread=new Thread(this);
       thread.setName("Exec thread "+session.getHost());
+      if(session.daemon_thread){
+        thread.setDaemon(session.daemon_thread);
+      }
       thread.start();
     }
   }

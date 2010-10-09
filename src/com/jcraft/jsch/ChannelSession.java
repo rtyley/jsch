@@ -29,12 +29,29 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
+import java.util.*;
+
 class ChannelSession extends Channel{
   private static byte[] _session="session".getBytes();
+
+  protected boolean agent_forwarding=false;
+  protected boolean xforwading=false;
+  protected Hashtable env=null;
+
   ChannelSession(){
     super();
     type=_session;
     io=new IO();
+  }
+
+  public void setAgentForwarding(boolean enable){ 
+    agent_forwarding=enable;
+  }
+  public void setXForwarding(boolean enable){
+    xforwading=enable; 
+  }
+  public void setEnv(Hashtable env){ 
+    this.env=env; 
   }
   
   public void run(){

@@ -28,8 +28,8 @@ This directory contains some examples, which demonstrate how to use JSch
   $ CLASSPATH=.:../build java Exec
   You will be asked username, hostname, displayname, passwd and command.
   If everything works fine, given command will be invoked 
-  on the remote side and outputs will be printed out. In this sample,
-  X forwarding is enabled, so you can give an X client as a command.
+  on the remote side and outputs will be printed out.
+
 
 - ViaHTTP.java
   This program will demonstrate the ssh session via HTTP proxy.

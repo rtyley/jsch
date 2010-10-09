@@ -151,10 +151,11 @@ class IdentityFile implements Identity{
       c=Class.forName((String)jsch.getConfig("md5"));
       hash=(HASH)(c.newInstance());
       hash.init();
+
       byte[] buf=prvkey;
+      int len=buf.length;
 
       int i=0;
-      int len=buf.length;
       while(i<len){
         if(buf[i]=='B'&& buf[i+1]=='E'&& buf[i+2]=='G'&& buf[i+3]=='I'){
           i+=6;	    
@@ -267,16 +268,17 @@ class IdentityFile implements Identity{
       }
       
       buf=pubkey;
+      len=buf.length;
 
       if(buf.length>4 &&             // FSecure's public key
 	 buf[0]=='-' && buf[1]=='-' && buf[2]=='-' && buf[3]=='-'){
 	i=0;
-	do{i++;}while(buf.length>i && buf[i]!=0x0a);
-	if(buf.length<=i) return;
-	while(true){
+	do{i++;}while(len>i && buf[i]!=0x0a);
+	if(len<=i) return;
+	while(i<len){
 	  if(buf[i]==0x0a){
 	    boolean inheader=false;
-	    for(int j=i+1; j<buf.length; j++){
+	    for(int j=i+1; j<len; j++){
 	      if(buf[j]==0x0a) break;
 	      if(buf[j]==':'){inheader=true; break;}
 	    }
@@ -287,7 +289,7 @@ class IdentityFile implements Identity{
 	  }
 	  i++;
 	}
-	if(buf.length<=i) return;
+	if(len<=i) return;
 
 	start=i;
 	while(i<len){
@@ -316,7 +318,7 @@ class IdentityFile implements Identity{
 	while(i<len){ if(buf[i]==' ')break; i++;} i++;
 	if(i>=len) return;
 	start=i;
-	while(i<len){ if(buf[i]==' ')break; i++;}
+	while(i<len){ if(buf[i]==' ' || buf[i]=='\n')break; i++;}
 	publickeyblob=Util.fromBase64(buf, start, i-start);
       }
     }

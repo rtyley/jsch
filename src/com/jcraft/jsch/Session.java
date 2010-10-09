@@ -33,7 +33,7 @@ import java.io.*;
 import java.net.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.30";
+  static private final String version="JSCH-0.1.31";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -103,6 +103,7 @@ public class Session implements Runnable{
   private Thread connectThread=null;
 
   boolean x11_forwarding=false;
+  boolean agent_forwarding=false;
 
   InputStream in=null;
   OutputStream out=null;
@@ -122,6 +123,8 @@ public class Session implements Runnable{
   private String hostKeyAlias=null;
   private int serverAliveInterval=0;
   private int serverAliveCountMax=1;
+
+  protected boolean daemon_thread=false;
 
   String host="127.0.0.1";
   int port=22;
@@ -346,21 +349,24 @@ public class Session implements Runnable{
 
       auth=ua.start(this, userinfo);
 
-      String methods=null;
+      String cmethods=getConfig("PreferredAuthentications");
+      String[] cmethoda=Util.split(cmethods, ",");
+
+      String smethods=null;
       if(!auth){
-        methods=((UserAuthNone)ua).getMethods();
-        if(methods!=null){
-          methods=methods.toLowerCase();
+        smethods=((UserAuthNone)ua).getMethods();
+        if(smethods!=null){
+          smethods=smethods.toLowerCase();
         }
         else{
           // methods: publickey,password,keyboard-interactive
-          methods="publickey,password,keyboard-interactive";
+          //smethods="publickey,password,keyboard-interactive";
+          smethods=cmethods;
         }
       }
 
-      //System.err.println(methods);
+      String[] smethoda=Util.split(smethods, ",");
 
-      String[] methoda=Util.split(methods, ",");
       int methodi=0;
 
       loop:
@@ -369,17 +375,27 @@ public class Session implements Runnable{
 //System.err.println("methods: "+methods);
 
 	while(!auth && 
-	      methoda!=null && methodi<methoda.length){
+	      cmethoda!=null && methodi<cmethoda.length){
 
-          String method=methoda[methodi++];
+          String method=cmethoda[methodi++];
+          boolean acceptable=false;
+          for(int k=0; k<smethoda.length; k++){
+            if(smethoda[k].equals(method)){
+              acceptable=true;
+              break;
+            }
+          }
+          if(!acceptable){
+            continue;
+          }
 
           //System.err.println("  method: "+method);
 
           if(JSch.getLogger().isEnabled(Logger.INFO)){
             String str="Authentications that can continue: ";
-            for(int k=methodi-1; k<methoda.length; k++){
-              str+=methoda[k];
-              if(k+1<methoda.length)
+            for(int k=methodi-1; k<cmethoda.length; k++){
+              str+=cmethoda[k];
+              if(k+1<cmethoda.length)
                 str+=",";
             }
             JSch.getLogger().log(Logger.INFO, 
@@ -420,8 +436,8 @@ public class Session implements Runnable{
 	      auth_cancel=true;
 	    }
 	    catch(JSchPartialAuthException ee){
-	      methods=ee.getMethods();
-              methoda=Util.split(methods, ",");
+	      smethods=ee.getMethods();
+              smethoda=Util.split(smethods, ",");
               methodi=0;
 	      //System.err.println("PartialAuth: "+methods);
 	      auth_cancel=false;
@@ -446,6 +462,9 @@ public class Session implements Runnable{
         isAuthed=true;
 	connectThread=new Thread(this);
 	connectThread.setName("Connect thread "+host+" session");
+        if(daemon_thread){
+          connectThread.setDaemon(daemon_thread);
+        }
 	connectThread.start();
 	return;
       }
@@ -615,7 +634,7 @@ System.err.println(e);
     String key_type=kex.getKeyType();
     String key_fprint=kex.getFingerPrint();
 
-    if(port!=22){
+    if(hostKeyAlias==null && port!=22){
       chost=("["+chost+"]:"+port);
     }
 
@@ -1333,10 +1352,10 @@ break;
 	  buf.getShort(); 
 	  foo=buf.getString(); 
 	  String ctyp=new String(foo);
-	  //System.err.println("type="+ctyp);
           if(!"forwarded-tcpip".equals(ctyp) &&
-	     !("x11".equals(ctyp) && x11_forwarding)){
-            System.err.println("Session.run: CHANNEL OPEN "+ctyp); 
+	     !("x11".equals(ctyp) && x11_forwarding) &&
+	     !("auth-agent@openssh.com".equals(ctyp) && agent_forwarding)){
+            //System.err.println("Session.run: CHANNEL OPEN "+ctyp); 
 	    throw new IOException("Session.run: CHANNEL OPEN "+ctyp);
 	  }
 	  else{
@@ -1354,6 +1373,9 @@ break;
 	    write(packet);
 	    Thread tmp=new Thread(channel);
 	    tmp.setName("Channel "+ctyp+" "+host);
+            if(daemon_thread){
+              tmp.setDaemon(daemon_thread);
+            }
 	    tmp.start();
 	    break;
 	  }
@@ -1489,6 +1511,9 @@ break;
     PortWatcher pw=PortWatcher.addPort(this, boundaddress, lport, host, rport, ssf);
     Thread tmp=new Thread(pw);
     tmp.setName("PortWatcher Thread for "+host);
+    if(daemon_thread){
+      tmp.setDaemon(daemon_thread);
+    }
     tmp.start();
   }
   public void delPortForwardingL(int lport) throws JSchException{
@@ -1657,6 +1682,7 @@ break;
   public void setPort(int port){ this.port=port; }
   void setUserName(String username){ this.username=username; }
   public void setUserInfo(UserInfo userinfo){ this.userinfo=userinfo; }
+  public UserInfo getUserInfo(){ return userinfo; }
   public void setInputStream(InputStream in){ this.in=in; }
   public void setOutputStream(OutputStream out){ this.out=out; }
   public void setX11Host(String host){ ChannelX11.setHost(host); }
@@ -1753,5 +1779,8 @@ break;
   }
   public void setServerAliveCountMax(int count){
     this.serverAliveCountMax=count;
+  }
+  public void setDaemonThread(boolean enable){
+    this.daemon_thread=enable;
   }
 }

@@ -72,7 +72,7 @@ Features
 * generating DSA and RSA key pairs.
 * SSH File Transfer Protocol(version 0, 1, 2, 3)
 * partial authentication
-* packet compression: zlib, zlib@openssh.com
+* packet compression.
   JZlib(http://www.jcraft.com/jzlib/) has been used.
 * hashed known_hosts file.
 * NONE Cipher switching.
