@@ -104,7 +104,9 @@ class UserAuthPublicKey extends UserAuth{
 	    catch(java.io.UnsupportedEncodingException e){
 	      message=new String(_message);
 	    }
-	    userinfo.showMessage(message);
+	    if(userinfo!=null){
+	      userinfo.showMessage(message);
+	    }
 	    continue loop1;
 	  }
 	  else{
@@ -209,7 +211,9 @@ class UserAuthPublicKey extends UserAuth{
 	  catch(java.io.UnsupportedEncodingException e){
 	    message=new String(_message);
 	  }
-	  userinfo.showMessage(message);
+	  if(userinfo!=null){
+	    userinfo.showMessage(message);
+	  }
 	  continue loop2;
 	}
 	else if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){

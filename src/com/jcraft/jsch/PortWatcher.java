@@ -45,10 +45,12 @@ class PortWatcher implements Runnable{
 
   static String[] getPortForwarding(Session session){
     java.util.Vector foo=new java.util.Vector();
-    for(int i=0; i<pool.size(); i++){
-      PortWatcher p=(PortWatcher)(pool.elementAt(i));
-      if(p.session==session){
-	foo.addElement(p.lport+":"+p.host+":"+p.rport);
+    synchronized(pool){
+      for(int i=0; i<pool.size(); i++){
+	PortWatcher p=(PortWatcher)(pool.elementAt(i));
+	if(p.session==session){
+	  foo.addElement(p.lport+":"+p.host+":"+p.rport);
+	}
       }
     }
     String[] bar=new String[foo.size()];
@@ -58,11 +60,13 @@ class PortWatcher implements Runnable{
     return bar;
   }
   static PortWatcher getPort(Session session, int lport){
-    for(int i=0; i<pool.size(); i++){
-      PortWatcher p=(PortWatcher)(pool.elementAt(i));
-      if(p.session==session && p.lport==lport) return p;
+    synchronized(pool){
+      for(int i=0; i<pool.size(); i++){
+	PortWatcher p=(PortWatcher)(pool.elementAt(i));
+	if(p.session==session && p.lport==lport) return p;
+      }
+      return null;
     }
-    return null;
   }
   static PortWatcher addPort(Session session, String address, int lport, String host, int rport) throws JSchException{
     if(getPort(session, lport)!=null){
@@ -81,12 +85,19 @@ class PortWatcher implements Runnable{
     pool.removeElement(pw);
   }
   static void delPort(Session session){
-    for(int i=0; i<pool.size(); i++){
-      PortWatcher p=(PortWatcher)(pool.elementAt(i));
-      if(p.session==session) {
-	p.delete();
+    PortWatcher[] foo=new PortWatcher[pool.size()];
+    int count=0;
+    synchronized(pool){
+      for(int i=0; i<pool.size(); i++){
+	PortWatcher p=(PortWatcher)(pool.elementAt(i));
+	if(p.session==session) {
+	  p.delete();
+	  foo[count++]=p;
+	}
+      }
+      for(int i=0; i<count; i++){
+	PortWatcher p=foo[i];
 	pool.removeElement(p);
-	i--;
       }
     }
   }
@@ -140,7 +151,10 @@ class PortWatcher implements Runnable{
 
   void delete(){
     thread=null;
-    try{ ss.close(); }
+    try{ 
+      if(ss!=null)ss.close();
+      ss=null;
+    }
     catch(Exception e){
     }
   }

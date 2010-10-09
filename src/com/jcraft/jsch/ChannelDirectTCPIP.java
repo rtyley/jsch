@@ -90,7 +90,7 @@ public class ChannelDirectTCPIP extends Channel{
       catch(Exception ee){
       }
 
-      if(this.eof){      // failed to open
+      if(this.eof_remote){      // failed to open
 	disconnect();
 	return;
       }
@@ -116,6 +116,7 @@ public class ChannelDirectTCPIP extends Channel{
 		     -16 -20 // padding and mac
 		     );
 	if(i<=0){
+	  eof();
           break;
 	}
 	if(close)break;

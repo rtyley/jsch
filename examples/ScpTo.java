@@ -31,7 +31,7 @@ public class ScpTo{
 
 
       // exec 'scp -t rfile' remotely
-      String command="scp -t "+rfile;
+      String command="scp -p -t "+rfile;
       Channel channel=session.openChannel("exec");
       ((ChannelExec)channel).setCommand(command);
 

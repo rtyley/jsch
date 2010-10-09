@@ -31,7 +31,7 @@ package com.jcraft.jsch;
 
 public class Packet{
 
-  private static Random random;
+  private static Random random=null;
   static void setRandom(Random foo){ random=foo;}
 
   Buffer buffer;
@@ -55,7 +55,10 @@ public class Packet{
     tmp[3]=(byte)(len);
     System.arraycopy(tmp, 0, buffer.buffer, 0, 4);
     buffer.buffer[4]=(byte)pad;
-    random.fill(buffer.buffer, buffer.index, pad); buffer.skip(pad);
+    synchronized(random){
+      random.fill(buffer.buffer, buffer.index, pad);
+    }
+    buffer.skip(pad);
     //buffer.putPad(pad);
 /*
 for(int i=0; i<buffer.index; i++){

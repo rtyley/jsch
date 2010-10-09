@@ -42,7 +42,10 @@ class UserAuthPassword extends UserAuth{
     Buffer buf=session.buf;
     final String username=session.username;
     String password=session.password;
-    String dest=username+"@"+session.host+((session.port==22) ? ""  : new Integer(session.port).toString());
+    String dest=username+"@"+session.host;
+    if(session.port!=22){
+      dest+=(":"+session.port);
+    }
 
     while(true){
       if(password==null){
@@ -108,7 +111,9 @@ class UserAuthPassword extends UserAuth{
 	  catch(java.io.UnsupportedEncodingException e){
 	    message=new String(_message);
 	  }
-	  userinfo.showMessage(message);
+	  if(userinfo!=null){
+	    userinfo.showMessage(message);
+	  }
 	  continue loop;
 	}
 	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){

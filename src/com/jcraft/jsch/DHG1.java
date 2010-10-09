@@ -29,8 +29,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-//import com.jcraft.jsch.*;
-
 public class DHG1 extends KeyExchange{
 
   static final byte[] g={ 2 };

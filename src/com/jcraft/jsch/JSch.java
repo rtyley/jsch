@@ -37,8 +37,10 @@ public class JSch{
     config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group-exchange-sha1");
     config.put("server_host_key", "ssh-rsa,ssh-dss");
     //config.put("server_host_key", "ssh-dss,ssh-rsa");
+
     config.put("cipher.s2c", "3des-cbc,blowfish-cbc");
     config.put("cipher.c2s", "3des-cbc,blowfish-cbc");
+
     config.put("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
     config.put("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
     config.put("compression.s2c", "none");
@@ -65,6 +67,10 @@ public class JSch{
     config.put("keypairgen.dsa",   "com.jcraft.jsch.jce.KeyPairGenDSA");
     config.put("keypairgen.rsa",   "com.jcraft.jsch.jce.KeyPairGenRSA");
     config.put("random",        "com.jcraft.jsch.jce.Random");
+
+    config.put("aes128-cbc",    "com.jcraft.jsch.jce.AES128CBC");
+//  config.put("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc");
+//  config.put("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc");
 
     config.put("zlib",          "com.jcraft.jsch.jcraft.Compression");
 
@@ -94,13 +100,17 @@ public class JSch{
   public void setKnownHosts(String foo) throws JSchException{
     if(known_hosts==null) known_hosts=new KnownHosts(this);
     if(known_hosts instanceof KnownHosts){
-      ((KnownHosts)known_hosts).setKnownHosts(foo); 
+      synchronized(known_hosts){
+	((KnownHosts)known_hosts).setKnownHosts(foo); 
+      }
     }
   }
   public void setKnownHosts(InputStream foo) throws JSchException{ 
     if(known_hosts==null) known_hosts=new KnownHosts(this);
     if(known_hosts instanceof KnownHosts){
-      ((KnownHosts)known_hosts).setKnownHosts(foo); 
+      synchronized(known_hosts){
+	((KnownHosts)known_hosts).setKnownHosts(foo); 
+      }
     }
   }
   /*
@@ -127,7 +137,7 @@ public class JSch{
   }
   */
   public void addIdentity(String foo) throws JSchException{
-    addIdentity(foo, null);
+    addIdentity(foo, (String)null);
   }
   public void addIdentity(String foo, String bar) throws JSchException{
     Identity identity=new IdentityFile(foo, this);
@@ -140,23 +150,27 @@ public class JSch{
   void setProxy(String hosts, Proxy proxy){
     java.lang.String[] patterns=Util.split(hosts, ",");
     if(proxies==null){proxies=new java.util.Vector();}
-    for(int i=0; i<patterns.length; i++){
-      if(proxy==null){
-	proxies.insertElementAt(null, 0);
-	proxies.insertElementAt(patterns[i].getBytes(), 0);
-      }
-      else{
-	proxies.addElement(patterns[i].getBytes());
-	proxies.addElement(proxy);
+    synchronized(proxies){
+      for(int i=0; i<patterns.length; i++){
+	if(proxy==null){
+	  proxies.insertElementAt(null, 0);
+	  proxies.insertElementAt(patterns[i].getBytes(), 0);
+	}
+	else{
+	  proxies.addElement(patterns[i].getBytes());
+	  proxies.addElement(proxy);
+	}
       }
     }
   }
   Proxy getProxy(String host){
     if(proxies==null)return null;
     byte[] _host=host.getBytes();
-    for(int i=0; i<proxies.size(); i+=2){
-      if(Util.glob(((byte[])proxies.elementAt(i)), _host)){
-	return (Proxy)(proxies.elementAt(i+1));
+    synchronized(proxies){
+      for(int i=0; i<proxies.size(); i+=2){
+	if(Util.glob(((byte[])proxies.elementAt(i)), _host)){
+	  return (Proxy)(proxies.elementAt(i+1));
+	}
       }
     }
     return null;
@@ -166,9 +180,11 @@ public class JSch{
   }
 
   public static void setConfig(java.util.Hashtable foo){
-    for(java.util.Enumeration e=foo.keys() ; e.hasMoreElements() ;) {
-      String key=(String)(e.nextElement());
-      config.put(key, (String)(foo.get(key)));
+    synchronized(config){
+      for(java.util.Enumeration e=foo.keys() ; e.hasMoreElements() ;) {
+	String key=(String)(e.nextElement());
+	config.put(key, (String)(foo.get(key)));
+      }
     }
   }
 }

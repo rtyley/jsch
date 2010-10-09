@@ -66,6 +66,11 @@ public class ChannelExec extends ChannelSession{
     io.setInputStream(session.in);
     io.setOutputStream(session.out);
   }
+  public void finalize() throws java.lang.Throwable{
+    ((Thread)thread).interrupt();
+    thread=null;
+    super.finalize();
+  }
   public void run(){
 //System.out.println(this+":run >");
     thread=this;
@@ -74,10 +79,16 @@ public class ChannelExec extends ChannelSession{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null && io!=null && io.in!=null){
+      while(isConnected() &&
+	    thread!=null && 
+	    io!=null && 
+	    io.in!=null){
         i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
 	if(i==0)continue;
-	if(i==-1)break;
+	if(i==-1){
+	  eof();
+	  break;
+	}
 	if(close)break;
         packet.reset();
         buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);

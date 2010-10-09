@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.18";
+  static private final String version="JSCH-0.1.19";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -103,6 +103,8 @@ public class Session implements Runnable{
 
   private boolean isConnected=false;
 
+  private Thread connectThread=null;
+
   InputStream in=null;
   OutputStream out=null;
 
@@ -154,7 +156,11 @@ public class Session implements Runnable{
 
       if(proxy==null){
 	proxy=jsch.getProxy(host);
-	if(proxy!=null)proxy.close();
+	if(proxy!=null){
+	  synchronized(proxy){
+	    proxy.close();
+	  }
+	}
       }
 
       if(proxy==null){
@@ -170,27 +176,47 @@ public class Session implements Runnable{
 	    final Exception[] ee=new Exception[1];
 	    final boolean[] done=new boolean[1];
 	    done[0]=false;
-	    new Thread(new Runnable(){
+	    String message="";
+	    Thread tmp=new Thread(new Runnable(){
 		public void run(){
 		  try{
 		    sockp[0]=new Socket(host, port);
-		    if(done[0]) sockp[0].close();
+		    if(done[0]){ 
+		      if(sockp[0]!=null){
+			sockp[0].close();
+			sockp[0]=null;
+		      }
+		    }
 		    else thread.interrupt();
 		  }
 		  catch(Exception e){
 		    ee[0]=e;
 		    thread.interrupt();
+		    if(sockp[0]!=null){
+		      try{
+			sockp[0].close();
+			sockp[0]=null;
+		      }catch(Exception eee){}
+		    }
 		  }
 		}
-	      }).start();
-	    try{ Thread.sleep(connectTimeout); }
-	    catch(java.lang.InterruptedException eee){}
+	      });
+	    tmp.start();
+	    try{ 
+	      Thread.sleep(connectTimeout); 
+	      message="timeout: ";
+	    }
+	    catch(java.lang.InterruptedException eee){
+	      tmp.interrupt();
+	      tmp=null;
+	      System.gc();
+	    }
 	    done[0]=true;
 	    if(sockp[0]!=null){
 	      socket=sockp[0];
 	    }
 	    else{
-              String message="socket is not established";
+	      message+="socket is not established";
 	      if(ee[0]!=null){
 		message=ee[0].toString();
 	      }
@@ -213,9 +239,11 @@ public class Session implements Runnable{
         io.setOutputStream(out);
       }
       else{
-        proxy.connect(this, host, port);
-        io.setInputStream(proxy.getInputStream());
-        io.setOutputStream(proxy.getOutputStream());
+	synchronized(proxy){
+	  proxy.connect(this, host, port);
+	  io.setInputStream(proxy.getInputStream());
+	  io.setOutputStream(proxy.getOutputStream());
+	}
       }
 
       isConnected=true;
@@ -244,7 +272,14 @@ public class Session implements Runnable{
       V_S=new byte[i]; System.arraycopy(buf.buffer, 0, V_S, 0, i);
       //System.out.println("V_S: ("+i+") ["+new String(V_S)+"]");
 
-      io.put(V_C, 0, V_C.length); io.put("\n".getBytes(), 0, 1);
+      //io.put(V_C, 0, V_C.length); io.put("\n".getBytes(), 0, 1);
+      {
+	// Some Cisco devices will miss to read '\n' if it is sent separately.
+	byte[] foo=new byte[V_C.length+1];
+	System.arraycopy(V_C, 0, foo, 0, V_C.length);
+	foo[foo.length-1]=(byte)'\n';
+	io.put(foo, 0, foo.length);
+      }
 
       buf=read(buf);
       //System.out.println("read: 20 ? "+buf.buffer[5]);
@@ -272,6 +307,8 @@ public class Session implements Runnable{
       }
 
       checkHost(host, kex);
+
+send_newkeys();
 
       // receive SSH_MSG_NEWKEYS(21)
       buf=read(buf);
@@ -308,8 +345,10 @@ public class Session implements Runnable{
 	  UserAuth us=null;
 	  if(methods.startsWith("publickey")){
 //System.out.println("   jsch.identities.size()="+jsch.identities.size());
-	    if(jsch.identities.size()>0){
-	      us=new UserAuthPublicKey(userinfo);
+	    synchronized(jsch.identities){
+	      if(jsch.identities.size()>0){
+		us=new UserAuthPublicKey(userinfo);
+	      }
 	    }
 	  }
 	  else if(methods.startsWith("keyboard-interactive")){
@@ -352,7 +391,8 @@ public class Session implements Runnable{
       }
 
       if(auth){
-	(new Thread(this)).start();
+	connectThread=new Thread(this);
+	connectThread.start();
 	return;
       }
       if(auth_cancel)
@@ -455,7 +495,9 @@ System.out.println(e);
     // string    languages_server_to_client
     packet.reset();
     buf.putByte((byte) SSH_MSG_KEXINIT);
-    random.fill(buf.buffer, buf.index, 16); buf.skip(16);
+    synchronized(random){
+      random.fill(buf.buffer, buf.index, 16); buf.skip(16);
+    }
     buf.putString(getConfig("kex").getBytes());
     buf.putString(getConfig("server_host_key").getBytes());
     buf.putString(getConfig("cipher.c2s").getBytes());
@@ -495,10 +537,16 @@ System.out.println(e);
     hostkey=new HostKey(host, K_S);
 
     HostKeyRepository hkr=jsch.getHostKeyRepository();
-    int i=hkr.check(host, K_S);
+    int i=0;
+    synchronized(hkr){
+      i=hkr.check(host, K_S);
+    }
     if((shkc.equals("ask") || shkc.equals("yes")) &&
-       i==KnownHosts.CHANGED){
-      String file=hkr.getKnownHostsRepositoryID();
+       i==HostKeyRepository.CHANGED){
+      String file=null;
+      synchronized(hkr){
+	file=hkr.getKnownHostsRepositoryID();
+      }
       if(file==null){file="known_hosts";}
       String message=
 "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
@@ -520,7 +568,7 @@ System.out.println(e);
     boolean insert=false;
  
     if((shkc.equals("ask") || shkc.equals("yes")) &&
-       i!=KnownHosts.OK){
+       i!=HostKeyRepository.OK){
       if(shkc.equals("yes")){
 	throw new JSchException("reject HostKey");
       }
@@ -537,54 +585,20 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	insert=true;
       }
       else{
-	if(i==KnownHosts.NOT_INCLUDED) 
+	if(i==HostKeyRepository.NOT_INCLUDED) 
 	  throw new JSchException("UnknownHostKey");
 	else throw new JSchException("HostKey has been changed.");
       }
     }
 
-    if(shkc.equals("no") && i==KnownHosts.NOT_INCLUDED){
+    if(shkc.equals("no") && 
+       HostKeyRepository.NOT_INCLUDED==i){
       insert=true;
     }
 
     if(insert){
-      hkr.add(host, K_S);
-      String bar=hkr.getKnownHostsRepositoryID();
-      if(bar!=null){
-	if(hkr instanceof KnownHosts){
-	  boolean foo=true;
-	  File goo=new File(bar);
-	  if(!goo.exists()){
-	    foo=false;
-	    if(userinfo!=null){
-	      foo=userinfo.promptYesNo(
-bar+" does not exist.\n"+
-"Are you sure you want to create it?"
-                                    );
-	      goo=goo.getParentFile();
-	      if(foo && goo!=null && !goo.exists()){
-		foo=userinfo.promptYesNo(
-"The parent directory "+goo+" does not exist.\n"+
-"Are you sure you want to create it?"
-);
-		if(foo){
-		  if(!goo.mkdirs()){
-		    userinfo.showMessage(goo+" has not been created.");
-		    foo=false;
-		  }
-		  else{
-		    userinfo.showMessage(goo+" has been succesfully created.\nPlease check its access permission.");
-		  }
-		}
-	      }
-	      if(goo==null)foo=false;
-	    }
-	  }
-	  if(foo){
-	    try{ ((KnownHosts)hkr).sync(bar); }
-	    catch(Exception e){ System.out.println("sync known_hosts: "+e); }
-	  }
-	}
+      synchronized(hkr){
+	hkr.add(host, K_S, userinfo);
       }
     }
 
@@ -622,7 +636,9 @@ bar+" does not exist.\n"+
     byte[] mac=null;
     if(c2scipher!=null){
       int pad=packet.buffer.buffer[4];
-      random.fill(packet.buffer.buffer, packet.buffer.index-pad, pad);
+      synchronized(random){
+	random.fill(packet.buffer.buffer, packet.buffer.index-pad, pad);
+      }
     }
     if(c2smac!=null){
       c2smac.update(seqo);
@@ -684,7 +700,7 @@ bar+" does not exist.\n"+
       }
 
       int type=buf.buffer[5]&0xff;
-      //System.out.println("read: "+type);
+//System.out.println("read: "+type);
       if(type==SSH_MSG_DISCONNECT){
         buf.rewind();
         buf.getInt();buf.getShort();
@@ -740,7 +756,7 @@ bar+" does not exist.\n"+
   }
 
   private void receive_newkeys(Buffer buf, KeyExchange kex) throws Exception {
-    send_newkeys();
+//    send_newkeys();
     in_kex=false;
     updateKeys(kex);
   }
@@ -813,7 +829,6 @@ bar+" does not exist.\n"+
 	Es2c=bar;
       }
       s2ccipher.init(Cipher.DECRYPT_MODE, Es2c, IVs2c);
-
       c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_MAC_ALGS_STOC]));
       s2cmac=(MAC)(c.newInstance());
       s2cmac.init(MACs2c);
@@ -925,7 +940,8 @@ bar+" does not exist.\n"+
     KeyExchange kex=null;
 
     try{
-      while(thread!=null){
+      while(isConnected &&
+	    thread!=null){
         buf=read(buf);
 	int msgType=buf.buffer[5]&0xff;
 //      if(msgType!=94)
@@ -947,6 +963,7 @@ System.out.println("KEXINIT");
 
 	case SSH_MSG_NEWKEYS:
 System.out.println("NEWKEYS");
+send_newkeys();
 	  receive_newkeys(buf, kex);
 	  kex=null;
 	  break;
@@ -1024,6 +1041,7 @@ break;
           i=buf.getInt(); 
 	  channel=Channel.getChannel(i, this);
 	  if(channel!=null){
+	    channel.eof_remote=true;
 	    channel.eof();
 	  }
 	  /*
@@ -1073,7 +1091,7 @@ break;
 	  //foo=buf.getString();  // language tag 
 	  channel.exitstatus=reason_code;
 	  channel.close=true;
-	  channel.eof=true;
+	  channel.eof_remote=true;
 	  channel.setRecipient(0);
 	  break;
 	case SSH_MSG_CHANNEL_REQUEST:
@@ -1187,6 +1205,11 @@ break;
     isConnected=false;
   }
 
+  public void finalize() throws Throwable{
+    disconnect();
+    jsch=null;
+  }
+
   public void disconnect(){
     if(!isConnected) return;
     isConnected=false;
@@ -1208,6 +1231,10 @@ break;
     PortWatcher.delPort(this);
     ChannelForwardedTCPIP.delPort(this);
 
+    connectThread.interrupt();
+    connectThread.yield();
+    connectThread=null;
+
     thread=null;
     try{
       if(io!=null){
@@ -1219,7 +1246,9 @@ break;
 	  socket.close();
       }
       else{
-        proxy.close();	  
+	synchronized(proxy){
+	  proxy.close();	  
+	}
 	proxy=null;
       }
     }
@@ -1228,7 +1257,10 @@ break;
     }
     io=null;
     socket=null;
-    jsch.pool.removeElement(this);
+    synchronized(jsch.pool){
+      jsch.pool.removeElement(this);
+    }
+    System.gc();
   }
 
   public void setPortForwardingL(int lport, String host, int rport) throws JSchException{
@@ -1338,6 +1370,15 @@ setConfig((java.util.Hashtable)foo);
   public void setClientVersion(String cv){
     V_C=cv.getBytes();
   }
+
+  public void sendIgnore() throws Exception{
+    Buffer buf=new Buffer();
+    Packet packet=new Packet(buf);
+    packet.reset();
+    buf.putByte((byte)SSH_MSG_IGNORE);
+    write(packet);
+  }
+  
   private HostKey hostkey=null;
   public HostKey getHostKey(){ return hostkey; }
 }

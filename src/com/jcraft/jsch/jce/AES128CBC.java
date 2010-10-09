@@ -27,65 +27,46 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package com.jcraft.jsch;
+package com.jcraft.jsch.jce;
 
-import java.io.*;
+import com.jcraft.jsch.Cipher;
+import javax.crypto.*;
+import javax.crypto.spec.*;
 
-public class IO{
-  InputStream in;
-  OutputStream out;
-  OutputStream out_ext;
-
-  void setOutputStream(OutputStream out){
-    this.out=out;
-  }
-  void setExtOutputStream(OutputStream out){
-    this.out_ext=out;
-  }
-  void setInputStream(InputStream in){
-    this.in=in;
-  }
-  public void put(Packet p) throws IOException, java.net.SocketException {
-    out.write(p.buffer.buffer, 0, p.buffer.index);
-    out.flush();
-  }
-  void put(byte[] array, int begin, int length) throws IOException {
-    out.write(array, begin, length);
-    out.flush();
-  }
-  void put_ext(byte[] array, int begin, int length) throws IOException {
-    out_ext.write(array, begin, length);
-    out_ext.flush();
-  }
-
-  int getByte() throws IOException {
-    return in.read()&0xff;
-  }
-
-  void getByte(byte[] array) throws IOException {
-    getByte(array, 0, array.length);
-  }
-
-  void getByte(byte[] array, int begin, int length) throws IOException {
-    do{
-      int completed = in.read(array, begin, length);
-      if(completed<=0){
-	throw new IOException("");
-      }
-      begin+=completed;
-      length-=completed;
+public class AES128CBC implements Cipher{
+  private static final int ivsize=16;
+  private static final int bsize=16;
+  private javax.crypto.Cipher cipher;    
+  public int getIVSize(){return ivsize;} 
+  public int getBlockSize(){return bsize;}
+  public void init(int mode, byte[] key, byte[] iv) throws Exception{
+    String pad="NoPadding";      
+    byte[] tmp;
+    if(iv.length>ivsize){
+      tmp=new byte[ivsize];
+      System.arraycopy(iv, 0, tmp, 0, tmp.length);
+      iv=tmp;
     }
-    while (length>0);
-  }
+    if(key.length>bsize){
+      tmp=new byte[bsize];
+      System.arraycopy(key, 0, tmp, 0, tmp.length);
+      key=tmp;
+    }
 
-  public void finalize() throws Throwable{
     try{
-      if(in!=null) in.close();
+      SecretKeySpec keyspec=new SecretKeySpec(key, "AES");
+      cipher=javax.crypto.Cipher.getInstance("AES/CBC/"+pad);
+      cipher.init((mode==ENCRYPT_MODE?
+		   javax.crypto.Cipher.ENCRYPT_MODE:
+		   javax.crypto.Cipher.DECRYPT_MODE),
+		  keyspec, new IvParameterSpec(iv));
     }
-    catch(Exception ee){}
-    try{
-      if(out!=null) out.close();
+    catch(Exception e){
+      //System.out.println(e);
+      cipher=null;
     }
-    catch(Exception ee){}
+  }
+  public void update(byte[] foo, int s1, int len, byte[] bar, int s2) throws Exception{
+    cipher.update(foo, s1, len, bar, s2);
   }
 }

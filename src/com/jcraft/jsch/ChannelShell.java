@@ -33,6 +33,7 @@ import java.net.*;
 
 public class ChannelShell extends ChannelSession{
   boolean xforwading=false;
+  private Thread currentThread=null;
   /*
   ChannelShell(){
     super();
@@ -57,7 +58,15 @@ public class ChannelShell extends ChannelSession{
     }
     catch(Exception e){
     }
-    (new Thread(this)).start();
+    currentThread=new Thread(this);
+    currentThread.start();
+  }
+  public void finalize() throws Throwable{
+    if(currentThread!=null){
+      currentThread.interrupt();
+      currentThread=null;
+    }
+    super.finalize();
   }
   public void init(){
     io.setInputStream(session.in);
@@ -69,10 +78,16 @@ public class ChannelShell extends ChannelSession{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null && io!=null && io.in!=null){
+      while(isConnected() &&
+	    thread!=null && 
+	    io!=null && 
+	    io.in!=null){
         i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
 	if(i==0)continue;
-	if(i==-1)break;
+	if(i==-1){
+	  eof();
+	  break;
+	}
 	if(close)break;
         packet.reset();
         buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);

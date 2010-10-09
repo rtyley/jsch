@@ -65,14 +65,18 @@ public abstract class Channel implements Runnable{
     return null;
   }
   static Channel getChannel(int id, Session session){
-    for(int i=0; i<pool.size(); i++){
-      Channel c=(Channel)(pool.elementAt(i));
-      if(c.id==id && c.session==session) return c;
+    synchronized(pool){
+      for(int i=0; i<pool.size(); i++){
+	Channel c=(Channel)(pool.elementAt(i));
+	if(c.id==id && c.session==session) return c;
+      }
     }
     return null;
   }
   static void del(Channel c){
-    pool.removeElement(c);
+    synchronized(pool){
+      pool.removeElement(c);
+    }
   }
 
   int id;
@@ -88,7 +92,10 @@ public abstract class Channel implements Runnable{
   IO io=null;    
   Runnable thread=null;
 
-  boolean eof=false;
+//  boolean eof=false;
+  boolean eof_local=false;
+  boolean eof_remote=false;
+
   boolean close=false;
 
   int exitstatus=-1;
@@ -98,8 +105,10 @@ public abstract class Channel implements Runnable{
   Session session;
 
   Channel(){
-    id=index++;
-    pool.addElement(this);
+    synchronized(pool){
+      id=index++;
+      pool.addElement(this);
+    }
   }
   void setRecipient(int foo){
     this.recipient=foo;
@@ -112,7 +121,7 @@ public abstract class Channel implements Runnable{
   }
 
   public void connect() throws JSchException{
-    if(!session.isConnected()){
+    if(!isConnected()){
       throw new JSchException("session is down");
     }
     try{
@@ -157,7 +166,7 @@ public abstract class Channel implements Runnable{
 
   public void start() throws JSchException{}
 
-  public boolean isEOF() {return eof;}
+  public boolean isEOF() {return eof_remote;}
 
   void getData(Buffer buf){
     setRecipient(buf.getInt());
@@ -204,12 +213,12 @@ public abstract class Channel implements Runnable{
     write(foo, 0, foo.length);
   }
   void write(byte[] foo, int s, int l) throws IOException {
-    if(eof)return;
+    //if(eof_remote)return;
     if(io.out!=null)
       io.put(foo, s, l);
   }
   void write_ext(byte[] foo, int s, int l) throws IOException {
-    if(eof)return;
+    //if(eof_remote)return;
     if(io.out_ext!=null)
       io.put_ext(foo, s, l);
   }
@@ -217,8 +226,8 @@ public abstract class Channel implements Runnable{
   void eof(){
 //System.out.println("EOF!!!! "+this);
 //Thread.dumpStack();
-    if(eof)return;
-    eof=true;
+    if(eof_local)return;
+    eof_local=true;
     //close=eof;
     try{
       Buffer buf=new Buffer(100);
@@ -231,6 +240,9 @@ public abstract class Channel implements Runnable{
     catch(Exception e){
       //System.out.println("Channel.eof");
       //e.printStackTrace();
+    }
+    if(!isConnected()){
+      disconnect();
     }
   }
 
@@ -251,15 +263,32 @@ public abstract class Channel implements Runnable{
     }
   }
   static void eof(Session session){
-    for(int i=0; i<pool.size(); i++){
-      try{
-        Channel c=((Channel)(pool.elementAt(i)));
-	if(c.session==session) c.eof();
-      }
-      catch(Exception e){
-      }
-    } 
+    Channel[] channels=null;
+    int count=0;
+    synchronized(pool){
+      channels=new Channel[pool.size()];
+      for(int i=0; i<pool.size(); i++){
+	try{
+	  Channel c=((Channel)(pool.elementAt(i)));
+	  if(c.session==session){
+	    channels[count++]=c;
+	  }
+	}
+	catch(Exception e){
+	}
+      } 
+    }
+    for(int i=0; i<count; i++){
+      channels[i].eof();
+    }
   }
+
+  public void finalize() throws Throwable{
+    disconnect();
+    super.finalize();
+    session=null;
+  }
+
   public void disconnect(){
 //System.out.println(this+":disconnect "+((ChannelExec)this).command+" "+io.in);
 //System.out.println(this+":disconnect "+io+" "+io.in);
@@ -292,6 +321,13 @@ public abstract class Channel implements Runnable{
 //System.out.println("$2");
     io=null;
     Channel.del(this);
+  }
+
+  public boolean isConnected(){
+    if(this.session!=null){
+      return session.isConnected();
+    }
+    return false;
   }
 
   public void sendSignal(String foo) throws Exception {

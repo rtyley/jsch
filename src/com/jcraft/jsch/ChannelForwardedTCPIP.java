@@ -76,6 +76,7 @@ class ChannelForwardedTCPIP extends Channel{
 		     -16 -20 // padding and mac
 		     );
 	if(i<=0){
+	  eof();
           break;
 	}
         packet.reset();
@@ -220,13 +221,19 @@ class ChannelForwardedTCPIP extends Channel{
     }
   }
   static void delPort(Session session){
-    for(int i=0; i<pool.size(); i++){
-      Object[] bar=(Object[])(pool.elementAt(i));
-      if(bar[0]==session) {
-        pool.removeElement(bar);
-	i--;
+    int[] rport=null;
+    int count=0;
+    synchronized(pool){
+      rport=new int[pool.size()];
+      for(int i=0; i<pool.size(); i++){
+	Object[] bar=(Object[])(pool.elementAt(i));
+	if(bar[0]==session) {
+	  rport[count++]=((Integer)bar[1]).intValue();
+	}
       }
     }
+    for(int i=0; i<count; i++){
+      delPort(session, rport[i]);
+    }
   }
-
 }

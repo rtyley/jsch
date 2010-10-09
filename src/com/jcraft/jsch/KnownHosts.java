@@ -150,7 +150,7 @@ loop:
 	HostKey hk = new HostKey(host, type, 
 				 Util.fromBase64(key.getBytes(), 0, 
 						 key.length()));
-        pool.addElement(hk);
+	pool.addElement(hk);
       }
       fis.close();
       if(error){
@@ -192,7 +192,7 @@ loop:
     //System.out.println("fail!!");
     return result;
   }
-  public void add(String host, byte[] key){
+  public void add(String host, byte[] key, UserInfo userinfo){
     HostKey hk;
     int type=getType(key);
     for(int i=0; i<pool.size(); i++){
@@ -213,7 +213,47 @@ loop:
     }
     hk=new HostKey(host, type, key);
     pool.addElement(hk);
+
+    String bar=getKnownHostsRepositoryID();
+    if(userinfo!=null && 
+       bar!=null){
+      boolean foo=true;
+      File goo=new File(bar);
+      if(!goo.exists()){
+	foo=false;
+	if(userinfo!=null){
+	  foo=userinfo.promptYesNo(
+bar+" does not exist.\n"+
+"Are you sure you want to create it?"
+                                    );
+	  goo=goo.getParentFile();
+	  if(foo && goo!=null && !goo.exists()){
+	    foo=userinfo.promptYesNo(
+"The parent directory "+goo+" does not exist.\n"+
+"Are you sure you want to create it?"
+);
+	    if(foo){
+	      if(!goo.mkdirs()){
+		userinfo.showMessage(goo+" has not been created.");
+		foo=false;
+	      }
+	      else{
+		userinfo.showMessage(goo+" has been succesfully created.\nPlease check its access permission.");
+	      }
+	    }
+	  }
+	  if(goo==null)foo=false;
+	}
+      }
+      if(foo){
+	try{ 
+	  sync(bar); 
+	}
+	catch(Exception e){ System.out.println("sync known_hosts: "+e); }
+      }
+    }
   }
+
   public HostKey[] getHostKey(){
     return getHostKey(null, null);
   }
@@ -264,11 +304,11 @@ loop:
     }
   }
 
-  void sync() throws IOException { 
+  private void sync() throws IOException { 
     if(known_hosts!=null)
       sync(known_hosts); 
   }
-  void sync(String foo) throws IOException {
+  private void sync(String foo) throws IOException {
     if(foo==null) return;
     FileOutputStream fos=new FileOutputStream(foo);
     dump(fos);

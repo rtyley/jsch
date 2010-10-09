@@ -45,16 +45,26 @@ class ChannelSession extends Channel{
   }
   */
 
+//  public void finalize() throws Throwable{
+//    super.finalize();
+//  }
+
   public void run(){
     thread=this;
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null && io!=null && io.in!=null){
+      while(isConnected() &&
+	    thread!=null && 
+	    io!=null && 
+	    io.in!=null){
         i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
 	if(i==0)continue;
-	if(i==-1)break;
+	if(i==-1){
+	  eof();
+	  break;
+	}
         packet.reset();
         buf.putByte((byte) Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);

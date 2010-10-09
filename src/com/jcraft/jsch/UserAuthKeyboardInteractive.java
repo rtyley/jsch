@@ -40,7 +40,10 @@ class UserAuthKeyboardInteractive extends UserAuth{
     Packet packet=session.packet;
     Buffer buf=session.buf;
     final String username=session.username;
-    String dest=username+"@"+session.host+((session.port==22) ? ""  : new Integer(session.port).toString());
+    String dest=username+"@"+session.host;
+    if(session.port!=22){
+      dest+=(":"+session.port);
+    }
 
     boolean cancel=false;
 
@@ -94,7 +97,9 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  catch(java.io.UnsupportedEncodingException e){
 	    message=new String(_message);
 	  }
-	  userinfo.showMessage(message);
+	  if(userinfo!=null){
+	    userinfo.showMessage(message);
+	  }
 	  continue loop;
 	}
 	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
@@ -134,13 +139,19 @@ class UserAuthKeyboardInteractive extends UserAuth{
 //System.out.println("  "+prompt[i]+","+echo[i]);
 	  }
 
-	  UIKeyboardInteractive kbi=(UIKeyboardInteractive)userinfo;
-	  String[] response=
-	    kbi.promptKeyboardInteractive(dest,
-					  name,
-					  instruction,
-					  prompt,
-					  echo);
+	  String[] response=null;
+	  if(num>0
+	     ||(name.length()>0 || instruction.length()>0)
+	     ){
+	    UIKeyboardInteractive kbi=(UIKeyboardInteractive)userinfo;
+	    if(userinfo!=null){
+	    response=kbi.promptKeyboardInteractive(dest,
+						   name,
+						   instruction,
+						   prompt,
+						   echo);
+	    }
+	  }
 	  // byte      SSH_MSG_USERAUTH_INFO_RESPONSE(61)
 	  // int       num-responses
 	  // string    response[1] (ISO-10646 UTF-8)
@@ -152,8 +163,9 @@ class UserAuthKeyboardInteractive extends UserAuth{
 //System.out.println("response is null");
 	  packet.reset();
 	  buf.putByte((byte)Session.SSH_MSG_USERAUTH_INFO_RESPONSE);
-	  if(response==null ||  // cancel
-	     num!=response.length){
+	  if(num>0 &&
+	     (response==null ||  // cancel
+	      num!=response.length)){
 	    buf.putInt(0);
 	    if(response==null)
 	      cancel=true;

@@ -66,11 +66,14 @@ class ChannelX11 extends Channel{
   static void setHost(String foo){ host=foo; }
   static void setPort(int foo){ port=foo; }
   static byte[] getFakedCookie(Session session){
-    byte[] foo=(byte[])faked_cookie_hex_pool.get(session);
-    if(foo==null){
-      Random random=session.random;
-      foo=new byte[16];
-      random.fill(foo, 0, 16);
+    synchronized(faked_cookie_hex_pool){
+      byte[] foo=(byte[])faked_cookie_hex_pool.get(session);
+      if(foo==null){
+	Random random=session.random;
+	foo=new byte[16];
+	synchronized(random){
+	  random.fill(foo, 0, 16);
+	}
 /*
 System.out.print("faked_cookie: ");
 for(int i=0; i<foo.length; i++){
@@ -78,16 +81,17 @@ for(int i=0; i<foo.length; i++){
 }
 System.out.println("");
 */
-      faked_cookie_pool.put(session, foo);
-      byte[] bar=new byte[32];
-      for(int i=0; i<16; i++){
-         bar[2*i]=table[(foo[i]>>>4)&0xf];
-         bar[2*i+1]=table[(foo[i])&0xf];
+	faked_cookie_pool.put(session, foo);
+	byte[] bar=new byte[32];
+	for(int i=0; i<16; i++){
+	  bar[2*i]=table[(foo[i]>>>4)&0xf];
+	  bar[2*i+1]=table[(foo[i])&0xf];
+	}
+	faked_cookie_hex_pool.put(session, bar);
+	foo=bar;
       }
-      faked_cookie_hex_pool.put(session, bar);
-      foo=bar;
+      return foo;
     }
-    return foo;
   }
 
   Socket socket = null;
@@ -124,6 +128,7 @@ System.out.println("");
 		     -16 -20 // padding and mac
 		     );
 	if(i<=0){
+	  eof();
           break;
 	}
 	if(close)break;
@@ -142,7 +147,7 @@ System.out.println("");
   }
 
   void write(byte[] foo, int s, int l) throws java.io.IOException {
-    if(eof)return;
+    //if(eof_local)return;
 
     if(init){
       int plen=(foo[s+6]&0xff)*256+(foo[s+7]&0xff);

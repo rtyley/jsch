@@ -29,8 +29,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-//import com.jcraft.jsch.*;
-
 public class DHGEX extends KeyExchange{
 
   static final int SSH_MSG_KEX_DH_GEX_GROUP=               31;

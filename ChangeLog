@@ -1,7 +1,29 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Thu Oct 28 17:00:13 UTC 2004
+Last modified: Thu Jan 13 20:36:13 JST 2005
 
+	
+Changes since version 0.1.18:		
+- fixed problems related to thread-safety.
+  Thanks to Eric Meek at cs dot utk dot edu.
+- At the lost of the network connectivity to the remote SSHD,  clients 
+  connected to the local port were never made aware of the
+  disconnection.  FIXED.
+- fixed confusions in handling EOFs from local input stream and 
+  the input stream for remote process.
+- 'com.jcraft.jsch.jce.AES128CBC' is added, but it is not be functional in
+  this release.  It will work in the next release.
+- Some sshd(Foxit-WAC-Serve) waits for SSH_MSG_NEWKEYS request before
+  sending it. FIXED.	
+- fixed a problem in connecting to Cisco Devices.	
+  Thanks to Jason Jeffords at comcast dot net.
+- changed the method 'add' of 'HostKeyRepository' interface.
+- 'UIKeyborarInteracetive' will ignore empty prompt by sshd.
+- added 'sendIgnore()' method to 'Session' class.
+- added '-p' for scp command in 'examples/ScpTo.java' to preserve
+  modification times, access times, and modes from the original file.
+
+	
 Changes since version 0.1.17:		
 - added 'com.jcraft.jsch.HostKeyRepository' interface.
   It will allow you to handle host keys in your own repository
