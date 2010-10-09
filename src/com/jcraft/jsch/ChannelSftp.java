@@ -149,6 +149,9 @@ public class ChannelSftp extends ChannelSubsystem{
    o  Implementation changes, no actual protocol changes.
 */
 
+  private static final String file_separator=java.io.File.separator;
+  private static final char file_separatorc=java.io.File.separatorChar;
+
   private String cwd;
   private String home;
   private String lcwd;
@@ -211,8 +214,8 @@ public class ChannelSftp extends ChannelSubsystem{
       str=buf.getString();         // logname
 //    SftpATTRS.getATTR(buf);           // attrs
 
-      lcwd=new File(".").getAbsolutePath();
-
+      //lcwd=new File(".").getAbsolutePath();
+      lcwd=new File(".").getCanonicalPath();
     }
     catch(Exception e){
       //System.out.println(e);
@@ -222,8 +225,14 @@ public class ChannelSftp extends ChannelSubsystem{
   public void quit(){ disconnect();}
   public void exit(){ disconnect();}
   public void lcd(String path) throws SftpException{
-    if(!path.startsWith("/")){ path=lcwd+"/"+path; }
+//    if(!path.startsWith("/")){ path=lcwd+file_separator+path; }
+    if(!isLocalAbsolutePath(path)){ path=lcwd+file_separator+path; }
     if((new File(path)).isDirectory()){
+      try{
+	//path=(new File(path)).getAbsolutePath();
+	path=(new File(path)).getCanonicalPath();
+      }
+      catch(Exception e){}
       lcwd=path;
       return;
     }
@@ -292,8 +301,10 @@ public class ChannelSftp extends ChannelSubsystem{
   }
   public void put(String src, String dst, 
 		  SftpProgressMonitor monitor) throws SftpException{
-    if(!src.startsWith("/")){ src=lcwd+"/"+src; } 
+//    if(!src.startsWith("/")){ src=lcwd+file_separator+src; } 
+    if(!isLocalAbsolutePath(src)){ src=lcwd+file_separator+src; } 
     if(!dst.startsWith("/")){ dst=cwd+"/"+dst; }
+//System.out.println("src: "+src+", "+dst);
     try{
       Vector v=glob_remote(dst);
       if(v.size()!=1){
@@ -304,6 +315,7 @@ public class ChannelSftp extends ChannelSubsystem{
       boolean isRemoteDir=isRemoteDir(dst);
 
       v=glob_local(src);
+//System.out.println("glob_local: "+v+" dst="+dst);
       for(int j=0; j<v.size(); j++){
 	String _src=(String)(v.elementAt(j));
 	String _dst=dst;
@@ -311,7 +323,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	  if(!_dst.endsWith("/")){
 	    _dst+="/";
 	  }
-	  int i=_src.lastIndexOf('/');
+	  int i=_src.lastIndexOf(file_separatorc);
 	  if(i==-1) _dst+=_src;
 	  else _dst+=_src.substring(i+1);
 	}
@@ -449,15 +461,16 @@ public class ChannelSftp extends ChannelSubsystem{
   public void get(String src, String dst,
 		  SftpProgressMonitor monitor) throws SftpException{
     if(!src.startsWith("/")){ src=cwd+"/"+src; } 
-    if(!dst.startsWith("/")){ dst=lcwd+"/"+dst; } 
+//    if(!dst.startsWith("/")){ dst=lcwd+file_separator+dst; } 
+    if(!isLocalAbsolutePath(dst)){ dst=lcwd+file_separator+dst; } 
     try{
       Vector v=glob_remote(src);
       for(int j=0; j<v.size(); j++){
 	String _dst=dst;
 	String _src=(String)(v.elementAt(j));
 	if((new File(_dst)).isDirectory()){
-	  if(!_dst.endsWith("/")){
-	    _dst+="/";
+	  if(!_dst.endsWith(file_separator)){
+	    _dst+=file_separator;
 	  }
 	  int i=_src.lastIndexOf('/');
 	  if(i==-1) _dst+=src;
@@ -1267,21 +1280,23 @@ public class ChannelSftp extends ChannelSubsystem{
     int i=path.length-1;
     while(i>=0){if(path[i]=='*' || path[i]=='?')break;i--;}
     if(i<0){ v.addElement(_path); return v;}
-    while(i>=0){if(path[i]=='/')break;i--;}
+    while(i>=0){if(path[i]==file_separatorc)break;i--;}
     if(i<0){ v.addElement(_path); return v;}
     byte[] dir;
-    if(i==0){dir=new byte[]{(byte)'/'};}
+    if(i==0){dir=new byte[]{(byte)file_separatorc};}
     else{ 
       dir=new byte[i];
       System.arraycopy(path, 0, dir, 0, i);
     }
     byte[] pattern=new byte[path.length-i-1];
     System.arraycopy(path, i+1, pattern, 0, pattern.length);
+//System.out.println("dir: "+dir+" pattern: "+pattern);
     try{
       String[] children=(new File(new String(dir))).list();
       for(int j=0; j<children.length; j++){
+//System.out.println("children: "+children[j]);
 	if(glob(pattern, children[j].getBytes())){
-	  v.addElement(new String(dir)+"/"+children[j]);
+	  v.addElement(new String(dir)+file_separator+children[j]);
 	}
       }
     }
@@ -1350,6 +1365,10 @@ public class ChannelSftp extends ChannelSubsystem{
     else{
       throw new SftpException(i, "Failure");
     }
+  }
+
+  private static boolean isLocalAbsolutePath(String path){
+    return (new File(path)).isAbsolute();
   }
 
   /*

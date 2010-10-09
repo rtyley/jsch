@@ -1,8 +1,17 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Apr  1 10:51:20 UTC 2003
+Last modified: Wed Apr 30 15:44:55 GMT 2003
 
+Changes since version 0.1.4:	
+- fixed a bug in managing local window size.
+  The local window should be consumed by CHANNEL_EXTENDED_DATA packet.
+- checking the availability of the ssh session in opening channels.
+  In some case, ssh session had been freezed.	
+- java.io.File.separator will be refereed in generating local pathname
+  on sftp channel.
+- absolute local pathname will be handled correctly on sftp channel.
 
+	
 Changes since version 0.1.3:	
 - fixed a serious bug, which had leaked resources related to
   ChannelExec.	

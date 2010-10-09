@@ -523,7 +523,7 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
 
   // encode will bin invoked in write with synchronization.
   public void encode(Packet packet) throws Exception{
-    //System.out.println("encode: "+packet.buffer.buffer[5]);
+//System.out.println("encode: "+packet.buffer.buffer[5]);
     if(deflater!=null){
       packet.buffer.index=deflater.compress(packet.buffer.buffer, 
 					    5, packet.buffer.index);
@@ -594,7 +594,7 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
       }
 
       int type=buf.buffer[5]&0xff;
-      //System.out.println("read: "+type);
+//System.out.println("read: "+type);
       if(type==SSH_MSG_DISCONNECT){
         buf.rewind();
         buf.getInt();buf.getShort();
@@ -876,6 +876,19 @@ System.out.println("NEWKEYS");
 	  buf.getInt();                   // data_type_code == 1
 	  foo=buf.getString(start, length);
 	  channel.write(foo, start[0], length[0]);
+//System.out.println("stderr: "+new String(foo, start[0], length[0]));
+
+	  len=length[0];
+	  channel.setLocalWindowSize(channel.lwsize-len);
+ 	  if(channel.lwsize<channel.lwsize_max/2){
+            packet.reset();
+	    buf.putByte((byte)SSH_MSG_CHANNEL_WINDOW_ADJUST);
+	    buf.putInt(channel.getRecipient());
+	    buf.putInt(channel.lwsize_max-channel.lwsize);
+	    write(packet);
+	    channel.setLocalWindowSize(channel.lwsize_max);
+	  }
+
 	  break;
 	case SSH_MSG_CHANNEL_WINDOW_ADJUST:
           buf.getInt(); 
@@ -1005,6 +1018,7 @@ System.out.println("NEWKEYS");
     if(!isConnected) return;
     isConnected=false;
     //System.out.println(this+": disconnect");
+    //Thread.dumpStack();
     /*
     for(int i=0; i<Channel.pool.size(); i++){
       try{

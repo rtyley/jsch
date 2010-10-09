@@ -132,16 +132,23 @@ public abstract class Channel implements Runnable{
       buf.putInt(this.lmpsize);
       session.write(packet);
 
-      try{
-        while(this.getRecipient()==-1){
-          Thread.sleep(500);
-        }
+      int retry=100;
+      while(this.getRecipient()==-1 &&
+	    session.isConnected() &&
+	    retry>0){
+	try{Thread.sleep(500);}catch(Exception ee){}
+	retry--;
       }
-      catch(Exception ee){
+      if(!session.isConnected()){
+	throw new JSchException("session is down");
+      }
+      if(retry==0){
+        throw new JSchException("channel is not opened.");
       }
       start();
     }
     catch(Exception e){
+      if(e instanceof JSchException) throw (JSchException)e;
     }
   }
 
