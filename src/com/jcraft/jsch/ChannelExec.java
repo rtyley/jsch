@@ -67,8 +67,10 @@ public class ChannelExec extends ChannelSession{
     io.setOutputStream(session.out);
   }
   public void run(){
+//System.out.println(this+":run >");
     thread=this;
     Buffer buf=new Buffer();
+//    Buffer buf=new Buffer(lmpsize);
     Packet packet=new Packet(buf);
     int i=0;
     try{
@@ -90,5 +92,6 @@ public class ChannelExec extends ChannelSession{
       //e.printStackTrace();
     }
     thread=null;
+//System.out.println(this+":run <");
   }
 }

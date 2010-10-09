@@ -94,7 +94,9 @@ public class ChannelDirectTCPIP extends Channel{
 
   public void run(){
     thread=this;
-    Buffer buf=new Buffer(rmpsize);
+//System.out.println("rmpsize: "+rmpsize+", lmpsize: "+lmpsize);
+//    Buffer buf=new Buffer(rmpsize);
+    Buffer buf=new Buffer(lmpsize);
     Packet packet=new Packet(buf);
     int i=0;
     try{

@@ -66,7 +66,7 @@ Features
   The unofficial patch for sshd of openssh will be find in the thread
   http://marc.theaimsgroup.com/?l=openssh-unix-dev&m=104295745607575&w=2
 * remote exec.
-* SSH File Transfer Protocol
+* SSH File Transfer Protocol(version 0, 1, 2, 3)
 * packet compression.
   JZlib(http://www.jcraft.com/jzlib/) has been used.
 * JSch is licensed under BSD style license(refer to LICENSE.txt).
@@ -148,6 +148,7 @@ TODO
 * generating RSA, DSA key pairs.
 * re-implementation with java.nio.
 * replacing cipher, hash by JCE with pure Java code.
+* SSH File Transfer Protocol version 4.
 * error handling.
 
 

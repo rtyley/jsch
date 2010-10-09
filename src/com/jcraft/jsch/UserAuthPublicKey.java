@@ -39,9 +39,10 @@ class UserAuthPublicKey extends UserAuth{
   }
 
   public boolean start(Session session) throws Exception{
-    super.start(session);
+    //super.start(session);
 
-    Vector identities=JSch.identities;
+    //Vector identities=JSch.identities;
+    Vector identities=session.jsch.identities;
 
     Packet packet=session.packet;
     Buffer buf=session.buf;
@@ -50,7 +51,7 @@ class UserAuthPublicKey extends UserAuth{
     final String username=session.username;
 
     for(int i=0; i<identities.size(); i++){
-    Identity identity=(Identity)(JSch.identities.elementAt(i));
+    Identity identity=(Identity)(identities.elementAt(i));
     byte[] pubkeyblob=identity.getPublicKeyBlob();
 
     if(pubkeyblob!=null){

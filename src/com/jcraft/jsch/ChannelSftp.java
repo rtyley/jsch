@@ -132,6 +132,23 @@ public class ChannelSftp extends ChannelSubsystem{
   private Packet packet=new Packet(buf);
 
   private String version="3";
+  private int server_version=3;
+/*
+10. Changes from previous protocol versions
+  The SSH File Transfer Protocol has changed over time, before it's
+   standardization.  The following is a description of the incompatible
+   changes between different versions.
+10.1 Changes between versions 3 and 2
+   o  The SSH_FXP_READLINK and SSH_FXP_SYMLINK messages were added.
+   o  The SSH_FXP_EXTENDED and SSH_FXP_EXTENDED_REPLY messages were added.
+   o  The SSH_FXP_STATUS message was changed to include fields `error
+      message' and `language tag'.
+10.2 Changes between versions 2 and 1
+   o  The SSH_FXP_RENAME message was added.
+10.3 Changes between versions 1 and 0
+   o  Implementation changes, no actual protocol changes.
+*/
+
   private String cwd;
   private String home;
   private String lcwd;
@@ -176,6 +193,8 @@ public class ChannelSftp extends ChannelSubsystem{
       i=io.in.read(buf.buffer, 0, buf.buffer.length);
       length=buf.getInt();
       type=buf.getByte();           // 2 -> SSH_FXP_VERSION
+      server_version=buf.getInt();
+//System.out.println("SFTP protocol server-version="+server_version);
 
       // send SSH_FXP_REALPATH
       sendREALPATH(".".getBytes());
@@ -269,6 +288,10 @@ public class ChannelSftp extends ChannelSubsystem{
       s->c STATUS 
   */
   public void put(String src, String dst) throws SftpException{
+    put(src, dst, null);
+  }
+  public void put(String src, String dst, 
+		  SftpProgressMonitor monitor) throws SftpException{
     if(!src.startsWith("/")){ src=lcwd+"/"+src; } 
     if(!dst.startsWith("/")){ dst=cwd+"/"+dst; }
     try{
@@ -277,17 +300,30 @@ public class ChannelSftp extends ChannelSubsystem{
         throw new SftpException(SSH_FX_FAILURE, v.toString());
       }
       dst=(String)(v.elementAt(0));
-      if(isRemoteDir(dst)){
-        if(!dst.endsWith("/")){
-	  dst+="/";
+
+      boolean isRemoteDir=isRemoteDir(dst);
+
+      v=glob_local(src);
+      for(int j=0; j<v.size(); j++){
+	String _src=(String)(v.elementAt(j));
+	String _dst=dst;
+	if(isRemoteDir){
+	  if(!_dst.endsWith("/")){
+	    _dst+="/";
+	  }
+	  int i=_src.lastIndexOf('/');
+	  if(i==-1) _dst+=_src;
+	  else _dst+=_src.substring(i+1);
 	}
-	int i=src.lastIndexOf('/');
-	if(i==-1) dst+=src;
-	else dst+=src.substring(i+1);
+
+        if(monitor!=null){
+ 	  monitor.init(SftpProgressMonitor.PUT, _src, _dst,
+		       (new File(_src)).length());
+        }
+        FileInputStream fis=new FileInputStream(_src);
+        put(fis, _dst, monitor);
+        fis.close();
       }
-      FileInputStream fis=new FileInputStream(src);
-      put(fis, dst);
-      fis.close();
     }
     catch(Exception e){
       if(e instanceof SftpException) throw (SftpException)e;
@@ -295,6 +331,10 @@ public class ChannelSftp extends ChannelSubsystem{
     }
   }
   public void put(InputStream src, String dst) throws SftpException{
+    put(src, dst, null);
+  }
+  public void put(InputStream src, String dst, 
+		  SftpProgressMonitor monitor) throws SftpException{
     try{
       if(!dst.startsWith("/")){ dst=cwd+"/"+dst; } 
       Vector v=glob_remote(dst);
@@ -317,8 +357,7 @@ public class ChannelSftp extends ChannelSubsystem{
       if(type==SSH_FXP_STATUS){
 	buf.getInt();
 	i=buf.getInt();
-	byte[] str=buf.getString();
-	throw new SftpException(i, new String(str));
+	throwStatusError(buf, i);
       }
       buf.getInt();
       byte[] handle=buf.getString();         // filename
@@ -326,6 +365,7 @@ public class ChannelSftp extends ChannelSubsystem{
       byte[] data=new byte[1024];
 
       long offset=0;
+
       while(true){
         i=src.read(data, 0, 1024);
         if(i<=0)break;
@@ -333,7 +373,7 @@ public class ChannelSftp extends ChannelSubsystem{
         offset+=i;
 
         buf.rewind();
-	i=io.in.read(buf.buffer, 0, buf.buffer.length);
+	io.in.read(buf.buffer, 0, buf.buffer.length);
 	length=buf.getInt();
 	type=buf.getByte();
 	if(type!=SSH_FXP_STATUS){ break;}
@@ -341,9 +381,18 @@ public class ChannelSftp extends ChannelSubsystem{
         if(buf.getInt()!=SSH_FX_OK){
           break;
 	}
+
+	if(monitor!=null){
+	  if(!monitor.count(i)){
+	    break;
+	  }
+	}
+
       }
 
       sendCLOSE(handle);
+
+      if(monitor!=null)monitor.end();
 
       buf.rewind();
       i=io.in.read(buf.buffer, 0, buf.buffer.length);
@@ -355,8 +404,7 @@ public class ChannelSftp extends ChannelSubsystem{
       buf.getInt();
       i=buf.getInt();
       if(i==SSH_FX_OK) return;
-      byte[] str=buf.getString();
-      throw new SftpException(i, new String(str));
+      throwStatusError(buf, i);
     }
     catch(Exception e){
       if(e instanceof SftpException) throw (SftpException)e;
@@ -396,6 +444,11 @@ public class ChannelSftp extends ChannelSubsystem{
     }
   }
   public void get(String src, String dst) throws SftpException{
+    get(src, dst, null);
+  }
+  public void get(String src, String dst,
+		  SftpProgressMonitor monitor) throws SftpException{
+    if(!src.startsWith("/")){ src=cwd+"/"+src; } 
     if(!dst.startsWith("/")){ dst=lcwd+"/"+dst; } 
     try{
       Vector v=glob_remote(src);
@@ -410,8 +463,14 @@ public class ChannelSftp extends ChannelSubsystem{
 	  if(i==-1) _dst+=src;
 	  else _dst+=_src.substring(i+1);
 	}
+
+	if(monitor!=null){
+	  SftpATTRS attr=stat(_src);
+	  monitor.init(SftpProgressMonitor.GET, _src, _dst, attr.getSize());
+	}
+
 	FileOutputStream fos=new FileOutputStream(_dst);
-	get(_src, fos);
+	get(_src, fos, monitor);
 	fos.close();
       }
     }
@@ -421,6 +480,10 @@ public class ChannelSftp extends ChannelSubsystem{
     }
   }
   public void get(String src, OutputStream dst) throws SftpException{
+    get(src, dst, null);
+  }
+  public void get(String src, OutputStream dst,
+		  SftpProgressMonitor monitor) throws SftpException{
 //System.out.println("get: "+src+", "+dst);
     try{
       if(!src.startsWith("/")){ src=cwd+"/"+src; } 
@@ -441,8 +504,7 @@ public class ChannelSftp extends ChannelSubsystem{
       if(type==SSH_FXP_STATUS){
 	buf.getInt();
 	i=buf.getInt();
-	byte[] str=buf.getString();
-	throw new SftpException(i, new String(str));
+	throwStatusError(buf, i);
       }
       buf.getInt();
       byte[] handle=buf.getString();         // filename
@@ -467,9 +529,19 @@ public class ChannelSftp extends ChannelSubsystem{
 	data=buf.getString();
         dst.write(data, 0, data.length);
 	dst.flush();
+	if(monitor!=null){
+	  if(!monitor.count(data.length)){
+	    break;
+	  }
+	}
         offset+=data.length;
       }
       sendCLOSE(handle);
+
+      if(monitor!=null){
+	monitor.end();
+      }
+
       buf.rewind();
       i=io.in.read(buf.buffer, 0, buf.buffer.length);
       length=buf.getInt();
@@ -480,8 +552,7 @@ public class ChannelSftp extends ChannelSubsystem{
       buf.getInt();
       i=buf.getInt();
       if(i==SSH_FX_OK) return;
-      byte[] str=buf.getString();
-      throw new SftpException(i, new String(str));
+      throwStatusError(buf, i);
     }
     catch(Exception e){
       if(e instanceof SftpException) throw (SftpException)e;
@@ -547,8 +618,7 @@ public class ChannelSftp extends ChannelSubsystem{
       if(type==SSH_FXP_STATUS){
 	buf.getInt();
 	i=buf.getInt();
-	byte[] str=buf.getString();
-	throw new SftpException(i, new String(str));
+	throwStatusError(buf, i);
       }
       buf.getInt();
       byte[] handle=buf.getString();         // filename
@@ -620,16 +690,20 @@ public class ChannelSftp extends ChannelSubsystem{
       buf.getInt();
       i=buf.getInt();
       if(i==SSH_FX_OK) return v;
-      byte[] str=buf.getString();
-      throw new SftpException(i, new String(str));
+      throwStatusError(buf, i);
     }
     catch(Exception e){
       if(e instanceof SftpException) throw (SftpException)e;
       throw new SftpException(SSH_FX_FAILURE, "");
     }
-//    return null;
+    return null;
   }
   public void symlink(String oldpath, String newpath) throws SftpException{
+    if(server_version<3){
+      throw new SftpException(SSH_FX_FAILURE, 
+			      "The remote sshd is too old to support symlink operation.");
+    }
+
     try{
       if(!oldpath.startsWith("/")){ oldpath=cwd+"/"+oldpath; } 
       if(!newpath.startsWith("/")){ newpath=cwd+"/"+newpath; } 
@@ -651,8 +725,7 @@ public class ChannelSftp extends ChannelSubsystem{
       buf.getInt();
       i=buf.getInt();
       if(i==SSH_FX_OK) return;
-      byte[] str=buf.getString();
-      throw new SftpException(i, new String(str));
+      throwStatusError(buf, i);
     }
     catch(Exception e){
       if(e instanceof SftpException) throw (SftpException)e;
@@ -660,6 +733,10 @@ public class ChannelSftp extends ChannelSubsystem{
     }
   }
   public void rename(String oldpath, String newpath) throws SftpException{
+    if(server_version<2){
+      throw new SftpException(SSH_FX_FAILURE, 
+			      "The remote sshd is too old to support rename operation.");
+    }
     try{
       if(!oldpath.startsWith("/")){ oldpath=cwd+"/"+oldpath; } 
       if(!newpath.startsWith("/")){ newpath=cwd+"/"+newpath; } 
@@ -689,8 +766,7 @@ public class ChannelSftp extends ChannelSubsystem{
       buf.getInt();
       i=buf.getInt();
       if(i==SSH_FX_OK) return;
-      byte[] str=buf.getString();
-      throw new SftpException(i, new String(str));
+      throwStatusError(buf, i);
     }
     catch(Exception e){
       if(e instanceof SftpException) throw (SftpException)e;
@@ -713,9 +789,8 @@ public class ChannelSftp extends ChannelSubsystem{
         }
         buf.getInt();
         i=buf.getInt();
-        if(i!=SSH_FX_OK){
-	  byte[] str=buf.getString();
-	  throw new SftpException(i, new String(str));
+	if(i!=SSH_FX_OK){
+	  throwStatusError(buf, i);
 	}
       }
     }
@@ -771,8 +846,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	buf.getInt();
 	i=buf.getInt();
 	if(i!=SSH_FX_OK){
-	  byte[] str=buf.getString();
-	  throw new SftpException(i, new String(str));
+	  throwStatusError(buf, i);
 	}
       }
     }
@@ -814,8 +888,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	buf.getInt();
 	i=buf.getInt();
 	if(i!=SSH_FX_OK){
-	  byte[] str=buf.getString();
-	  throw new SftpException(i, new String(str));
+	  throwStatusError(buf, i);
 	}
       }
     }
@@ -857,8 +930,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	buf.getInt();
 	i=buf.getInt();
 	if(i!=SSH_FX_OK){
-	  byte[] str=buf.getString();
-	  throw new SftpException(i, new String(str));
+	  throwStatusError(buf, i);
 	}
       }
     }
@@ -885,8 +957,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	buf.getInt();
 	i=buf.getInt();
 	if(i!=SSH_FX_OK){
-	  byte[] str=buf.getString();
-	  throw new SftpException(i, new String(str));
+	  throwStatusError(buf, i);
 	}
       }
     }
@@ -910,8 +981,7 @@ public class ChannelSftp extends ChannelSubsystem{
       buf.getInt();
       i=buf.getInt();
       if(i==SSH_FX_OK) return;
-      byte[] str=buf.getString();
-      throw new SftpException(i, new String(str));
+      throwStatusError(buf, i);
     }
     catch(Exception e){
       if(e instanceof SftpException) throw (SftpException)e;
@@ -931,8 +1001,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	if(type==SSH_FXP_STATUS){
 	  buf.getInt();
 	  i=buf.getInt();
-	  byte[] str=buf.getString();
-	  throw new SftpException(i, new String(str));
+	  throwStatusError(buf, i);
 	}
 	throw new SftpException(SSH_FX_FAILURE, "");
       }
@@ -958,8 +1027,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	if(type==SSH_FXP_STATUS){
 	  buf.getInt();
 	  i=buf.getInt();
-	  byte[] str=buf.getString();
-	  throw new SftpException(i, new String(str));
+	  throwStatusError(buf, i);
 	}
 	throw new SftpException(SSH_FX_FAILURE, "");
       }
@@ -1128,8 +1196,7 @@ public class ChannelSftp extends ChannelSubsystem{
     if(type==SSH_FXP_STATUS){
       buf.getInt();
       i=buf.getInt();
-      byte[] str=buf.getString();
-      throw new SftpException(i, new String(str));
+      throwStatusError(buf, i);
     }
     buf.getInt();
     byte[] handle=buf.getString();         // filename
@@ -1192,13 +1259,48 @@ public class ChannelSftp extends ChannelSubsystem{
 
     return null;
   }
+
+  private Vector glob_local(String _path) throws Exception{
+//System.out.println("glob_local: "+_path);
+    Vector v=new Vector();
+    byte[] path=_path.getBytes();
+    int i=path.length-1;
+    while(i>=0){if(path[i]=='*' || path[i]=='?')break;i--;}
+    if(i<0){ v.addElement(_path); return v;}
+    while(i>=0){if(path[i]=='/')break;i--;}
+    if(i<0){ v.addElement(_path); return v;}
+    byte[] dir;
+    if(i==0){dir=new byte[]{(byte)'/'};}
+    else{ 
+      dir=new byte[i];
+      System.arraycopy(path, 0, dir, 0, i);
+    }
+    byte[] pattern=new byte[path.length-i-1];
+    System.arraycopy(path, i+1, pattern, 0, pattern.length);
+    try{
+      String[] children=(new File(new String(dir))).list();
+      for(int j=0; j<children.length; j++){
+	if(glob(pattern, children[j].getBytes())){
+	  v.addElement(new String(dir)+"/"+children[j]);
+	}
+      }
+    }
+    catch(Exception e){
+    }
+    return v;
+  }
   private boolean glob(byte[] pattern, byte[] name){
+    return glob(pattern, 0, name, 0);
+  }
+  private boolean glob(byte[] pattern, int pattern_index,
+		       byte[] name, int name_index){
+//System.out.println("glob: "+new String(pattern)+", "+new String(name));
     int patternlen=pattern.length;
     if(patternlen==0)
       return false;
     int namelen=name.length;
-    int i=0;
-    int j=0;
+    int i=pattern_index;
+    int j=name_index;
     while(i<patternlen && j<namelen){
       if(pattern[i]=='\\'){
 	if(i+1==patternlen)
@@ -1213,12 +1315,19 @@ public class ChannelSftp extends ChannelSubsystem{
 	i++;
 	byte foo=pattern[i];
 	while(j<namelen){
-	  if(foo==name[j])break;
+	  if(foo==name[j]){
+	    if(glob(pattern, i, name, j)){
+	      return true;
+	    }
+	  }
 	  j++;
 	}
+	return false;
+	/*
 	if(j==namelen) return false;
 	i++; j++;
 	continue;
+	*/
       }
       if(pattern[i]=='?'){
 	i++; j++;
@@ -1231,6 +1340,18 @@ public class ChannelSftp extends ChannelSubsystem{
     if(i==patternlen && j==namelen) return true;
     return false;
   }
+
+  private void throwStatusError(Buffer buf, int i) throws SftpException{
+    if(server_version>=3){
+      byte[] str=buf.getString();
+      //byte[] tag=buf.getString();
+      throw new SftpException(i, new String(str));
+    }
+    else{
+      throw new SftpException(i, "Failure");
+    }
+  }
+
   /*
    * Class: Ssh_exp_name
    *

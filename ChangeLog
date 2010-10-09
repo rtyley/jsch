@@ -3,6 +3,19 @@ ChangeLog of JSch
 Last modified: Tue Apr  1 10:51:20 UTC 2003
 
 
+Changes since version 0.1.3:	
+- fixed a serious bug, which had leaked resources related to
+  ChannelExec.	
+- added the older SFTP protocol(version 0, 1, 2) support.
+- fixed a problem in the authentication step for FSecure's sshd.
+- fixed a bug, which had broken Diffie-Hellman key exchange in some case.
+- implemented the file name globbing for local files on sftp session. 
+- fixed a bug in the file name globbing.
+- added an interface 'SftpProgressMonitor'.
+- modified 'examples/Sftp.java' to demonstrate displaying progress-bar
+  in transferring files. 	 
+	
+	
 Changes since version 0.1.2:	
 - modified 'build.xml' to allow Ant users to compile jsch with debug
   support (i.e. line-number tables) by overriding the property

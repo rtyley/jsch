@@ -215,7 +215,7 @@ public abstract class Channel implements Runnable{
   }
 
   void close(){
-//System.out.println("close!!!!");
+    //System.out.println("close!!!!");
     if(close)return;
     close=true;
     try{
@@ -241,16 +241,19 @@ public abstract class Channel implements Runnable{
     } 
   }
   public void disconnect(){
+//System.out.println(this+":disconnect "+((ChannelExec)this).command+" "+io.in);
     close();
     thread=null;
     try{
       if(io!=null){
 	try{
+	  //System.out.println(" io.in="+io.in);
 	  if(io.in!=null && (io.in instanceof PassiveInputStream))
 	    io.in.close();
 	}
 	catch(Exception ee){}
 	try{
+	  //System.out.println(" io.out="+io.out);
 	  if(io.out!=null && (io.out instanceof PassiveOutputStream))
 	    io.out.close();
 	}
@@ -262,6 +265,7 @@ public abstract class Channel implements Runnable{
     }
     io=null;
     Channel.del(this);
+//System.out.println(this+":bye");
   }
 
   public void sendSignal(String foo) throws Exception {
@@ -283,8 +287,16 @@ public abstract class Channel implements Runnable{
 */
 
   class PassiveInputStream extends PipedInputStream{
+    PipedOutputStream out;
     PassiveInputStream(PipedOutputStream out) throws IOException{
       super(out);
+      this.out=out;
+    }
+    public void close() throws IOException{
+      if(out!=null){
+        this.out.close();
+      }
+      out=null;
     }
   }
   class PassiveOutputStream extends PipedOutputStream{

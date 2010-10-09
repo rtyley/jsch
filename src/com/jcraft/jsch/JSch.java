@@ -34,7 +34,8 @@ public class JSch{
   static{
 //  config.put("kex", "diffie-hellman-group-exchange-sha1");
     config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group-exchange-sha1");
-    config.put("server_host_key", "ssh-rsa,ssh-dss");
+    //config.put("server_host_key", "ssh-rsa,ssh-dss");
+    config.put("server_host_key", "ssh-dss,ssh-rsa");
 //  config.put("cipher.s2c", "blowfish-cbc");
 //  config.put("cipher.c2s", "blowfish-cbc");
     config.put("cipher.s2c", "3des-cbc,blowfish-cbc");
@@ -69,8 +70,8 @@ public class JSch{
 
     config.put("StrictHostKeyChecking",  "ask");
   }
-  private static java.util.Vector pool=new java.util.Vector();
-  static java.util.Vector identities=new java.util.Vector();
+  /*static*/ java.util.Vector pool=new java.util.Vector();
+  /*static*/ java.util.Vector identities=new java.util.Vector();
   private KnownHosts known_hosts=null;
 
   public JSch(){

@@ -182,11 +182,13 @@ public class Sftp{
 	if(cmd.equals("get") || cmd.equals("put")){
 	  if(cmds.size()!=2 && cmds.size()!=3) continue;
 	  String p1=(String)cmds.elementAt(1);
-	  String p2=p1;
+//	  String p2=p1;
+	  String p2=".";
 	  if(cmds.size()==3)p2=(String)cmds.elementAt(2);
 	  try{
-	    if(cmd.equals("get")) c.get(p1, p2);
-	    else c.put(p1, p2);
+	    SftpProgressMonitor monitor=new MyProgressMonitor();
+	    if(cmd.equals("get")){ c.get(p1, p2, monitor); }
+	    else{ c.put(p1, p2, monitor); }
 	  }
 	  catch(SftpException e){
 	    System.out.println(e.message);
@@ -308,6 +310,72 @@ public class Sftp{
     }
     public void showMessage(String message){
       JOptionPane.showMessageDialog(null, message);
+    }
+  }
+
+/*
+  public static class MyProgressMonitor implements com.jcraft.jsch.ProgressMonitor{
+    JProgressBar progressBar;
+    JFrame frame;
+    long count=0;
+    long max=0;
+
+    public void init(String info, long max){
+      this.max=max;
+      if(frame==null){
+        frame=new JFrame();
+	frame.setSize(200, 20);
+        progressBar = new JProgressBar();
+      }
+      count=0;
+
+      frame.setTitle(info);
+      progressBar.setMaximum((int)max);
+      progressBar.setMinimum((int)0);
+      progressBar.setValue((int)count);
+      progressBar.setStringPainted(true);
+
+      JPanel p=new JPanel();
+      p.add(progressBar);
+      frame.getContentPane().add(progressBar);
+      frame.setVisible(true);
+      System.out.println("!info:"+info+", max="+max+" "+progressBar);
+    }
+    public void count(long count){
+      this.count+=count;
+      System.out.println("count: "+count);
+      progressBar.setValue((int)this.count);
+    }
+    public void end(){
+      System.out.println("end");
+      progressBar.setValue((int)this.max);
+      frame.setVisible(false);
+    }
+  }
+*/
+
+  public static class MyProgressMonitor implements SftpProgressMonitor{
+    ProgressMonitor monitor;
+    long count=0;
+    long max=0;
+    public void init(int op, String src, String dest, long max){
+      this.max=max;
+      monitor=new ProgressMonitor(null, 
+				  ((op==SftpProgressMonitor.PUT)? 
+				   "put" : "get")+": "+src, 
+				  "",  0, (int)max);
+      count=0;
+      monitor.setProgress((int)this.count);
+      monitor.setMillisToDecideToPopup(1000);
+    }
+    public boolean count(long count){
+      this.count+=count;
+      monitor.setProgress((int)this.count);
+      monitor.setNote("Completed "+this.count+" out of "+max+".");
+      return !(monitor.isCanceled());
+    }
+    public void end(){
+      monitor.close();
     }
   }
 

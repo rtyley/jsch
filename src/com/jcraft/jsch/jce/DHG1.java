@@ -175,6 +175,7 @@ public class DHG1 extends KeyExchange{
       buf.putMPInt(K);
       byte[] foo=new byte[buf.getLength()];
       buf.getByte(foo);
+
       sha.update(foo, 0, foo.length);
       H=sha.digest();
       // System.out.print("H -> "); dump(H, 0, H.length);

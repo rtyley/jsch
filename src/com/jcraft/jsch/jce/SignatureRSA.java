@@ -77,6 +77,7 @@ public class SignatureRSA implements com.jcraft.jsch.SignatureRSA{
 	((sig[i++]<<8)&0x0000ff00)|((sig[i++])&0x000000ff);
     byte[] tmp=new byte[j]; 
     System.arraycopy(sig, i, tmp, 0, j); sig=tmp;
+//System.out.println("j="+j+" "+Integer.toHexString(sig[0]&0xff));
     return signature.verify(sig);
   }
 }

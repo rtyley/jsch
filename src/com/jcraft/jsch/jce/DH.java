@@ -74,6 +74,12 @@ class DH implements com.jcraft.jsch.DH{
       byte[] mySharedSecret=myKeyAgree.generateSecret();
       K=new BigInteger(mySharedSecret);
       K_array=K.toByteArray();
+
+//System.out.println("K.signum(): "+K.signum()+
+//		   " "+Integer.toHexString(mySharedSecret[0]&0xff)+
+//		   " "+Integer.toHexString(K_array[0]&0xff));
+
+      K_array=mySharedSecret;
     }
     return K_array;
   }

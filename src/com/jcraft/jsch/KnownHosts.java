@@ -98,6 +98,7 @@ loop:
 						 key.length()));
         pool.addElement(hk);
       }
+      fis.close();
     }
     catch(Exception e){
     }

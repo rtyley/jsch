@@ -126,7 +126,6 @@ public class Session implements Runnable{
 
   JSch jsch;
 
-
 //  static{
 //    Class ccc=Channel.class;
 //  }
@@ -458,6 +457,7 @@ System.out.println(e);
       if(shkc.equals("yes")){
 	throw new JSchException("reject HostKey");
       }
+      //System.out.println("finger-print: "+kex.getFingerPrint());
       if(userinfo!=null){
 	boolean foo=userinfo.promptYesNo(
 "The authenticity of host '"+host+"' can't be established.\n"+
@@ -1002,6 +1002,9 @@ System.out.println("NEWKEYS");
   }
 
   public void disconnect(){
+    if(!isConnected) return;
+    isConnected=false;
+    //System.out.println(this+": disconnect");
     /*
     for(int i=0; i<Channel.pool.size(); i++){
       try{
@@ -1021,7 +1024,7 @@ System.out.println("NEWKEYS");
       }
       if(proxy==null){
         if(socket!=null)
-	  socket.close();	  
+	  socket.close();
       }
       else{
         proxy.close();	  
@@ -1033,7 +1036,7 @@ System.out.println("NEWKEYS");
     }
     io=null;
     socket=null;
-//    jsch.pool.removeElement(this);
+    jsch.pool.removeElement(this);
   }
 
   public void setPortForwardingL(int lport, String host, int rport){

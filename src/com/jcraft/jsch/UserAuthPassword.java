@@ -36,8 +36,8 @@ class UserAuthPassword extends UserAuth{
   }
 
   public boolean start(Session session) throws Exception{
-    super.start(session);
-
+//    super.start(session);
+//System.out.println("UserAuthPassword: start");
     Packet packet=session.packet;
     Buffer buf=session.buf;
     final String username=session.username;

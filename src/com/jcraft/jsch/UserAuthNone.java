@@ -38,7 +38,7 @@ class UserAuthNone extends UserAuth{
 
   public boolean start(Session session) throws Exception{
     super.start(session);
-
+    //System.out.println("UserAuthNone: start");
     Packet packet=session.packet;
     Buffer buf=session.buf;
     final String username=session.username;
@@ -61,7 +61,7 @@ class UserAuthNone extends UserAuth{
       // byte      SSH_MSG_USERAUTH_SUCCESS(52)
       // string    service name
       buf=session.read(buf);
-      //System.out.println("read: 52 ? "+    buf.buffer[5]);
+      //System.out.println("UserAuthNone: read: 52 ? "+    buf.buffer[5]);
       if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
 	return true;
       }
