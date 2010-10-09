@@ -30,20 +30,16 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 import java.net.*;
+import java.util.*;
 
 public class ChannelExec extends ChannelSession{
   boolean xforwading=false;
   boolean pty=false;
+  Hashtable env=null;
   String command="";
-  /*
-  ChannelExec(){
-    super();
-    type="session".getBytes();
-    io=new IO();
-  }
-  */
   public void setXForwarding(boolean foo){ xforwading=foo; }
   public void setPty(boolean foo){ pty=foo; }
+  public void setEnv(Hashtable foo){ env=foo; }
   public void start() throws JSchException{
     try{
       Request request;
@@ -56,6 +52,16 @@ public class ChannelExec extends ChannelSession{
       if(pty){
 	request=new RequestPtyReq();
 	request.request(session, this);
+      }
+
+      if(env!=null){
+        for(Enumeration _env=env.keys() ; _env.hasMoreElements() ;) {
+          String name=(String)(_env.nextElement());
+          String value=(String)(env.get(name));
+          request=new RequestEnv();
+          ((RequestEnv)request).setEnv(name, value);
+          request.request(session, this);
+        }
       }
 
       request=new RequestExec(command);

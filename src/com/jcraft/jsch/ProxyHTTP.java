@@ -126,12 +126,28 @@ public class ProxyHTTP implements Proxy{
         throw new IOException("proxy error: "+reason);
       }
 
+      /*
       while(foo>=0){
         foo=in.read(); if(foo!=13) continue;
         foo=in.read(); if(foo!=10) continue;
         foo=in.read(); if(foo!=13) continue;      
         foo=in.read(); if(foo!=10) continue;
         break;
+      }
+      */
+
+      int count=0;
+      while(true){
+        count=0;
+        while(foo>=0){
+          foo=in.read(); if(foo!=13){count++;  continue;}
+          foo=in.read(); if(foo!=10){continue;}
+          break;
+        }
+        if(foo<0){
+          throw new IOException();
+        }
+        if(count==0)break;
       }
     }
     catch(RuntimeException e){

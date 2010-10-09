@@ -39,6 +39,12 @@ public class Shell{
       channel.setInputStream(System.in);
       channel.setOutputStream(System.out);
 
+      /*
+      java.util.Hashtable env=new java.util.Hashtable();
+      env.put("LANG", "ja_JP.eucJP");
+      ((ChannelShell)channel).setEnv(env);
+      */
+
       channel.connect();
     }
     catch(Exception e){

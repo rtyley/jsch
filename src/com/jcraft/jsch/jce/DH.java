@@ -50,7 +50,9 @@ public class DH implements com.jcraft.jsch.DH{
   private KeyAgreement myKeyAgree;
   public void init() throws Exception{
     myKpairGen=KeyPairGenerator.getInstance("DH");
+//    myKpairGen=KeyPairGenerator.getInstance("DiffieHellman");
     myKeyAgree=KeyAgreement.getInstance("DH");
+//    myKeyAgree=KeyAgreement.getInstance("DiffieHellman");
   }
   public byte[] getE() throws Exception{
     if(e==null){

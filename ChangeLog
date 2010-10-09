@@ -1,8 +1,14 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Apr 18 17:32:45 UTC 2006
+Last modified: Thu May  4 02:11:44 UTC 2006
 
-	
+Changes since version 0.1.27:	
+- bugfix: ChannelSftp.localAbsolutePath did not work correctly.      FIXED.
+- bugfix: ChannelSftp.chmod did not work for directory.              FIXED.
+- bugfix: ProxyHTTP had a bug in processing HTTP headers.            FIXED.
+- bugfix: messages before server's version string should be ignored. FIXED.
+- feature: Environment Variable Passing.
+
 Changes since version 0.1.26:
 - bugfix: there was a session crash bug. That occurrence is rare, but 
           depends on the thread scheduling.  FIXED.

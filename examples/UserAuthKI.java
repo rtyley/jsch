@@ -81,6 +81,15 @@ public class UserAuthKI{
                                               String instruction,
                                               String[] prompt,
                                               boolean[] echo){
+      /*
+//System.out.println("promptKeyboardInteractive");
+System.out.println("destination: "+destination);
+System.out.println("name: "+name);
+System.out.println("instruction: "+instruction);
+System.out.println("prompt.length: "+prompt.length);
+System.out.println("prompt: "+prompt[0]);
+      */
+
       panel = new JPanel();
       panel.setLayout(new GridBagLayout());
 

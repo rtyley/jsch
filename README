@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Thu Mar 30 15:36:54 UTC 2006
+Last modified: Thu May  4 02:13:31 UTC 2006
 
 
 Description
@@ -66,6 +66,7 @@ Features
 * signal sending.
   The unofficial patch for sshd of openssh will be find in the thread
   http://marc.theaimsgroup.com/?l=openssh-unix-dev&m=104295745607575&w=2
+* envrironment variable passing.
 * remote exec.
 * generating DSA and RSA key pairs.
 * SSH File Transfer Protocol(version 0, 1, 2, 3)

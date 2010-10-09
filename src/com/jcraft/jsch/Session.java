@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.27";
+  static private final String version="JSCH-0.1.28";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -205,32 +205,40 @@ public class Session implements Runnable{
 
       isConnected=true;
 
-      i=0;
-      j=0;
-      while(i<buf.buffer.length){
-        j=io.getByte();
-	if(j<0)break;
-        buf.buffer[i]=(byte)j; i++; 
-        if(j==10)break;
-      }
-      if(j<0){
-	throw new JSchException("connection is closed by foreign host");
-      }
+      while(true){
+        i=0;
+        j=0;
+        while(i<buf.buffer.length){
+          j=io.getByte();
+          if(j<0)break;
+          buf.buffer[i]=(byte)j; i++; 
+          if(j==10)break;
+        }
+        if(j<0){
+          throw new JSchException("connection is closed by foreign host");
+        }
 
-      if(buf.buffer[i-1]==10){    // 0x0a
-	i--;
-	if(buf.buffer[i-1]==13){  // 0x0d
-	  i--;
-	}
-      }
+        if(buf.buffer[i-1]==10){    // 0x0a
+          i--;
+          if(buf.buffer[i-1]==13){  // 0x0d
+            i--;
+          }
+        }
 
-      if(i==buf.buffer.length ||
-         (i>4 && (buf.buffer[0]!='S'||buf.buffer[1]!='S'||
-                  buf.buffer[2]!='H'||buf.buffer[3]!='-'))||
-	 i<7 ||                                      // SSH-1.99 or SSH-2.0
-	 (buf.buffer[4]=='1' && buf.buffer[6]!='9')  // SSH-1.5
-	 ){
-	throw new JSchException("invalid server's version string");
+        if(i>4 && (i!=buf.buffer.length) &&
+           (buf.buffer[0]!='S'||buf.buffer[1]!='S'||
+            buf.buffer[2]!='H'||buf.buffer[3]!='-')){
+          //System.err.println(new String(buf.buffer, 0, i);
+          continue;
+        }
+
+        if(i==buf.buffer.length ||
+           i<7 ||                                      // SSH-1.99 or SSH-2.0
+           (buf.buffer[4]=='1' && buf.buffer[6]!='9')  // SSH-1.5
+           ){
+          throw new JSchException("invalid server's version string");
+        }
+        break;
       }
 
       V_S=new byte[i]; System.arraycopy(buf.buffer, 0, V_S, 0, i);
@@ -541,10 +549,8 @@ System.out.println(e);
       }
       if(file==null){file="known_hosts";}
       String message=
-"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
-"@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n"+
-"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
-"IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!      \n"+
+"WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!\n"+
+"IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!\n"+
 "Someone could be eavesdropping on you right now (man-in-the-middle attack)!\n"+
 "It is also possible that the "+key_type+" host key has just been changed.\n"+
 "The fingerprint for the "+key_type+" key sent by the remote host is\n"+
@@ -594,7 +600,7 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
       }
       else{
 	if(i==HostKeyRepository.NOT_INCLUDED) 
-	  throw new JSchException("UnknownHostKey: "+host);
+	  throw new JSchException("UnknownHostKey: "+host+". "+key_type+" key fingerprint is "+key_fprint);
 	else throw new JSchException("HostKey has been changed: "+host);
       }
     }
@@ -945,7 +951,9 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
           if(len>length){
             len=length;
           }
-	  s=packet.shift(len, (c2smac!=null ? c2smac.getBlockSize() : 0));
+          if(len!=length){
+            s=packet.shift(len, (c2smac!=null ? c2smac.getBlockSize() : 0));
+          }
 	  command=packet.buffer.buffer[5];
 	  recipient=c.getRecipient();
 	  length-=len;
@@ -955,6 +963,9 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
       }
       if(sendit){
 	_write(packet);
+        if(length==0){
+          return;
+        }
 	packet.unshift(command, recipient, s, length);
 
         synchronized(c){

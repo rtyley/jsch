@@ -1356,6 +1356,7 @@ public class ChannelSftp extends ChannelSession{
 	}
 	buf.getInt();
 	SftpATTRS attr=SftpATTRS.getATTR(buf);
+	attr.setFLAGS(0);
 	attr.setUIDGID(attr.uid, gid); 
 	_setStat(path, attr);
       }
@@ -1385,6 +1386,7 @@ public class ChannelSftp extends ChannelSession{
 	}
 	buf.getInt();
 	SftpATTRS attr=SftpATTRS.getATTR(buf);
+	attr.setFLAGS(0);
 	attr.setUIDGID(uid, attr.gid); 
 	_setStat(path, attr);
       }
@@ -1414,6 +1416,7 @@ public class ChannelSftp extends ChannelSession{
 	}
 	buf.getInt();
 	SftpATTRS attr=SftpATTRS.getATTR(buf);
+	attr.setFLAGS(0);
 	attr.setPERMISSIONS(permissions); 
 	_setStat(path, attr);
       }
@@ -1441,6 +1444,7 @@ public class ChannelSftp extends ChannelSession{
 	}
 	buf.getInt();
 	SftpATTRS attr=SftpATTRS.getATTR(buf);
+	attr.setFLAGS(0);
 	attr.setACMODTIME(attr.getATime(), mtime);
 	_setStat(path, attr);
       }
@@ -1979,8 +1983,8 @@ public class ChannelSftp extends ChannelSession{
 
   private String localAbsolutePath(String path){
     if(isLocalAbsolutePath(path)) return path;
-    if(lcwd.endsWith(file_separator)) return cwd+path;
-    return cwd+file_separator+path;
+    if(lcwd.endsWith(file_separator)) return lcwd+path;
+    return lcwd+file_separator+path;
   }
 
   public class LsEntry {

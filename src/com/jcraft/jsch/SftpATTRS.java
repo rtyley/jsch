@@ -67,10 +67,13 @@ public class SftpATTRS {
   static final int S_IWOTH = 00002; // write by others
   static final int S_IXOTH = 00001; // execute/search by others
 
+  private static final int pmask = 0xFFF;
+
   public String getPermissionsString() {
     StringBuffer buf = new StringBuffer(10);
 
     if(isDir()) buf.append('d');
+    else if(isLink()) buf.append('l');
     else buf.append('-');
 
     if((permissions & S_IRUSR)!=0) buf.append('r');
@@ -121,6 +124,7 @@ public class SftpATTRS {
   public static final int SSH_FILEXFER_ATTR_EXTENDED=     0x80000000;
 
   static final int S_IFDIR=0x4000;
+  static final int S_IFLNK=0xa000;
 
   int flags=0;
   long size;
@@ -204,6 +208,9 @@ public class SftpATTRS {
       }
     }
   }
+  void setFLAGS(int flags){
+    this.flags=flags;
+  }
   public void setSIZE(long size){
     flags|=SSH_FILEXFER_ATTR_SIZE;
     this.size=size;
@@ -220,12 +227,17 @@ public class SftpATTRS {
   }
   public void setPERMISSIONS(int permissions){
     flags|=SSH_FILEXFER_ATTR_PERMISSIONS;
+    permissions=(this.permissions&~pmask)|(permissions&pmask);
     this.permissions=permissions;
   }
 
   public boolean isDir(){
     return ((flags&SSH_FILEXFER_ATTR_PERMISSIONS)!=0 && 
-	    ((permissions&S_IFDIR)!=0));
+	    ((permissions&S_IFDIR)==S_IFDIR));
+  }      
+  public boolean isLink(){
+    return ((flags&SSH_FILEXFER_ATTR_PERMISSIONS)!=0 && 
+	    ((permissions&S_IFLNK)==S_IFLNK));
   }      
   public int getFlags() { return flags; }
   public long getSize() { return size; }
