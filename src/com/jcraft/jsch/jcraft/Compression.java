@@ -126,13 +126,13 @@ public class Compression implements com.jcraft.jsch.Compression {
 	  break;
         case JZlib.Z_BUF_ERROR:
           if(inflated_end>buffer.length-start){
-            byte[] foo=new byte[inflated_end+5];
+            byte[] foo=new byte[inflated_end+start];
             System.arraycopy(buffer, 0, foo, 0, start);
-            System.arraycopy(inflated_buf, 0, foo, 5, inflated_end);
+            System.arraycopy(inflated_buf, 0, foo, start, inflated_end);
 	    buffer=foo;
 	  }
 	  else{
-            System.arraycopy(inflated_buf, 0, buffer, 5, inflated_end);
+            System.arraycopy(inflated_buf, 0, buffer, start, inflated_end);
 	  }
           length[0]=inflated_end;
 	  return buffer;

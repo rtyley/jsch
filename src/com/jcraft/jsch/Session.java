@@ -33,7 +33,7 @@ import java.io.*;
 import java.net.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.31";
+  static private final String version="JSCH-0.1.32";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -420,19 +420,16 @@ public class Session implements Runnable{
           }
 
 	  if(ua!=null){
+            auth_cancel=false;
 	    try{ 
 	      auth=ua.start(this, userinfo); 
-
               if(auth && 
                  JSch.getLogger().isEnabled(Logger.INFO)){
                 JSch.getLogger().log(Logger.INFO, 
                                      "Authentication succeeded ("+method+").");
               }
-
-	      auth_cancel=false;
 	    }
 	    catch(JSchAuthCancelException ee){
-	      //System.err.println(ee);
 	      auth_cancel=true;
 	    }
 	    catch(JSchPartialAuthException ee){
@@ -448,17 +445,19 @@ public class Session implements Runnable{
 	    }
 	    catch(Exception ee){
 	      //System.err.println("ee: "+ee); // SSH_MSG_DISCONNECT: 2 Too many authentication failures
+              break loop;
 	    }
 	  }
 	}
         break;
       }
 
-      if(connectTimeout>0 || timeout>0){
-        socket.setSoTimeout(timeout);
-      }
-
       if(auth){
+
+        if(connectTimeout>0 || timeout>0){
+          socket.setSoTimeout(timeout);
+        }
+
         isAuthed=true;
 	connectThread=new Thread(this);
 	connectThread.setName("Connect thread "+host+" session");
@@ -468,6 +467,7 @@ public class Session implements Runnable{
 	connectThread.start();
 	return;
       }
+
       if(auth_cancel)
 	throw new JSchException("Auth cancel");
       throw new JSchException("Auth fail");
@@ -884,6 +884,15 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	//break;
       }
       else if(type==SSH_MSG_IGNORE){
+      }
+      else if(type==SSH_MSG_UNIMPLEMENTED){
+        buf.rewind();
+        buf.getInt();buf.getShort();
+	int reason_id=buf.getInt();
+        if(JSch.getLogger().isEnabled(Logger.INFO)){
+          JSch.getLogger().log(Logger.INFO, 
+                               "Received SSH_MSG_UNIMPLEMENTED for "+reason_id);
+        }
       }
       else if(type==SSH_MSG_DEBUG){
         buf.rewind();
@@ -1501,13 +1510,13 @@ break;
     //System.gc();
   }
 
-  public void setPortForwardingL(int lport, String host, int rport) throws JSchException{
-    setPortForwardingL("127.0.0.1", lport, host,rport);
+  public int setPortForwardingL(int lport, String host, int rport) throws JSchException{
+    return setPortForwardingL("127.0.0.1", lport, host, rport);
   }
-  public void setPortForwardingL(String boundaddress, int lport, String host, int rport) throws JSchException{
-    setPortForwardingL(boundaddress, lport, host, rport, null);
+  public int setPortForwardingL(String boundaddress, int lport, String host, int rport) throws JSchException{
+    return setPortForwardingL(boundaddress, lport, host, rport, null);
   }
-  public void setPortForwardingL(String boundaddress, int lport, String host, int rport, ServerSocketFactory ssf) throws JSchException{
+  public int setPortForwardingL(String boundaddress, int lport, String host, int rport, ServerSocketFactory ssf) throws JSchException{
     PortWatcher pw=PortWatcher.addPort(this, boundaddress, lport, host, rport, ssf);
     Thread tmp=new Thread(pw);
     tmp.setName("PortWatcher Thread for "+host);
@@ -1515,6 +1524,7 @@ break;
       tmp.setDaemon(daemon_thread);
     }
     tmp.start();
+    return pw.lport;
   }
   public void delPortForwardingL(int lport) throws JSchException{
     delPortForwardingL("127.0.0.1", lport);

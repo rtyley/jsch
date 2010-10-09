@@ -146,6 +146,11 @@ class PortWatcher implements Runnable{
         throw new JSchException(message, (Throwable)e);
       throw new JSchException(message);
     }
+    if(lport==0){
+      int assigned=ss.getLocalPort();
+      if(assigned!=-1)
+        this.lport=assigned;
+    }
   }
 
   public void run(){

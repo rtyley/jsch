@@ -40,6 +40,8 @@ public class ChannelForwardedTCPIP extends Channel{
   static private final int LOCAL_MAXIMUM_PACKET_SIZE=0x4000;
 
   SocketFactory factory=null;
+  private Socket socket=null;
+  private ForwardedTCPIPDaemon daemon=null;
   String target;
   int lport;
   int rport;
@@ -50,28 +52,27 @@ public class ChannelForwardedTCPIP extends Channel{
     setLocalWindowSize(LOCAL_WINDOW_SIZE_MAX);
     setLocalPacketSize(LOCAL_MAXIMUM_PACKET_SIZE);
     io=new IO();
+    connected=true;
   }
 
   void init (){
     try{ 
       if(lport==-1){
         Class c=Class.forName(target);
-        ForwardedTCPIPDaemon daemon=(ForwardedTCPIPDaemon)c.newInstance();
+        daemon=(ForwardedTCPIPDaemon)c.newInstance();
         daemon.setChannel(this);
         Object[] foo=getPort(session, rport);
         daemon.setArg((Object[])foo[3]);
-        connected=true;
         new Thread(daemon).start();
         return;
       }
       else{
-        Socket socket=(factory==null) ? 
+        socket=(factory==null) ? 
           new Socket(target, lport) : 
           factory.createSocket(target, lport);
         socket.setTcpNoDelay(true);
         io.setInputStream(socket.getInputStream());
         io.setOutputStream(socket.getOutputStream());
-        connected=true;
       }
     }
     catch(Exception e){

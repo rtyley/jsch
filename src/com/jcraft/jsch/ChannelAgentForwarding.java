@@ -66,6 +66,7 @@ class ChannelAgentForwarding extends Channel{
     //wbuf=new Buffer(rmpsize);
     //packet=new Packet(wbuf);
     mbuf=new Buffer();
+    connected=true;
   }
 
   void write(byte[] foo, int s, int l) throws java.io.IOException {

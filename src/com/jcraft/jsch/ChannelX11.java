@@ -36,19 +36,24 @@ class ChannelX11 extends Channel{
   static private final int LOCAL_WINDOW_SIZE_MAX=0x20000;
   static private final int LOCAL_MAXIMUM_PACKET_SIZE=0x4000;
 
-  static String host="127.0.0.1";
-  static int port=6000;
+  static private final int TIMEOUT=10*1000;
 
-  boolean init=true;
+  private static String host="127.0.0.1";
+  private static int port=6000;
+
+  private boolean init=true;
 
   static byte[] cookie=null;
-  static byte[] cookie_hex=null;
+  private static byte[] cookie_hex=null;
 
   private static java.util.Hashtable faked_cookie_pool=new java.util.Hashtable();
   private static java.util.Hashtable faked_cookie_hex_pool=new java.util.Hashtable();
 
-  static byte[] table={0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,
-                        0x61,0x62,0x63,0x64,0x65,0x66};
+  private static byte[] table={0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,
+                               0x61,0x62,0x63,0x64,0x65,0x66};
+
+  private Socket socket = null;
+
   static int revtable(byte foo){
     for(int i=0; i<table.length; i++){
       if(table[i]==foo)return i;
@@ -94,7 +99,6 @@ System.err.println("");
     }
   }
 
-  Socket socket = null;
   ChannelX11(){
     super();
 
@@ -103,15 +107,19 @@ System.err.println("");
     setLocalPacketSize(LOCAL_MAXIMUM_PACKET_SIZE);
 
     type="x11".getBytes();
+
+    connected=true;
+
     try{ 
-      socket=new Socket(host, port);
+      //socket=new Socket(host, port);
+      socket=Util.createSocket(host, port, TIMEOUT);
       socket.setTcpNoDelay(true);
       io=new IO();
       io.setInputStream(socket.getInputStream());
       io.setOutputStream(socket.getOutputStream());
     }
     catch(Exception e){
-      System.err.println(e);
+      //System.err.println(e);
     }
   }
 
@@ -121,7 +129,9 @@ System.err.println("");
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null){
+      while(thread!=null &&
+            io!=null &&
+            io.in!=null){
         i=io.in.read(buf.buffer, 
 		     14, 
 		     buf.buffer.length-14
@@ -143,6 +153,7 @@ System.err.println("");
     catch(Exception e){
       //System.err.println(e);
     }
+    disconnect();
   }
 
   private byte[] cache=new byte[0];

@@ -30,6 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 class UserAuthPassword extends UserAuth{
+  private final int SSH_MSG_USERAUTH_PASSWD_CHANGEREQ=60;
 
   public boolean start(Session session, UserInfo userinfo) throws Exception{
     this.userinfo=userinfo;
@@ -43,6 +44,8 @@ class UserAuthPassword extends UserAuth{
     if(session.port!=22){
       dest+=(":"+session.port);
     }
+
+    try{
 
     while(true){
       if(password==null){
@@ -80,8 +83,6 @@ class UserAuthPassword extends UserAuth{
       buf.putString("password".getBytes());
       buf.putByte((byte)0);
       buf.putString(password);
-      Util.bzero(password);
-      password=null;
       session.write(packet);
 
       loop:
@@ -90,7 +91,7 @@ class UserAuthPassword extends UserAuth{
 	// byte      SSH_MSG_USERAUTH_SUCCESS(52)
 	// string    service name
 	buf=session.read(buf);
-        // System.err.println("read: 52 ? "+    buf.buffer[5]);
+        //System.err.println("read: 52 ? "+    buf.buffer[5]);
 	if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
 	  return true;
 	}
@@ -104,6 +105,55 @@ class UserAuthPassword extends UserAuth{
 	  }
 	  continue loop;
 	}
+	if(buf.buffer[5]==SSH_MSG_USERAUTH_PASSWD_CHANGEREQ){
+	  buf.getInt(); buf.getByte(); buf.getByte(); 
+	  byte[] instruction=buf.getString();
+	  byte[] tag=buf.getString();
+	  if(userinfo==null || 
+             !(userinfo instanceof UIKeyboardInteractive)){
+            if(userinfo!=null){
+              userinfo.showMessage("Password must be changed.");
+            }
+            return false;
+          }
+
+          UIKeyboardInteractive kbi=(UIKeyboardInteractive)userinfo;
+          String[] response;
+          String name="Password Change Required";
+          String[] prompt={"New Password: "};
+          boolean[] echo={false};
+          response=kbi.promptKeyboardInteractive(dest,
+                                                 name,
+                                                 new String(instruction),
+                                                 prompt,
+                                                 echo);
+          if(response==null){
+            throw new JSchAuthCancelException("password");
+          }
+
+          byte[] newpassword=response[0].getBytes();
+
+          // send
+          // byte      SSH_MSG_USERAUTH_REQUEST(50)
+          // string    user name
+          // string    service name ("ssh-connection")
+          // string    "password"
+          // boolen    TRUE
+          // string    plaintext old password (ISO-10646 UTF-8)
+          // string    plaintext new password (ISO-10646 UTF-8)
+          packet.reset();
+          buf.putByte((byte)SSH_MSG_USERAUTH_REQUEST);
+          buf.putString(_username);
+          buf.putString("ssh-connection".getBytes());
+          buf.putString("password".getBytes());
+          buf.putByte((byte)1);
+          buf.putString(password);
+          buf.putString(newpassword);
+          Util.bzero(newpassword);
+          response=null;
+          session.write(packet);
+	  continue loop;
+        }
 	if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
 	  buf.getInt(); buf.getByte(); buf.getByte(); 
 	  byte[] foo=buf.getString();
@@ -116,13 +166,27 @@ class UserAuthPassword extends UserAuth{
 	  break;
 	}
 	else{
-//        System.err.println("USERAUTH fail ("+buf.buffer[5]+")");
+          //System.err.println("USERAUTH fail ("+buf.buffer[5]+")");
 //	  throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
 	  return false;
 	}
       }
-      password=null;
+
+      if(password!=null){
+        Util.bzero(password);
+        password=null;
+      }
+
     }
+
+    }
+    finally{
+      if(password!=null){
+        Util.bzero(password);
+        password=null;
+      }
+    }
+
     //throw new JSchException("USERAUTH fail");
     //return false;
   }

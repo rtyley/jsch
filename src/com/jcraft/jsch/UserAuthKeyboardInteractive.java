@@ -71,17 +71,18 @@ class UserAuthKeyboardInteractive extends UserAuth{
       boolean firsttime=true;
       loop:
       while(true){
-	// receive
-	// byte      SSH_MSG_USERAUTH_SUCCESS(52)
-	// string    service name
-	try{  buf=session.read(buf); }
-	catch(JSchException e){
-	  return false;
-	}
-	catch(java.io.IOException e){
-	  return false;
-	}
-	//System.err.println("read: 52 ? "+    buf.buffer[5]);
+//	try{  buf=session.read(buf); }
+//	catch(JSchException e){
+//	  return false;
+//	}
+//	catch(java.io.IOException e){
+//	  return false;
+//	}
+
+        buf=session.read(buf);
+
+        //System.err.println("read: 52 ? "+    buf.buffer[5]);
+
 	if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
 	  return true;
 	}
@@ -111,8 +112,8 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  }
 
 	  if(firsttime){
-	    throw new JSchException("USERAUTH KI is not supported");
-	    //return false;
+	    return false;
+	    //throw new JSchException("USERAUTH KI is not supported");
 	    //cancel=true;  // ??
 	  }
 	  break;
@@ -178,7 +179,18 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  if(num>0 &&
 	     (response==null ||  // cancel
 	      num!=response.length)){
-	    buf.putInt(0);
+
+            if(response==null){  
+              // working around the bug in OpenSSH ;-<
+              buf.putInt(num);
+              for(int i=0; i<num; i++){
+                buf.putString("".getBytes());
+              }
+            }
+            else{
+              buf.putInt(0);
+            }
+
 	    if(response==null)
 	      cancel=true;
 	  }
@@ -190,9 +202,10 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	    }
 	  }
 	  session.write(packet);
+          /*
 	  if(cancel)
 	    break;
-//System.err.println("continue loop");
+          */
 	  continue loop;
 	}
 	//throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");

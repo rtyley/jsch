@@ -1,6 +1,24 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Jan 17 02:38:39 UTC 2007
+Last modified: Wed Mar  7 06:50:37 UTC 2007
+
+	
+Changes since version 0.1.31:			
+- bugfix: remote port forwarding will be hanged at its closing.    FIXED.
+- bugfix: X forwarding channels will be hanged and some resources 
+	  will be leaked whenever they are closed.                 FIXED.
+- bugfix: failed to detect "Connection refused".                   FIXED.
+- bugfix: at the failure for keyboard-interactive auth method, 
+	a session will be terminated.                              FIXED.
+- bugfix: due to the cancel for keyboard-interactive auth method, 
+	a session will be terminated.                              FIXED.
+- feature: Session#setPortForwardingL will return the assigned local
+	TCP port number; TCP port will be assigned dynamically if lport==0.
+- feature: support for SSH_MSG_UNIMPLEMENTED.
+- feature: support for PASSWD_CHANGEREQ. 
+- change: com.jcraft.jsch.jcraft.Compression#uncompress will respect
+	the argument "start".
+- change: "gssapi-with-mic" will choose the default credential.
 
 	
 Changes since version 0.1.30:		
@@ -20,7 +38,6 @@ Changes since version 0.1.30:
 - change: if alias-name is given, non-standard TCP port number will not be
 	  saved in 'known_hosts' file.
 
-	
 Changes since version 0.1.29:		
 - bugfix: ChannelSftp#cd() will not throw an exception even if
 	  a file is given.                                           FIXED.

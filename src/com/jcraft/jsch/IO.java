@@ -70,7 +70,7 @@ public class IO{
   }
 
   int getByte() throws IOException {
-    return in.read()&0xff;
+    return in.read();
   }
 
   void getByte(byte[] array) throws IOException {

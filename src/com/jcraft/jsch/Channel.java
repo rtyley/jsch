@@ -475,20 +475,16 @@ public abstract class Channel implements Runnable{
     }
   }
 
-  /*
-  public void finalize() throws Throwable{
-    disconnect();
-    super.finalize();
-    session=null;
-  }
-  */
-
   public void disconnect(){
-//System.err.println(this+":disconnect "+io+" "+io.in);
-    if(!connected){
-      return;
+    //System.err.println(this+":disconnect "+io+" "+connected);
+    //Thread.dumpStack();
+
+    synchronized(this){
+      if(!connected){
+        return;
+      }
+      connected=false;
     }
-    connected=false;
 
     close();
 
