@@ -21,7 +21,7 @@ public class Compression{
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
-      java.util.Properties config=new java.util.Properties();
+      java.util.Hashtable config=new java.util.Hashtable();
       config.put("compression.s2c", "zlib,none");
       //config.put("compression.c2s", "zlib,none");
       session.setConfig(config);

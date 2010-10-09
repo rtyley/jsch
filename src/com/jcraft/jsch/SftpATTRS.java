@@ -31,7 +31,6 @@ package com.jcraft.jsch;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.text.DateFormat;
 
 /*
   uint32   flags
@@ -106,7 +105,7 @@ public class SftpATTRS {
   }
 
   public String  getAtimeString(){
-    DateFormat locale=new SimpleDateFormat();
+    SimpleDateFormat locale=new SimpleDateFormat();
     return (locale.format(new Date(atime)));
   }
 

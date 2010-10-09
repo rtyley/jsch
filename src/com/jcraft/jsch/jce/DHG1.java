@@ -64,17 +64,17 @@ public class DHG1 extends KeyExchange{
   private int state;
 
   com.jcraft.jsch.DH dh;
-  HASH sha;
+//  HASH sha;
 
-  byte[] K;
-  byte[] H;
+//  byte[] K;
+//  byte[] H;
 
   byte[] V_S;
   byte[] V_C;
   byte[] I_S;
   byte[] I_C;
 
-  byte[] K_S;
+//  byte[] K_S;
 
   byte[] e;
 
@@ -83,6 +83,7 @@ public class DHG1 extends KeyExchange{
 
   public void init(Session session,
 		   byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception{
+    this.session=session;
     this.V_S=V_S;      
     this.V_C=V_C;      
     this.I_S=I_S;      
@@ -121,7 +122,7 @@ public class DHG1 extends KeyExchange{
     state=SSH_MSG_KEXDH_REPLY;
   }
 
-  public boolean next(Session session, Buffer _buf) throws Exception{
+  public boolean next(Buffer _buf) throws Exception{
     int i,j;
 
     switch(state){
@@ -251,34 +252,6 @@ public class DHG1 extends KeyExchange{
     return false;
   }
 
-  public byte[] getK(){ return K; }
-  public byte[] getH(){ return H; }
-  public HASH getHash(){ return sha; }
-  public byte[] getHostKey(){ return K_S; }
-
-  static String[] chars={
-    "0","1","2","3","4","5","6","7","8","9", "a","b","c","d","e","f"
-  };
-  public String getFingerPrint(){
-    try{
-      java.security.MessageDigest md=java.security.MessageDigest.getInstance("MD5");
-      md.update(K_S, 0, K_S.length);
-      byte[] foo=md.digest();
-      StringBuffer sb=new StringBuffer();
-      int bar;
-      for(int i=0; i<foo.length;i++){
-        bar=foo[i]&0xff;
-        sb.append(chars[(bar>>>4)&0xf]);
-        sb.append(chars[(bar)&0xf]);
-        if(i+1<foo.length)
-          sb.append(":");
-      }
-      return sb.toString();
-    }
-    catch(Exception e){
-      return "???";
-    }
-  }
   public String getKeyType(){
     if(type==DSS) return "DSA";
     return "RSA";

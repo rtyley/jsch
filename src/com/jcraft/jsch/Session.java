@@ -112,7 +112,7 @@ public class Session implements Runnable{
 
   SocketFactory socket_factory=null;
 
-  private java.util.Properties config=null;
+  private java.util.Hashtable config=null;
 
   private Proxy proxy=null;
   private UserInfo userinfo;
@@ -133,6 +133,13 @@ public class Session implements Runnable{
   Session(JSch jsch) throws JSchException{
     super();
     this.jsch=jsch;
+    buf=new Buffer();
+    packet=new Packet(buf);
+    io=new IO();
+  }
+
+  public void connect() throws JSchException{    
+
     if(random==null){
       try{
 	Class c=Class.forName(getConfig("random"));
@@ -140,16 +147,16 @@ public class Session implements Runnable{
       }
       catch(Exception e){ System.err.println(e); }
     }
-    buf=new Buffer();
-    packet=new Packet(buf);
-    io=new IO();
     Packet.setRandom(random);
-  }
 
-  public void connect() throws JSchException{    
     try	{
       int i, j;
       int pad=0;
+
+      if(proxy==null){
+	proxy=jsch.getProxy(host);
+	if(proxy!=null)proxy.close();
+      }
 
       if(proxy==null){
         InputStream in;
@@ -242,7 +249,7 @@ public class Session implements Runnable{
       while(true){
 	buf=read(buf);
 	if(kex.getState()==buf.buffer[5]){
-	  result=kex.next(this, buf);
+	  result=kex.next(buf);
 	  if(!result){
 	    //System.out.println("verify: "+result);
 	    throw new JSchException("verify: "+result);
@@ -821,10 +828,10 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
         buf=read(buf);
 	int msgType=buf.buffer[5]&0xff;
 //      if(msgType!=94)
-//        System.out.println("read: 94 ? "+msgType);
+//System.out.println("read: 94 ? "+msgType);
 
 	if(kex!=null && kex.getState()==msgType){
-	  boolean result=kex.next(this, buf);
+	  boolean result=kex.next(buf);
 	  if(!result){
 	    throw new JSchException("verify: "+result);
 	  }
@@ -832,7 +839,6 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
 	}
 
         switch(msgType){
-
 	case SSH_MSG_KEXINIT:
 System.out.println("KEXINIT");
 	  kex=receive_kexinit(buf);
@@ -1029,7 +1035,12 @@ System.out.println("NEWKEYS");
       }
     } 
     */
+
     Channel.eof(this);
+
+    PortWatcher.delPort(this);
+    ChannelForwardedTCPIP.delPort(this);
+
     thread=null;
     try{
       if(io!=null){
@@ -1053,16 +1064,25 @@ System.out.println("NEWKEYS");
     jsch.pool.removeElement(this);
   }
 
-  public void setPortForwardingL(int lport, String host, int rport){
-    PortWatcher pw=new PortWatcher(this, lport, host, rport);
+  public void setPortForwardingL(int lport, String host, int rport) throws JSchException{
+    setPortForwardingL("127.0.0.1", lport, host,rport);
+  }
+  public void setPortForwardingL(String boundaddress, int lport, String host, int rport) throws JSchException{
+    PortWatcher pw=PortWatcher.addPort(this, boundaddress, lport, host, rport);
     (new Thread(pw)).start();
+  }
+  public void delPortForwardingL(int lport) throws JSchException{
+    PortWatcher.delPort(this, lport);
+  }
+  public String[] getPortForwardingL() throws JSchException{
+    return PortWatcher.getPortForwarding(this);
   }
 
   public void setPortForwardingR(int rport, String host, int lport) throws JSchException{
+    ChannelForwardedTCPIP.addPort(this, rport, host, lport);
+
     Buffer buf=new Buffer(100); // ??
     Packet packet=new Packet(buf);
-
-    ChannelForwardedTCPIP.addPort(this, rport, host, lport);
 
     try{
       // byte SSH_MSG_GLOBAL_REQUEST 80
@@ -1082,6 +1102,10 @@ System.out.println("NEWKEYS");
       throw new JSchException(e.toString());
     }
   }
+  public void delPortForwardingR(int rport) throws JSchException{
+    ChannelForwardedTCPIP.delPort(this, rport);
+  }
+
   void addChannel(Channel channel){
     channel.session=this;
   }
@@ -1107,8 +1131,8 @@ System.out.println("NEWKEYS");
   public void setX11Host(String host){ ChannelX11.setHost(host); }
   public void setX11Port(int port){ ChannelX11.setPort(port); }
   public void setX11Cookie(String cookie){ ChannelX11.setCookie(cookie); }
-  public void setConfig(java.util.Properties foo){
-    if(config==null) config=new java.util.Properties();
+  public void setConfig(java.util.Hashtable foo){
+    if(config==null) config=new java.util.Hashtable();
     for(java.util.Enumeration e=foo.keys() ; e.hasMoreElements() ;) {
       String key=(String)(e.nextElement());
       config.put(key, (String)(foo.get(key)));

@@ -32,9 +32,8 @@ package com.jcraft.jsch;
 import java.net.*;
 class ChannelX11 extends Channel{
 
-  int lwsize_max=0x20000;
-  int lwsize=lwsize_max;   // local initial window size
-  int lmpsize=0x4000;      // local maximum packet size
+  static private final int LOCAL_WINDOW_SIZE_MAX=0x20000;
+  static private final int LOCAL_MAXIMUM_PACKET_SIZE=0x4000;
 
   static String host="127.0.0.1";
   static int port=6000;
@@ -94,6 +93,11 @@ System.out.println("");
   Socket socket = null;
   ChannelX11(){
     super();
+
+    setLocalWindowSizeMax(LOCAL_WINDOW_SIZE_MAX);
+    setLocalWindowSize(LOCAL_WINDOW_SIZE_MAX);
+    setLocalPacketSize(LOCAL_MAXIMUM_PACKET_SIZE);
+
     type="x11".getBytes();
     try{ 
       socket=new Socket(host, port);
@@ -152,11 +156,11 @@ System.out.println("");
       else{
 	  // ??
       }
-      byte[]bar=new byte[dlen];
+      byte[] bar=new byte[dlen];
       System.arraycopy(foo, s+12+plen+((-plen)&3), bar, 0, dlen);
       byte[] faked_cookie=(byte[])faked_cookie_pool.get(session);
 
-      if(java.util.Arrays.equals(bar, faked_cookie)){
+      if(equals(bar, faked_cookie)){
         if(cookie!=null)
           System.arraycopy(cookie, 0, foo, s+12+plen+((-plen)&3), dlen);
       }
@@ -195,5 +199,13 @@ System.out.println("");
     }
     io=null;
     Channel.del(this);
+  }
+
+  private static boolean equals(byte[] foo, byte[] bar){
+    if(foo.length!=bar.length)return false;
+    for(int i=0; i<foo.length; i++){
+      if(foo[i]!=bar[i])return false;
+    }
+    return true;
   }
 }

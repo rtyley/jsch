@@ -33,23 +33,76 @@ import java.net.*;
 import java.io.*;
 
 class PortWatcher implements Runnable{
+  private static java.util.Vector pool=new java.util.Vector();
+
   Session session;
   int lport;
   int rport;
   String host;
+  String boundaddress;
   ServerSocket ss;
   Runnable thread;
-  PortWatcher(Session session, int lport, String host, int rport){
+
+  static String[] getPortForwarding(Session session){
+    java.util.Vector foo=new java.util.Vector();
+    for(int i=0; i<pool.size(); i++){
+      PortWatcher p=(PortWatcher)(pool.elementAt(i));
+      if(p.session==session){
+	foo.addElement(p.lport+":"+p.host+":"+p.rport);
+      }
+    }
+    String[] bar=new String[foo.size()];
+    for(int i=0; i<foo.size(); i++){
+      bar[i]=(String)(foo.elementAt(i));
+    }
+    return bar;
+  }
+  static PortWatcher getPort(Session session, int lport){
+    for(int i=0; i<pool.size(); i++){
+      PortWatcher p=(PortWatcher)(pool.elementAt(i));
+      if(p.session==session && p.lport==lport) return p;
+    }
+    return null;
+  }
+  static PortWatcher addPort(Session session, String address, int lport, String host, int rport) throws JSchException{
+    if(getPort(session, lport)!=null){
+      throw new JSchException("PortForwardingL: local port "+lport+" is already registered.");
+    }
+    PortWatcher pw=new PortWatcher(session, address, lport, host, rport);
+    pool.addElement(pw);
+    return pw;
+  }
+  static void delPort(Session session, int lport) throws JSchException{
+    PortWatcher pw=getPort(session, lport);
+    if(pw==null){
+      throw new JSchException("PortForwardingL: local port "+lport+" is not registered.");
+    }
+    pw.delete();
+    pool.removeElement(pw);
+  }
+  static void delPort(Session session){
+    for(java.util.Enumeration e=pool.elements(); e.hasMoreElements();){
+      PortWatcher p=(PortWatcher)(e.nextElement());
+      if(p.session==session) {
+	try{delPort(session, p.lport);}catch(Exception ee){}
+      }
+    }
+  }
+  PortWatcher(Session session, 
+	      String boundaddress, int lport, 
+	      String host, int rport) {
     this.session=session;
+    this.boundaddress=boundaddress;
     this.lport=lport;
     this.host=host;
     this.rport=rport;
     try{
 //    ss=new ServerSocket(port);
-      ss=new ServerSocket(lport, 0, InetAddress.getByName("127.0.0.1"));
+      ss=new ServerSocket(lport, 0, 
+			  InetAddress.getByName(this.boundaddress));
     }
     catch(Exception e){ 
-	System.out.println(e);
+      System.out.println(e);
     }
   }
 
@@ -77,6 +130,13 @@ class PortWatcher implements Runnable{
     }
     catch(Exception e){
       System.out.println("! "+e);
+    }
+  }
+
+  void delete(){
+    thread=null;
+    try{ ss.close(); }
+    catch(Exception e){
     }
   }
 }

@@ -78,7 +78,7 @@ public class Sftp{
 	  }
 	  try{
 	    level=Integer.parseInt((String)cmds.elementAt(1));
-	    java.util.Properties config=new java.util.Properties();
+	    java.util.Hashtable config=new java.util.Hashtable();
 	    if(level==0){
 	      config.put("compression.s2c", "none");
 	      config.put("compression.c2s", "none");

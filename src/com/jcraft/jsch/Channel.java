@@ -183,6 +183,7 @@ public abstract class Channel implements Runnable{
     return out;
   }
 
+  void setLocalWindowSizeMax(int foo){ this.lwsize_max=foo; }
   void setLocalWindowSize(int foo){ this.lwsize=foo; }
   void setLocalPacketSize(int foo){ this.lmpsize=foo; }
   void setRemoteWindowSize(int foo){ this.rwsize=foo; }

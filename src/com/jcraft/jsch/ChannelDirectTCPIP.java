@@ -34,9 +34,8 @@ import java.io.*;
 
 public class ChannelDirectTCPIP extends Channel{
 
-  int lwsize_max=0x20000;
-  int lwsize=lwsize_max;   // local initial window size
-  int lmpsize=0x4000;      // local maximum packet size
+  static private final int LOCAL_WINDOW_SIZE_MAX=0x20000;
+  static private final int LOCAL_MAXIMUM_PACKET_SIZE=0x4000;
 
   String host;
   int port;
@@ -46,6 +45,9 @@ public class ChannelDirectTCPIP extends Channel{
 
   ChannelDirectTCPIP(){
     super();
+    setLocalWindowSizeMax(LOCAL_WINDOW_SIZE_MAX);
+    setLocalWindowSize(LOCAL_WINDOW_SIZE_MAX);
+    setLocalPacketSize(LOCAL_MAXIMUM_PACKET_SIZE);
   }
 
   void init (){
@@ -59,7 +61,7 @@ public class ChannelDirectTCPIP extends Channel{
 
   public void connect(){
     try{
-      Buffer buf=new Buffer(100);
+      Buffer buf=new Buffer(150);
       Packet packet=new Packet(buf);
       // send
       // byte   SSH_MSG_CHANNEL_OPEN(90)

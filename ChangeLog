@@ -1,7 +1,15 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Apr 30 15:44:55 GMT 2003
+Last modified: Wed Aug  6 15:11:34 UTC 2003
 
+	
+Changes since version 0.1.5:	
+- fixed crash bugs in port forwarding.
+- modified to use "ssh-rsa" for key-exchanging by the default.
+- the port forwarding setting can be canceled dynamically.
+- fixed a freeze bug in getting an empty file on sftp channel.
+
+	
 Changes since version 0.1.4:	
 - fixed a bug in managing local window size.
   The local window should be consumed by CHANNEL_EXTENDED_DATA packet.

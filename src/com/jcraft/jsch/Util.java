@@ -97,4 +97,78 @@ class Util{
 
 //    return sun.misc.BASE64Encoder().encode(buf);
   }
+
+  static String[] split(String foo, String split){
+    byte[] buf=foo.getBytes();
+    java.util.Vector bar=new java.util.Vector();
+    int start=0;
+    int index;
+    while(true){
+      index=foo.indexOf(split, start);
+      if(index>=0){
+	bar.addElement(new String(buf, start, index-start));
+	start=index+1;
+	continue;
+      }
+      bar.addElement(new String(buf, start, buf.length-start));
+      break;
+    }
+    String[] result=new String[bar.size()];
+    for(int i=0; i<result.length; i++){
+      result[i]=(String)(bar.elementAt(i));
+    }
+    return result;
+  }
+  static boolean glob(byte[] pattern, byte[] name){
+    return glob(pattern, 0, name, 0);
+  }
+  static private boolean glob(byte[] pattern, int pattern_index,
+			      byte[] name, int name_index){
+//System.out.println("glob: "+new String(pattern)+", "+new String(name));
+    int patternlen=pattern.length;
+    if(patternlen==0)
+      return false;
+    int namelen=name.length;
+    int i=pattern_index;
+    int j=name_index;
+    while(i<patternlen && j<namelen){
+      if(pattern[i]=='\\'){
+	if(i+1==patternlen)
+	  return false;
+	i++;
+	if(pattern[i]!=name[j]) return false;
+	i++; j++;
+	continue;
+      }
+      if(pattern[i]=='*'){
+	if(patternlen==i+1) return true;
+	i++;
+	byte foo=pattern[i];
+	while(j<namelen){
+	  if(foo==name[j]){
+	    if(glob(pattern, i, name, j)){
+	      return true;
+	    }
+	  }
+	  j++;
+	}
+	return false;
+	/*
+	if(j==namelen) return false;
+	i++; j++;
+	continue;
+	*/
+      }
+      if(pattern[i]=='?'){
+	i++; j++;
+	continue;
+      }
+      if(pattern[i]!=name[j]) return false;
+      i++; j++;
+      continue;
+    }
+    if(i==patternlen && j==namelen) return true;
+    return false;
+  }
+
 }

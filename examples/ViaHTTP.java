@@ -32,7 +32,7 @@ public class ViaHTTP{
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
 
-      //java.util.Properties config=new java.util.Properties();
+      //java.util.Hashtable config=new java.util.Hashtable();
       //config.put("compression.s2c", "zlib,non");
       //config.put("compression.c2s", "zlib,none");
       //session.setConfig(config);

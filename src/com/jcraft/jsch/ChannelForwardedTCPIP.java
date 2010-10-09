@@ -34,11 +34,10 @@ import java.io.*;
 
 class ChannelForwardedTCPIP extends Channel{
 
-  static java.util.Vector port_pool=new java.util.Vector();
+  static java.util.Vector pool=new java.util.Vector();
 
-  int lwsize_max=0x20000;
-  int lwsize=lwsize_max;   // local initial window size
-  int lmpsize=0x4000;      // local maximum packet size
+  static private final int LOCAL_WINDOW_SIZE_MAX=0x20000;
+  static private final int LOCAL_MAXIMUM_PACKET_SIZE=0x4000;
 
   String host;
   int lport;
@@ -46,6 +45,9 @@ class ChannelForwardedTCPIP extends Channel{
 
   ChannelForwardedTCPIP(){
     super();
+    setLocalWindowSizeMax(LOCAL_WINDOW_SIZE_MAX);
+    setLocalWindowSize(LOCAL_WINDOW_SIZE_MAX);
+    setLocalPacketSize(LOCAL_MAXIMUM_PACKET_SIZE);
   }
 
   void init (){
@@ -118,9 +120,9 @@ class ChannelForwardedTCPIP extends Channel{
     System.out.println("orgport: "+orgport);
     */
 
-    synchronized(port_pool){
-      for(int i=0; i<port_pool.size(); i++){
-        Object[] foo=(Object[])(port_pool.elementAt(i));
+    synchronized(pool){
+      for(int i=0; i<pool.size(); i++){
+        Object[] foo=(Object[])(pool.elementAt(i));
         if(foo[0]!=session) continue;
         if(((Integer)foo[1]).intValue()!=port) continue;
         this.rport=port;
@@ -133,27 +135,92 @@ class ChannelForwardedTCPIP extends Channel{
       }
     }
   }
-  static void addPort(Session session, int port, String host, int lport){
-    synchronized(port_pool){
+
+  static Object[] getPort(Session session, int rport){
+    synchronized(pool){
+      Object[] foo=null;
+      for(int i=0; i<pool.size(); i++){
+        Object[] bar=(Object[])(pool.elementAt(i));
+        if(bar[0]!=session) continue;
+        if(((Integer)bar[1]).intValue()!=rport) continue;
+	return bar;
+      }
+      return null;
+    }
+  }
+
+  static String[] getPortForwarding(Session session){
+    java.util.Vector foo=new java.util.Vector();
+    synchronized(pool){
+      for(int i=0; i<pool.size(); i++){
+        Object[] bar=(Object[])(pool.elementAt(i));
+        if(bar[0]!=session) continue;
+	foo.addElement(bar[1]+":"+bar[2]+":"+bar[3]);
+      }
+    }
+    String[] bar=new String[foo.size()];
+    for(int i=0; i<foo.size(); i++){
+      bar[i]=(String)(foo.elementAt(i));
+    }
+    return bar;
+  }
+
+  static void addPort(Session session, int port, String host, int lport) throws JSchException{
+    synchronized(pool){
+      if(getPort(session, port)!=null){
+        throw new JSchException("PortForwardingR: remote port "+port+" is already registered.");
+      }
       Object[] foo=new Object[4];
       foo[0]=session; foo[1]=new Integer(port);
       foo[2]=host; foo[3]=new Integer(lport);
-      port_pool.addElement(foo);
+      pool.addElement(foo);
     }
   }
   static void delPort(ChannelForwardedTCPIP c){
-    synchronized(port_pool){
+    delPort(c.session, c.rport);
+  }
+  static void delPort(Session session, int rport){
+    synchronized(pool){
       Object[] foo=null;
-      for(int i=0; i<port_pool.size(); i++){
-        Object[] bar=(Object[])(port_pool.elementAt(i));
-        if(bar[0]!=c.session) continue;
-        if(((Integer)bar[1]).intValue()!=c.rport) continue;
+      for(int i=0; i<pool.size(); i++){
+        Object[] bar=(Object[])(pool.elementAt(i));
+        if(bar[0]!=session) continue;
+        if(((Integer)bar[1]).intValue()!=rport) continue;
         foo=bar;
         break;
       }
-      if(foo!=null){
-        port_pool.removeElement(foo);	
+      if(foo==null)return;
+      pool.removeElement(foo);	
+    }
+
+    Buffer buf=new Buffer(100); // ??
+    Packet packet=new Packet(buf);
+
+    try{
+      // byte SSH_MSG_GLOBAL_REQUEST 80
+      // string "cancel-tcpip-forward"
+      // boolean want_reply
+      // string  address_to_bind (e.g. "127.0.0.1")
+      // uint32  port number to bind
+      packet.reset();
+      buf.putByte((byte) 80/*SSH_MSG_GLOBAL_REQUEST*/);
+      buf.putString("cancel-tcpip-forward".getBytes());
+      buf.putByte((byte)0);
+      buf.putString("0.0.0.0".getBytes());
+      buf.putInt(rport);
+      session.write(packet);
+    }
+    catch(Exception e){
+//    throw new JSchException(e.toString());
+    }
+  }
+  static void delPort(Session session){
+    for(java.util.Enumeration e=pool.elements(); e.hasMoreElements();){
+      Object[] bar=(Object[])(e.nextElement());
+      if(bar[0]==session) {
+        pool.removeElement(bar);	
       }
     }
   }
+
 }

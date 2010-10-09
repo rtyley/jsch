@@ -27,7 +27,7 @@ public class Shell{
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
 
-      //java.util.Properties config=new java.util.Properties();
+      //java.util.Hashtable config=new java.util.Hashtable();
       //config.put("StrictHostKeyChecking", "no");
       //session.setConfig(config);
 

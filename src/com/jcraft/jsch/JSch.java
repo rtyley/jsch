@@ -30,18 +30,14 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 public class JSch{
-  static java.util.Properties config=new java.util.Properties();
+  static java.util.Hashtable config=new java.util.Hashtable();
   static{
 //  config.put("kex", "diffie-hellman-group-exchange-sha1");
     config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group-exchange-sha1");
-    //config.put("server_host_key", "ssh-rsa,ssh-dss");
-    config.put("server_host_key", "ssh-dss,ssh-rsa");
-//  config.put("cipher.s2c", "blowfish-cbc");
-//  config.put("cipher.c2s", "blowfish-cbc");
+    config.put("server_host_key", "ssh-rsa,ssh-dss");
+    //config.put("server_host_key", "ssh-dss,ssh-rsa");
     config.put("cipher.s2c", "3des-cbc,blowfish-cbc");
     config.put("cipher.c2s", "3des-cbc,blowfish-cbc");
-//  config.put("mac.s2c", "hmac-md5");
-//  config.put("mac.c2s", "hmac-md5");
     config.put("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
     config.put("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
     config.put("compression.s2c", "none");
@@ -64,8 +60,8 @@ public class JSch{
     config.put("md5",           "com.jcraft.jsch.jce.MD5");
     config.put("signature.dss", "com.jcraft.jsch.jce.SignatureDSA");
     config.put("signature.rsa", "com.jcraft.jsch.jce.SignatureRSA");
-
     config.put("random",        "com.jcraft.jsch.jce.Random");
+
     config.put("zlib",          "com.jcraft.jsch.jcraft.Compression");
 
     config.put("StrictHostKeyChecking",  "ask");
@@ -77,6 +73,7 @@ public class JSch{
   public JSch(){
     known_hosts=new KnownHosts();
   }
+
   public Session getSession(String username, String host) throws JSchException { return getSession(username, host, 22); }
   public Session getSession(String username, String host, int port) throws JSchException {
     Session s=new Session(this); 
@@ -97,4 +94,40 @@ public class JSch{
     identities.addElement(identity);
   }
   String getConfig(String foo){ return (String)(config.get(foo)); }
+
+  private java.util.Vector proxies;
+  void setProxy(String hosts, Proxy proxy){
+    java.lang.String[] patterns=Util.split(hosts, ",");
+    if(proxies==null){proxies=new java.util.Vector();}
+    for(int i=0; i<patterns.length; i++){
+      if(proxy==null){
+	proxies.insertElementAt(null, 0);
+	proxies.insertElementAt(patterns[i].getBytes(), 0);
+      }
+      else{
+	proxies.addElement(patterns[i].getBytes());
+	proxies.addElement(proxy);
+      }
+    }
+  }
+  Proxy getProxy(String host){
+    if(proxies==null)return null;
+    byte[] _host=host.getBytes();
+    for(int i=0; i<proxies.size(); i+=2){
+      if(Util.glob(((byte[])proxies.elementAt(i)), _host)){
+	return (Proxy)(proxies.elementAt(i+1));
+      }
+    }
+    return null;
+  }
+  void removeProxy(){
+    proxies=null;
+  }
+
+  public static void setConfig(java.util.Hashtable foo){
+    for(java.util.Enumeration e=foo.keys() ; e.hasMoreElements() ;) {
+      String key=(String)(e.nextElement());
+      config.put(key, (String)(foo.get(key)));
+    }
+  }
 }

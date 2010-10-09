@@ -114,7 +114,7 @@ loop:
     for(int i=0; i<pool.size(); i++){
       hk=(HostKey)(pool.elementAt(i));
       if(isIncluded(hk.host, host) && hk.type==type){
-        if(java.util.Arrays.equals(hk.key, key)){
+        if(equals(hk.key, key)){
 	  //System.out.println("find!!");
           return OK;
 	}
@@ -134,7 +134,7 @@ loop:
       hk=(HostKey)(pool.elementAt(i));
       if(isIncluded(hk.host, host) && hk.type==type){
 /*
-        if(java.util.Arrays.equals(hk.key, key)){
+        if(equals(hk.key, key)){
           return;
 	}
         if(hk.host.equals(host)){
@@ -212,10 +212,18 @@ loop:
     return false;
   }
 
-    static final byte[] space={(byte)0x20};
-    static final byte[] sshdss="ssh-dss".getBytes();
-    static final byte[] sshrsa="ssh-rsa".getBytes();
-    static final byte[] cr="\n".getBytes();
+  private static boolean equals(byte[] foo, byte[] bar){
+    if(foo.length!=bar.length)return false;
+    for(int i=0; i<foo.length; i++){
+      if(foo[i]!=bar[i])return false;
+    }
+    return true;
+  }
+
+  static final byte[] space={(byte)0x20};
+  static final byte[] sshdss="ssh-dss".getBytes();
+  static final byte[] sshrsa="ssh-rsa".getBytes();
+  static final byte[] cr="\n".getBytes();
 
   class HostKey{
     String host;

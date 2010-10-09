@@ -62,15 +62,15 @@ public abstract class KeyExchange{
   public static final int STATE_END=0;
 
   public String[] guess=null;
+  protected Session session=null;
+  protected HASH sha=null;
+  protected byte[] K=null;
+  protected byte[] H=null;
+  protected byte[] K_S=null;
 
   public abstract void init(Session session, 
 			    byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception;
-  public abstract boolean next(Session session, Buffer buf) throws Exception;
-  public abstract byte[] getK();
-  public abstract byte[] getH();
-  public abstract HASH getHash();
-  public abstract byte[] getHostKey();
-  public abstract String getFingerPrint();
+  public abstract boolean next(Buffer buf) throws Exception;
   public abstract String getKeyType();
   public abstract int getState();
 
@@ -133,4 +133,42 @@ public abstract class KeyExchange{
 
     return guess;
   }
+
+  public String getFingerPrint(){
+    HASH hash=null;
+    try{
+      Class c=Class.forName(session.getConfig("md5"));
+      hash=(HASH)(c.newInstance());
+    }
+    catch(Exception e){ System.err.println(e); }
+    return getFingerPrint(hash, getHostKey());
+  }
+
+  private static String[] chars={
+    "0","1","2","3","4","5","6","7","8","9", "a","b","c","d","e","f"
+  };
+  private static String getFingerPrint(HASH hash, byte[] data){
+    try{
+      hash.init();
+      hash.update(data, 0, data.length);
+      byte[] foo=hash.digest();
+      StringBuffer sb=new StringBuffer();
+      int bar;
+      for(int i=0; i<foo.length;i++){
+        bar=foo[i]&0xff;
+        sb.append(chars[(bar>>>4)&0xf]);
+        sb.append(chars[(bar)&0xf]);
+        if(i+1<foo.length)
+          sb.append(":");
+      }
+      return sb.toString();
+    }
+    catch(Exception e){
+      return "???";
+    }
+  }
+  byte[] getK(){ return K; }
+  byte[] getH(){ return H; }
+  HASH getHash(){ return sha; }
+  byte[] getHostKey(){ return K_S; }
 }

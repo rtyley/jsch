@@ -534,10 +534,11 @@ public class ChannelSftp extends ChannelSubsystem{
         buf.getInt();
 	if(type!=SSH_FXP_STATUS && type!=SSH_FXP_DATA){ break;}
 	if(type==SSH_FXP_STATUS){
-          if(buf.getInt()==SSH_FX_EOF){
-            break;
-   	  }
-//	  break;
+ 	  i=buf.getInt();
+	  if(i==SSH_FX_EOF){
+ 	    break;
+ 	  }
+ 	  throwStatusError(buf, i);
 	}
 	data=buf.getString();
         dst.write(data, 0, data.length);
@@ -581,12 +582,18 @@ public class ChannelSftp extends ChannelSubsystem{
       }
       src=(String)(v.elementAt(0));
 
-      stat(src);
+      SftpATTRS attr=stat(src);
 
       java.io.PipedInputStream pis=new java.io.PipedInputStream();
       final java.io.PipedOutputStream pos=new java.io.PipedOutputStream(pis);
       final ChannelSftp channel=this;
       final String _src=src;
+
+      if(attr.getSize()<=0){
+        try{ pos.close(); }catch(Exception ee){}
+	return pis;
+      }
+
       new Thread(new Runnable(){
 	  public void run(){
 	    try{ channel.get(_src, pos); }
@@ -683,7 +690,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	  // System.out.println("longname: "+longname);
 
 	  SftpATTRS attrs=SftpATTRS.getATTR(buf);
-	  if(pattern==null || glob(pattern, filename)){
+	  if(pattern==null || Util.glob(pattern, filename)){
   	    v.addElement(longname);
 //	    v.addElement(new Ssh_exp_name(new String(filename), longname, attrs));
 	  }
@@ -1250,7 +1257,7 @@ public class ChannelSftp extends ChannelSubsystem{
 	str=buf.getString();
 	SftpATTRS attrs=SftpATTRS.getATTR(buf);
 
-	if(glob(pattern, filename)){
+	if(Util.glob(pattern, filename)){
 	  v.addElement(new String(dir)+"/"+new String(filename));
 	}
 
@@ -1295,7 +1302,7 @@ public class ChannelSftp extends ChannelSubsystem{
       String[] children=(new File(new String(dir))).list();
       for(int j=0; j<children.length; j++){
 //System.out.println("children: "+children[j]);
-	if(glob(pattern, children[j].getBytes())){
+	if(Util.glob(pattern, children[j].getBytes())){
 	  v.addElement(new String(dir)+file_separator+children[j]);
 	}
       }
@@ -1303,57 +1310,6 @@ public class ChannelSftp extends ChannelSubsystem{
     catch(Exception e){
     }
     return v;
-  }
-  private boolean glob(byte[] pattern, byte[] name){
-    return glob(pattern, 0, name, 0);
-  }
-  private boolean glob(byte[] pattern, int pattern_index,
-		       byte[] name, int name_index){
-//System.out.println("glob: "+new String(pattern)+", "+new String(name));
-    int patternlen=pattern.length;
-    if(patternlen==0)
-      return false;
-    int namelen=name.length;
-    int i=pattern_index;
-    int j=name_index;
-    while(i<patternlen && j<namelen){
-      if(pattern[i]=='\\'){
-	if(i+1==patternlen)
-	  return false;
-	i++;
-	if(pattern[i]!=name[j]) return false;
-	i++; j++;
-	continue;
-      }
-      if(pattern[i]=='*'){
-	if(patternlen==i+1) return true;
-	i++;
-	byte foo=pattern[i];
-	while(j<namelen){
-	  if(foo==name[j]){
-	    if(glob(pattern, i, name, j)){
-	      return true;
-	    }
-	  }
-	  j++;
-	}
-	return false;
-	/*
-	if(j==namelen) return false;
-	i++; j++;
-	continue;
-	*/
-      }
-      if(pattern[i]=='?'){
-	i++; j++;
-	continue;
-      }
-      if(pattern[i]!=name[j]) return false;
-      i++; j++;
-      continue;
-    }
-    if(i==patternlen && j==namelen) return true;
-    return false;
   }
 
   private void throwStatusError(Buffer buf, int i) throws SftpException{

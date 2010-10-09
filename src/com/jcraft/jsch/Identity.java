@@ -261,7 +261,7 @@ class Identity{
 
     }
     catch(Exception e){
-      System.out.println(e);
+      System.out.println("Identity: "+e);
       if(e instanceof JSchException) throw (JSchException)e;
       throw new JSchException(e.toString());
     }
