@@ -108,7 +108,7 @@ class UserAuthPublicKey extends UserAuth{
 	    continue loop1;
 	  }
 	  else{
-	    System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
+	    //System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
 	    //throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
 	    break;
 	  }
@@ -149,6 +149,7 @@ class UserAuthPublicKey extends UserAuth{
       if(pubkeyblob==null) pubkeyblob=identity.getPublicKeyBlob();
 
 //System.out.println("UserAuthPublicKey: pubkeyblob="+pubkeyblob);
+
       if(pubkeyblob==null) continue;
 
       // send
@@ -169,7 +170,7 @@ class UserAuthPublicKey extends UserAuth{
 
 //      byte[] tmp=new byte[buf.index-5];
 //      System.arraycopy(buf.buffer, 5, tmp, 0, tmp.length);
-//      buf.putString(identity.getSignature(session, tmp));
+//      buf.putString(signature);
 
       byte[] sid=session.getSessionId();
       int sidlen=sid.length;
@@ -180,7 +181,12 @@ class UserAuthPublicKey extends UserAuth{
       tmp[3]=(byte)(sidlen);
       System.arraycopy(sid, 0, tmp, 4, sidlen);
       System.arraycopy(buf.buffer, 5, tmp, 4+sidlen, buf.index-5);
-      buf.putString(identity.getSignature(session, tmp));
+
+      byte[] signature=identity.getSignature(session, tmp);
+      if(signature==null){  // for example, too long key length.
+	break;
+      }
+      buf.putString(signature);
 
       session.write(packet);
 
@@ -217,7 +223,7 @@ class UserAuthPublicKey extends UserAuth{
 	  }
 	  break;
 	}
-	System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
+	//System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
 	//throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
 	break;
       }

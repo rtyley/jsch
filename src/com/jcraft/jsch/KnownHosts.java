@@ -32,15 +32,19 @@ package com.jcraft.jsch;
 import java.io.*;
 
 public
-class KnownHosts{
+class KnownHosts implements HostKeyRepository{
   private static final String _known_hosts="known_hosts";
-
+  /*
   static final int OK=0;
   static final int NOT_INCLUDED=1;
   static final int CHANGED=2;
+  */
 
+  /*
   static final int SSHDSS=0;
   static final int SSHRSA=1;
+  static final int UNKNOWN=2;
+  */
 
   private JSch jsch=null;
   private String known_hosts=null;
@@ -64,52 +68,80 @@ class KnownHosts{
   void setKnownHosts(InputStream foo) throws JSchException{
     pool.removeAllElements();
     StringBuffer sb=new StringBuffer();
-    int i;
+    byte i;
+    int j;
     boolean error=false;
     try{
       InputStream fis=foo;
       String host;
-      String key;
+      String key=null;
       int type;
+      byte[] buf=new byte[1024];
+      int bufl=0;
 loop:
       while(true){
-        sb.setLength(0);
+	bufl=0;
         while(true){
-          i=fis.read();
-	  if(i==-1){
-	    if(sb.length()>0)
-	      error=true;
-	    break loop;
+          j=fis.read();
+	  if(j==-1){ break loop;}
+	  if(j==0x0d){ continue; }
+	  if(j==0x0a){ break; }
+          buf[bufl++]=(byte)j;
+	}
+
+	j=0;
+        while(j<bufl){
+          i=buf[j];
+	  if(i==' '||i=='\t'){ j++; continue; }
+	  if(i=='#'){
+	    addInvalidLine(new String(buf, 0, bufl));
+	    continue loop;
 	  }
-          if(i==0x20){
-            host=sb.toString();
-            break;
-	  }
-          sb.append((char)i);
+	  break;
+	}
+	if(j>=bufl){ 
+	  addInvalidLine(new String(buf, 0, bufl));
+	  continue loop; 
 	}
 
         sb.setLength(0);
-        while(true){
-          i=fis.read();
-	  if(i==-1){error=true; break loop; }
-          if(i==0x20){
-            if(sb.toString().equals("ssh-dss")) type=SSHDSS;
-	    else type=SSHRSA;
-            break;
-	  }
+        while(j<bufl){
+          i=buf[j++];
+          if(i==0x20 || i=='\t'){ break; }
           sb.append((char)i);
+	}
+	host=sb.toString();
+	if(j>=bufl || host.length()==0){
+	  addInvalidLine(new String(buf, 0, bufl));
+	  continue loop; 
 	}
 
         sb.setLength(0);
-        while(true){
-          i=fis.read();
-	  if(i==-1){error=true; break loop; }
+	type=-1;
+        while(j<bufl){
+          i=buf[j++];
+          if(i==0x20 || i=='\t'){ break; }
+          sb.append((char)i);
+	}
+	if(sb.toString().equals("ssh-dss")){ type=HostKey.SSHDSS; }
+	else if(sb.toString().equals("ssh-rsa")){ type=HostKey.SSHRSA; }
+	else { j=bufl; }
+	if(j>=bufl){
+	  addInvalidLine(new String(buf, 0, bufl));
+	  continue loop; 
+	}
+
+        sb.setLength(0);
+        while(j<bufl){
+          i=buf[j++];
           if(i==0x0d){ continue; }
-          if(i==0x0a){
-            key=sb.toString();
-            break;
-	  }
+          if(i==0x0a){ break; }
           sb.append((char)i);
+	}
+	key=sb.toString();
+	if(key.length()==0){
+	  addInvalidLine(new String(buf, 0, bufl));
+	  continue loop; 
 	}
 
 	//System.out.println(host);
@@ -132,40 +164,42 @@ loop:
       throw new JSchException(e.toString());
     }
   }
-
+  private void addInvalidLine(String line){
+    HostKey hk = new HostKey(line, HostKey.UNKNOWN, null);
+    pool.addElement(hk);
+  }
   String getKnownHostsFile(){ return known_hosts; }
+  public String getKnownHostsRepositoryID(){ return known_hosts; }
 
-  int check(String host, byte[] key){
+  public int check(String host, byte[] key){
     String foo; 
     byte[] bar;
     HostKey hk;
+    int result=NOT_INCLUDED;
     int type=getType(key);
     for(int i=0; i<pool.size(); i++){
       hk=(HostKey)(pool.elementAt(i));
       if(isIncluded(hk.host, host) && hk.type==type){
-        if(equals(hk.key, key)){
+        if(Util.array_equals(hk.key, key)){
 	  //System.out.println("find!!");
           return OK;
 	}
 	else{
-          return CHANGED;
+          result=CHANGED;
 	}
       }
     }
     //System.out.println("fail!!");
-    return NOT_INCLUDED;
+    return result;
   }
-
-  void insert(String host, byte[] key){
+  public void add(String host, byte[] key){
     HostKey hk;
     int type=getType(key);
     for(int i=0; i<pool.size(); i++){
       hk=(HostKey)(pool.elementAt(i));
       if(isIncluded(hk.host, host) && hk.type==type){
 /*
-        if(equals(hk.key, key)){
-          return;
-	}
+        if(Util.array_equals(hk.key, key)){ return; }
         if(hk.host.equals(host)){
           hk.key=key;
           return;
@@ -180,22 +214,53 @@ loop:
     hk=new HostKey(host, type, key);
     pool.addElement(hk);
   }
-  HostKey[] getHostKeys(){
-    HostKey[] foo=new HostKey[pool.size()];
-    for(int i=0; i<foo.length; i++){
-      foo[i]=(HostKey)pool.elementAt(i);
-    }
-    return foo;
+  public HostKey[] getHostKey(){
+    return getHostKey(null, null);
   }
-  void removeHostKey(String host, String type){
+  public HostKey[] getHostKey(String host, String type){
+    synchronized(pool){
+      int count=0;
+      for(int i=0; i<pool.size(); i++){
+	HostKey hk=(HostKey)pool.elementAt(i);
+	if(hk.type==HostKey.UNKNOWN) continue;
+	if(host==null || 
+	   (isIncluded(hk.host, host) && 
+	    (type==null || hk.getType().equals(type)))){
+	  count++;
+	}
+      }
+      if(count==0)return null;
+      HostKey[] foo=new HostKey[count];
+      int j=0;
+      for(int i=0; i<pool.size(); i++){
+	HostKey hk=(HostKey)pool.elementAt(i);
+	if(hk.type==HostKey.UNKNOWN) continue;
+	if(host==null || 
+	   (isIncluded(hk.host, host) && 
+	    (type==null || hk.getType().equals(type)))){
+	  foo[j++]=hk;
+	}
+      }
+      return foo;
+    }
+  }
+  public void remove(String host, String type){
+    remove(host, type, null);
+  }
+  public void remove(String host, String type, byte[] key){
+    boolean sync=false;
     for(int i=0; i<pool.size(); i++){
       HostKey hk=(HostKey)(pool.elementAt(i));
-      if(hk.getHost().equals(host) && 
-	 hk.getType().equals(type)){
+      if(host==null ||
+	 (hk.getHost().equals(host) && 
+	  (type==null || (hk.getType().equals(type) &&
+			  (key==null || Util.array_equals(key, hk.key)))))){
 	pool.removeElement(hk);
-	try{sync();}catch(Exception e){};
-	return;
+	sync=true;
       }
+    }
+    if(sync){
+      try{sync();}catch(Exception e){};
     }
   }
 
@@ -209,12 +274,28 @@ loop:
     dump(fos);
     fos.close();
   }
+
+  private static final byte[] space={(byte)0x20};
+  private static final byte[] cr="\n".getBytes();
   void dump(OutputStream out) throws IOException {
     try{
       HostKey hk;
       for(int i=0; i<pool.size(); i++){
         hk=(HostKey)(pool.elementAt(i));
-        hk.dump(out);
+        //hk.dump(out);
+	String host=hk.getHost();
+	String type=hk.getType();
+	if(type.equals("UNKNOWN")){
+	  out.write(host.getBytes());
+	  out.write(cr);
+	  continue;
+	}
+	out.write(host.getBytes());
+	out.write(space);
+	out.write(type.getBytes());
+	out.write(space);
+	out.write(hk.getKey().getBytes());
+	out.write(cr);
       }
     }
     catch(Exception e){
@@ -222,8 +303,9 @@ loop:
     }
   }
   private int getType(byte[] key){
-    if(key[8]=='d') return SSHDSS;
-    return SSHRSA;
+    if(key[8]=='d') return HostKey.SSHDSS;
+    if(key[8]=='r') return HostKey.SSHRSA;
+    return HostKey.UNKNOWN;
   }
   private String deleteSubString(String hosts, String host){
     int i=0;
@@ -264,7 +346,7 @@ loop:
     }
     return false;
   }
-
+  /*
   private static boolean equals(byte[] foo, byte[] bar){
     if(foo.length!=bar.length)return false;
     for(int i=0; i<foo.length; i++){
@@ -272,7 +354,9 @@ loop:
     }
     return true;
   }
+  */
 
+  /*
   private static final byte[] space={(byte)0x20};
   private static final byte[] sshdss="ssh-dss".getBytes();
   private static final byte[] sshrsa="ssh-rsa".getBytes();
@@ -286,10 +370,15 @@ loop:
       this.host=host; this.type=type; this.key=key;
     }
     void dump(OutputStream out) throws IOException{
+      if(type==UNKNOWN){
+	out.write(host.getBytes());
+	out.write(cr);
+	return;
+      }
       out.write(host.getBytes());
       out.write(space);
-      if(type==SSHDSS) out.write(sshdss);
-      else out.write(sshrsa);
+      if(type==HostKey.SSHDSS){ out.write(sshdss); }
+      else if(type==HostKey.SSHRSA){ out.write(sshrsa);}
       out.write(space);
       out.write(Util.toBase64(key, 0, key.length));
       out.write(cr);
@@ -297,8 +386,9 @@ loop:
 
     public String getHost(){ return host; }
     public String getType(){
-      if(type==SSHDSS) return new String(sshdss);
-      else  return new String(sshrsa);
+      if(type==SSHDSS){ return new String(sshdss); }
+      if(type==SSHRSA){ return new String(sshrsa);}
+      return "UNKNOWN";
     }
     public String getKey(){
       return new String(Util.toBase64(key, 0, key.length));
@@ -313,4 +403,5 @@ loop:
       return Util.getFingerPrint(hash, key);
     }
   }
+  */
 }

@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.17";
+  static private final String version="JSCH-0.1.18";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -489,10 +489,16 @@ System.out.println(e);
     //System.out.println("shkc: "+shkc);
 
     byte[] K_S=kex.getHostKey();
-    int i=jsch.getKnownHosts().check(host, K_S);
+    String key_type=kex.getKeyType();
+    String key_fprint=kex.getFingerPrint();
+
+    hostkey=new HostKey(host, K_S);
+
+    HostKeyRepository hkr=jsch.getHostKeyRepository();
+    int i=hkr.check(host, K_S);
     if((shkc.equals("ask") || shkc.equals("yes")) &&
        i==KnownHosts.CHANGED){
-      String file=jsch.getKnownHosts().getKnownHostsFile();
+      String file=hkr.getKnownHostsRepositoryID();
       if(file==null){file="known_hosts";}
       String message=
 "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
@@ -500,9 +506,9 @@ System.out.println(e);
 "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
 "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!      \n"+
 "Someone could be eavesdropping on you right now (man-in-the-middle attack)!\n"+
-"It is also possible that the "+kex.getKeyType()+" host key has just been changed.\n"+
-"The fingerprint for the "+kex.getKeyType()+" key sent by the remote host is\n"+
-	  kex.getFingerPrint()+".\n"+
+"It is also possible that the "+key_type+" host key has just been changed.\n"+
+"The fingerprint for the "+key_type+" key sent by the remote host is\n"+
+	  key_fprint+".\n"+
 "Please contact your system administrator.\n"+
 "Add correct host key in "+file+" to get rid of this message.";
       if(userinfo!=null){
@@ -518,11 +524,11 @@ System.out.println(e);
       if(shkc.equals("yes")){
 	throw new JSchException("reject HostKey");
       }
-      //System.out.println("finger-print: "+kex.getFingerPrint());
+      //System.out.println("finger-print: "+key_fprint);
       if(userinfo!=null){
 	boolean foo=userinfo.promptYesNo(
 "The authenticity of host '"+host+"' can't be established.\n"+
-kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
+key_type+" key fingerprint is "+key_fprint+".\n"+
 "Are you sure you want to continue connecting?"
 					 );
 	if(!foo){
@@ -542,40 +548,42 @@ kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
     }
 
     if(insert){
-      jsch.getKnownHosts().insert(host, K_S);
-      String bar=jsch.getKnownHosts().getKnownHostsFile();
+      hkr.add(host, K_S);
+      String bar=hkr.getKnownHostsRepositoryID();
       if(bar!=null){
-	boolean foo=true;
-	File goo=new File(bar);
-	if(!goo.exists()){
-	  foo=false;
-	  if(userinfo!=null){
-	    foo=userinfo.promptYesNo(
+	if(hkr instanceof KnownHosts){
+	  boolean foo=true;
+	  File goo=new File(bar);
+	  if(!goo.exists()){
+	    foo=false;
+	    if(userinfo!=null){
+	      foo=userinfo.promptYesNo(
 bar+" does not exist.\n"+
 "Are you sure you want to create it?"
                                     );
-	    goo=goo.getParentFile();
-	    if(foo && goo!=null && !goo.exists()){
-	      foo=userinfo.promptYesNo(
+	      goo=goo.getParentFile();
+	      if(foo && goo!=null && !goo.exists()){
+		foo=userinfo.promptYesNo(
 "The parent directory "+goo+" does not exist.\n"+
 "Are you sure you want to create it?"
 );
-	      if(foo){
-		if(!goo.mkdirs()){
-		  userinfo.showMessage(goo+" has not been created.");
-		  foo=false;
-		}
-		else{
-		  userinfo.showMessage(goo+" has been succesfully created.\nPlease check its access permission.");
+		if(foo){
+		  if(!goo.mkdirs()){
+		    userinfo.showMessage(goo+" has not been created.");
+		    foo=false;
+		  }
+		  else{
+		    userinfo.showMessage(goo+" has been succesfully created.\nPlease check its access permission.");
+		  }
 		}
 	      }
+	      if(goo==null)foo=false;
 	    }
-	    if(goo==null)foo=false;
 	  }
-	}
-	if(foo){
-	  try{ jsch.getKnownHosts().sync(bar); }
-	  catch(Exception e){ System.out.println("sync known_hosts: "+e); }
+	  if(foo){
+	    try{ ((KnownHosts)hkr).sync(bar); }
+	    catch(Exception e){ System.out.println("sync known_hosts: "+e); }
+	  }
 	}
       }
     }
@@ -1330,4 +1338,6 @@ setConfig((java.util.Hashtable)foo);
   public void setClientVersion(String cv){
     V_C=cv.getBytes();
   }
+  private HostKey hostkey=null;
+  public HostKey getHostKey(){ return hostkey; }
 }

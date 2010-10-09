@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2004 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -27,43 +27,18 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package com.jcraft.jsch.jce;
+package com.jcraft.jsch;
 
-import com.jcraft.jsch.MAC;
-import javax.crypto.*;
-import javax.crypto.spec.*;
+public interface HostKeyRepository{
+  final int OK=0;
+  final int NOT_INCLUDED=1;
+  final int CHANGED=2;
 
-public class HMACMD5 implements MAC{
-  private static final String name="hmac-md5";
-  private static final int bsize=16;
-  private Mac mac;
-  public int getBlockSize(){return bsize;};
-  public void init(byte[] key) throws Exception{
-    if(key.length>bsize){
-      byte[] tmp=new byte[bsize];
-      System.arraycopy(key, 0, tmp, 0, bsize);	  
-      key=tmp;
-    }
-    SecretKeySpec skey=new SecretKeySpec(key, "HmacMD5");
-    mac=Mac.getInstance("HmacMD5");
-    mac.init(skey);
-  } 
-
-  private final byte[] tmp=new byte[4];
-  public void update(int i){
-    tmp[0]=(byte)(i>>>24);
-    tmp[1]=(byte)(i>>>16);
-    tmp[2]=(byte)(i>>>8);
-    tmp[3]=(byte)i;
-    update(tmp, 0, 4);
-  }
-  public void update(byte foo[], int s, int l){
-    mac.update(foo, s, l);      
-  }
-  public byte[] doFinal(){
-    return mac.doFinal();
-  }
-  public String getName(){
-    return name;
-  }
+  int check(String host, byte[] key);
+  void add(String host, byte[] key);
+  void remove(String host, String type);
+  void remove(String host, String type, byte[] key);
+  String getKnownHostsRepositoryID();
+  HostKey[] getHostKey();
+  HostKey[] getHostKey(String host, String type);
 }

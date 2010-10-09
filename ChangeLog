@@ -1,6 +1,18 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Thu Sep  2 18:55:54 UTC 2004
+Last modified: Thu Oct 28 17:00:13 UTC 2004
+
+Changes since version 0.1.17:		
+- added 'com.jcraft.jsch.HostKeyRepository' interface.
+  It will allow you to handle host keys in your own repository
+  (for example, RDB) instead of using 'known_hosts' file.
+- added methods to get the finger-print of host keys.
+  refer to 'examples/KnownHosts.java'.	
+- improved 'known_hosts' file handling.
+  - comment lines will be kept.
+  - SSH1 host keys will be kept.
+  - each hostname can have multiple host keys.	
+- fixed a crash bug in processing private keys which have too long key-bits.
 
 	
 Changes since version 0.1.16:		
@@ -9,7 +21,7 @@ Changes since version 0.1.16:
 - added APIs to handle hostkeys included in 'known_hosts',
      JSch.getHostKeys(),
      JSch.removeHostKey()
-- allowing to set timeout value in oping sockets,
+- allowing to set timeout value in opening sockets,
      Session.connect(int timeout)
 
 	

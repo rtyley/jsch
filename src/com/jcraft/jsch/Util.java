@@ -194,4 +194,11 @@ class Util{
       return "???";
     }
   }
+  static boolean array_equals(byte[] foo, byte bar[]){
+    int i=foo.length;
+    if(i!=bar.length) return false;
+    for(int j=0; j<i; j++){ if(foo[j]!=bar[j]) return false; }
+    //try{while(true){i--; if(foo[i]!=bar[i])return false;}}catch(Exception e){}
+    return true;
+  }
 }

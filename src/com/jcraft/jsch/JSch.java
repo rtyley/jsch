@@ -72,10 +72,11 @@ public class JSch{
   }
   java.util.Vector pool=new java.util.Vector();
   java.util.Vector identities=new java.util.Vector();
-  private KnownHosts known_hosts=null;
+  //private KnownHosts known_hosts=null;
+  private HostKeyRepository known_hosts=null;
 
   public JSch(){
-    known_hosts=new KnownHosts(this);
+    //known_hosts=new KnownHosts(this);
   }
 
   public Session getSession(String username, String host) throws JSchException { return getSession(username, host, 22); }
@@ -87,20 +88,44 @@ public class JSch{
     pool.addElement(s);
     return s;
   }
+  public void setHostKeyRepository(HostKeyRepository foo){
+    known_hosts=foo;
+  }
   public void setKnownHosts(String foo) throws JSchException{
-    known_hosts.setKnownHosts(foo); 
+    if(known_hosts==null) known_hosts=new KnownHosts(this);
+    if(known_hosts instanceof KnownHosts){
+      ((KnownHosts)known_hosts).setKnownHosts(foo); 
+    }
   }
   public void setKnownHosts(InputStream foo) throws JSchException{ 
-    known_hosts.setKnownHosts(foo); 
+    if(known_hosts==null) known_hosts=new KnownHosts(this);
+    if(known_hosts instanceof KnownHosts){
+      ((KnownHosts)known_hosts).setKnownHosts(foo); 
+    }
   }
-  KnownHosts getKnownHosts(){ return known_hosts; }
-
-  public KnownHosts.HostKey[] getHostKeys(){
-    return known_hosts.getHostKeys(); 
+  /*
+  HostKeyRepository getKnownHosts(){ 
+    if(known_hosts==null) known_hosts=new KnownHosts(this);
+    return known_hosts; 
+  }
+  */
+  public HostKeyRepository getHostKeyRepository(){ 
+    if(known_hosts==null) known_hosts=new KnownHosts(this);
+    return known_hosts; 
+  }
+  /*
+  public HostKey[] getHostKey(){
+    if(known_hosts==null) return null;
+    return known_hosts.getHostKey(); 
   }
   public void removeHostKey(String foo, String type){
-    known_hosts.removeHostKey(foo, type); 
+    removeHostKey(foo, type, null);
   }
+  public void removeHostKey(String foo, String type, byte[] key){
+    if(known_hosts==null) return;
+    known_hosts.remove(foo, type, key); 
+  }
+  */
   public void addIdentity(String foo) throws JSchException{
     addIdentity(foo, null);
   }

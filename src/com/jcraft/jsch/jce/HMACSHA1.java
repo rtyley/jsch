@@ -34,10 +34,9 @@ import javax.crypto.*;
 import javax.crypto.spec.*;
 
 public class HMACSHA1 implements MAC{
-  private String name="hmac-sha1";
-  private int bsize=20;
+  private static final String name="hmac-sha1";
+  private static final int bsize=20;
   private Mac mac;
-  private byte[] tmp=new byte[4];
   public int getBlockSize(){return bsize;};
   public void init(byte[] key) throws Exception{
     if(key.length>bsize){
@@ -49,6 +48,7 @@ public class HMACSHA1 implements MAC{
     mac=Mac.getInstance("HmacSHA1");
     mac.init(skey);
   } 
+  private final byte[] tmp=new byte[4];
   public void update(int i){
     tmp[0]=(byte)(i>>>24);
     tmp[1]=(byte)(i>>>16);

@@ -27,43 +27,44 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package com.jcraft.jsch.jce;
+package com.jcraft.jsch;
 
-import com.jcraft.jsch.MAC;
-import javax.crypto.*;
-import javax.crypto.spec.*;
+public class HostKey{
+  private static final byte[] sshdss="ssh-dss".getBytes();
+  private static final byte[] sshrsa="ssh-rsa".getBytes();
 
-public class HMACMD5 implements MAC{
-  private static final String name="hmac-md5";
-  private static final int bsize=16;
-  private Mac mac;
-  public int getBlockSize(){return bsize;};
-  public void init(byte[] key) throws Exception{
-    if(key.length>bsize){
-      byte[] tmp=new byte[bsize];
-      System.arraycopy(key, 0, tmp, 0, bsize);	  
-      key=tmp;
+  public static final int SSHDSS=0;
+  public static final int SSHRSA=1;
+  static final int UNKNOWN=2;
+
+  String host;
+  int type;
+  byte[] key;
+  public HostKey(String host, byte[] key) throws JSchException {
+    this.host=host; this.key=key;
+    if(key[8]=='d'){ this.type=SSHDSS; }
+    else if(key[8]=='r'){ this.type=SSHRSA; }
+    else { throw new JSchException("invalid key type");}
+  }
+  HostKey(String host, int type, byte[] key){
+    this.host=host; this.type=type; this.key=key;
+  }
+  public String getHost(){ return host; }
+  public String getType(){
+    if(type==SSHDSS){ return new String(sshdss); }
+    if(type==SSHRSA){ return new String(sshrsa);}
+    return "UNKNOWN";
+  }
+  public String getKey(){
+    return new String(Util.toBase64(key, 0, key.length));
+  }
+  public String getFingerPrint(JSch jsch){
+    HASH hash=null;
+    try{
+      Class c=Class.forName(jsch.getConfig("md5"));
+      hash=(HASH)(c.newInstance());
     }
-    SecretKeySpec skey=new SecretKeySpec(key, "HmacMD5");
-    mac=Mac.getInstance("HmacMD5");
-    mac.init(skey);
-  } 
-
-  private final byte[] tmp=new byte[4];
-  public void update(int i){
-    tmp[0]=(byte)(i>>>24);
-    tmp[1]=(byte)(i>>>16);
-    tmp[2]=(byte)(i>>>8);
-    tmp[3]=(byte)i;
-    update(tmp, 0, 4);
-  }
-  public void update(byte foo[], int s, int l){
-    mac.update(foo, s, l);      
-  }
-  public byte[] doFinal(){
-    return mac.doFinal();
-  }
-  public String getName(){
-    return name;
+    catch(Exception e){ System.err.println("getFingerPrint: "+e); }
+    return Util.getFingerPrint(hash, key);
   }
 }

@@ -22,6 +22,19 @@ public class KnownHosts{
 	jsch.setKnownHosts(chooser.getSelectedFile().getAbsolutePath());
       }
 
+      HostKeyRepository hkr=jsch.getHostKeyRepository();
+      HostKey[] hks=hkr.getHostKey();
+      if(hks!=null){
+	System.out.println("Host keys in "+hkr.getKnownHostsRepositoryID());
+	for(int i=0; i<hks.length; i++){
+	  HostKey hk=hks[i];
+	  System.out.println(hk.getHost()+" "+
+			     hk.getType()+" "+
+			     hk.getFingerPrint(jsch));
+	}
+	System.out.println("");
+      }
+
       String host=JOptionPane.showInputDialog("Enter username@hostname",
 					      System.getProperty("user.name")+
 					      "@localhost"); 
@@ -35,6 +48,14 @@ public class KnownHosts{
       session.setUserInfo(ui);
 
       session.connect();
+
+      {
+	HostKey hk=session.getHostKey();
+	System.out.println("HostKey: "+
+			   hk.getHost()+" "+
+			   hk.getType()+" "+
+			   hk.getFingerPrint(jsch));
+      }
 
       Channel channel=session.openChannel("shell");
 

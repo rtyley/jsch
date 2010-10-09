@@ -34,9 +34,9 @@ import javax.crypto.*;
 import javax.crypto.spec.*;
 
 public class TripleDESCBC implements Cipher{
-  int ivsize=8;
-  int bsize=24;
-  javax.crypto.Cipher cipher;    
+  private static final int ivsize=8;
+  private static final int bsize=24;
+  private javax.crypto.Cipher cipher;    
   public int getIVSize(){return ivsize;} 
   public int getBlockSize(){return bsize;}
   public void init(int mode, byte[] key, byte[] iv) throws Exception{
