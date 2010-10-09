@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.21";
+  static private final String version="JSCH-0.1.22";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -104,6 +104,8 @@ public class Session implements Runnable{
   private boolean isConnected=false;
 
   private Thread connectThread=null;
+
+  boolean x11_forwarding=false;
 
   InputStream in=null;
   OutputStream out=null;
@@ -177,48 +179,54 @@ public class Session implements Runnable{
 	  }
 	  else{
 	    final Socket[] sockp=new Socket[1];
-	    final Thread thread=Thread.currentThread();
+	    final Thread currentThread=Thread.currentThread();
 	    final Exception[] ee=new Exception[1];
-	    final boolean[] done=new boolean[1];
-	    done[0]=false;
+//	    final boolean[] done=new boolean[1];
+//	    done[0]=false;
 	    String message="";
 	    Thread tmp=new Thread(new Runnable(){
 		public void run(){
+                  sockp[0]=null;
 		  try{
 		    sockp[0]=new Socket(host, port);
+                    /*
 		    if(done[0]){ 
 		      if(sockp[0]!=null){
 			sockp[0].close();
 			sockp[0]=null;
 		      }
 		    }
-		    else thread.interrupt();
+		    else currentThread.interrupt();
+                    */
 		  }
 		  catch(Exception e){
 		    ee[0]=e;
-		    thread.interrupt();
-		    if(sockp[0]!=null){
+                    /*
+		    currentThread.interrupt();
+                    */
+		    if(sockp[0]!=null && sockp[0].isConnected()){
 		      try{
 			sockp[0].close();
-			sockp[0]=null;
-		      }catch(Exception eee){}
+		      }
+                      catch(Exception eee){}
 		    }
+                    sockp[0]=null;
 		  }
 		}
 	      });
 	    tmp.setName("Opening Socket "+host);
 	    tmp.start();
 	    try{ 
-	      Thread.sleep(connectTimeout); 
+	      //Thread.sleep(connectTimeout); 
+              tmp.join(connectTimeout);
 	      message="timeout: ";
 	    }
 	    catch(java.lang.InterruptedException eee){
-	      tmp.interrupt();
-	      tmp=null;
-	      //System.gc();
+//	      tmp.interrupt();
+//	      tmp=null;
 	    }
-	    done[0]=true;
-	    if(sockp[0]!=null){
+//	    done[0]=true;
+	    if(sockp[0]!=null && sockp[0].isConnected()){
 	      socket=sockp[0];
 	    }
 	    else{
@@ -226,6 +234,8 @@ public class Session implements Runnable{
 	      if(ee[0]!=null){
 		message=ee[0].toString();
 	      }
+	      tmp.interrupt();
+              tmp=null;
 	      throw new JSchException(message);
 	    }
 	  }
@@ -337,7 +347,7 @@ send_newkeys();
       UserAuthNone usn=new UserAuthNone(userinfo);
       auth=usn.start(this);
 
-      String methods=usn.getMethods();
+      String methods=usn.getMethods().toLowerCase();
       // methods: publickey,password,keyboard-interactive
       if(methods==null){
 	methods="publickey,password,keyboard-interactive";
@@ -553,6 +563,9 @@ System.out.println(e);
     synchronized(hkr){
       i=hkr.check(host, K_S);
     }
+
+    boolean insert=false;
+
     if((shkc.equals("ask") || shkc.equals("yes")) &&
        i==HostKeyRepository.CHANGED){
       String file=null;
@@ -571,16 +584,30 @@ System.out.println(e);
 	  key_fprint+".\n"+
 "Please contact your system administrator.\n"+
 "Add correct host key in "+file+" to get rid of this message.";
+
+      boolean b=false;
+
       if(userinfo!=null){
-	userinfo.showMessage(message);
+	//userinfo.showMessage(message);
+        b=userinfo.promptYesNo(message+
+                               "\nDo you want to delete the old key and insert the new key?");
       }
-      throw new JSchException("HostKey has been changed: "+host);
+      //throw new JSchException("HostKey has been changed: "+host);
+      if(!b){
+        throw new JSchException("HostKey has been changed: "+host);
+      }
+      else{
+        synchronized(hkr){
+          hkr.remove(host, null);
+          insert=true;
+        }
+      }
     }
 
-    boolean insert=false;
+//    boolean insert=false;
  
     if((shkc.equals("ask") || shkc.equals("yes")) &&
-       i!=HostKeyRepository.OK){
+       (i!=HostKeyRepository.OK) && !insert){
       if(shkc.equals("yes")){
 	throw new JSchException("reject HostKey: "+host);
       }
@@ -637,6 +664,7 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
   // encode will bin invoked in write with synchronization.
   public void encode(Packet packet) throws Exception{
 //System.out.println("encode: "+packet.buffer.buffer[5]);
+//System.out.println("        "+packet.buffer.index);
 //if(packet.buffer.buffer[5]==96){
 //Thread.dumpStack();
 //}
@@ -791,8 +819,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 
   private void receive_newkeys(Buffer buf, KeyExchange kex) throws Exception {
 //    send_newkeys();
-    in_kex=false;
     updateKeys(kex);
+    in_kex=false;
   }
   private void updateKeys(KeyExchange kex) throws Exception{
     byte[] K=kex.getK();
@@ -895,7 +923,10 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	  try{
 	    c=Class.forName(foo);
 	    deflater=(Compression)(c.newInstance());
-	    deflater.init(Compression.DEFLATER, 6);
+            int level=6;
+            try{ level=Integer.parseInt(getConfig("compression_level"));}
+            catch(Exception ee){ }
+	    deflater.init(Compression.DEFLATER, level);
 	  }
 	  catch(Exception ee){
 	    System.err.println(foo+" isn't accessible.");
@@ -931,6 +962,11 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 
   /*public*/ /*synchronized*/ void write(Packet packet, Channel c, int length) throws Exception{
     while(true){
+      if(in_kex){
+        try{Thread.sleep(10);}
+        catch(java.lang.InterruptedException e){};
+        continue;
+      }
       synchronized(c){
         if(c.rwsize>=length){
           c.rwsize-=length;
@@ -957,16 +993,38 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	}
       }
       if(sendit){
-	write(packet);
+	_write(packet);
 	packet.unshift(command, recipient, s, length);
       }
 
       try{Thread.sleep(10);}
       catch(java.lang.InterruptedException e){};
     }
-    write(packet);
+    _write(packet);
   }
+  /*
   public synchronized void write(Packet packet) throws Exception{
+     encode(packet);
+     if(io!=null){
+       io.put(packet);
+       seqo++;
+     }
+  }
+  */
+  public void write(Packet packet) throws Exception{
+    while(in_kex){
+      byte command=packet.buffer.buffer[5];
+      //System.out.println("command: "+command);
+      if(command==SSH_MSG_KEXINIT ||
+         command==SSH_MSG_NEWKEYS ||
+         command==SSH_MSG_KEXDH_INIT ||
+         command==SSH_MSG_KEXDH_REPLY){
+        break;
+      }
+    }
+    _write(packet);
+  }
+  private synchronized void _write(Packet packet) throws Exception{
      encode(packet);
      if(io!=null){
        io.put(packet);
@@ -1005,13 +1063,13 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 
         switch(msgType){
 	case SSH_MSG_KEXINIT:
-System.out.println("KEXINIT");
+//System.out.println("KEXINIT");
 	  kex=receive_kexinit(buf);
 	  break;
 
 	case SSH_MSG_NEWKEYS:
-System.out.println("NEWKEYS");
-send_newkeys();
+//System.out.println("NEWKEYS");
+          send_newkeys();
 	  receive_newkeys(buf, kex);
 	  kex=null;
 	  break;
@@ -1176,7 +1234,7 @@ break;
 	  String ctyp=new String(foo);
 	  //System.out.println("type="+ctyp);
           if(!"forwarded-tcpip".equals(ctyp) &&
-	     !"x11".equals(ctyp)){
+	     !("x11".equals(ctyp) && x11_forwarding)){
             System.out.println("Session.run: CHANNEL OPEN "+ctyp); 
 	    throw new IOException("Session.run: CHANNEL OPEN "+ctyp);
 	  }
@@ -1229,8 +1287,13 @@ break;
 	    write(packet);
 	  }
 	  break;
-	case SSH_MSG_REQUEST_SUCCESS:
 	case SSH_MSG_REQUEST_FAILURE:
+	case SSH_MSG_REQUEST_SUCCESS:
+          Thread t=grr.getThread();
+          if(t!=null){
+            grr.setReply(msgType==SSH_MSG_REQUEST_SUCCESS? 1 : 0);
+            t.interrupt();
+          }
 	  break;
 	default:
           System.out.println("Session.run: unsupported type "+msgType); 
@@ -1263,7 +1326,7 @@ break;
 
   public void disconnect(){
     if(!isConnected) return;
-    isConnected=false;
+
     //System.out.println(this+": disconnect");
     //Thread.dumpStack();
     /*
@@ -1278,6 +1341,8 @@ break;
     */
 
     Channel.disconnect(this);
+
+    isConnected=false;
 
     PortWatcher.delPort(this);
     ChannelForwardedTCPIP.delPort(this);
@@ -1310,9 +1375,12 @@ break;
     }
     io=null;
     socket=null;
-    synchronized(jsch.pool){
-      jsch.pool.removeElement(this);
-    }
+//    synchronized(jsch.pool){
+//      jsch.pool.removeElement(this);
+//    }
+
+    jsch.removeSession(this);
+
     //System.gc();
   }
 
@@ -1348,7 +1416,20 @@ break;
     setPortForwarding(rport);
   }
 
+  private class GlobalRequestReply{
+    private Thread thread=null;
+    private int reply=-1;
+    void setThread(Thread thread){
+      this.thread=thread;
+      this.reply=-1;
+    }
+    Thread getThread(){ return thread; }
+    void setReply(int reply){ this.reply=reply; }
+    int getReply(){ return this.reply; }
+  }
+  private GlobalRequestReply grr=new GlobalRequestReply();
   private void setPortForwarding(int rport) throws JSchException{
+    synchronized(grr){
     Buffer buf=new Buffer(100); // ??
     Packet packet=new Packet(buf);
 
@@ -1361,13 +1442,25 @@ break;
       packet.reset();
       buf.putByte((byte) SSH_MSG_GLOBAL_REQUEST);
       buf.putString("tcpip-forward".getBytes());
-      buf.putByte((byte)0);
+//      buf.putByte((byte)0);
+      buf.putByte((byte)1);
       buf.putString("0.0.0.0".getBytes());
       buf.putInt(rport);
       write(packet);
     }
     catch(Exception e){
       throw new JSchException(e.toString());
+    }
+
+    grr.setThread(Thread.currentThread());
+    try{ Thread.sleep(10000);}
+    catch(Exception e){
+    }
+    int reply=grr.getReply();
+    grr.setThread(null);
+    if(reply==0){
+      throw new JSchException("remote port forwarding failed for listen port "+rport);
+    }
     }
   }
   public void delPortForwardingR(int rport) throws JSchException{

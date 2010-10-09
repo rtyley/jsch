@@ -41,7 +41,6 @@ class ChannelX11 extends Channel{
   boolean init=true;
 
   static byte[] cookie=null;
-//static byte[] cookie_hex="0c281f065158632a427d3e074d79265d".getBytes();
   static byte[] cookie_hex=null;
 
   private static java.util.Hashtable faked_cookie_pool=new java.util.Hashtable();

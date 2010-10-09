@@ -183,7 +183,7 @@ class UserAuthPublicKey extends UserAuth{
       tmp[3]=(byte)(sidlen);
       System.arraycopy(sid, 0, tmp, 4, sidlen);
       System.arraycopy(buf.buffer, 5, tmp, 4+sidlen, buf.index-5);
-      byte[] signature=identity.getSignature(session, tmp);
+      byte[] signature=identity.getSignature(tmp);
       if(signature==null){  // for example, too long key length.
 	break;
       }

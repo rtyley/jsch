@@ -96,9 +96,9 @@ class PortWatcher implements Runnable{
     pool.removeElement(pw);
   }
   static void delPort(Session session){
-    PortWatcher[] foo=new PortWatcher[pool.size()];
-    int count=0;
     synchronized(pool){
+      PortWatcher[] foo=new PortWatcher[pool.size()];
+      int count=0;
       for(int i=0; i<pool.size(); i++){
 	PortWatcher p=(PortWatcher)(pool.elementAt(i));
 	if(p.session==session) {

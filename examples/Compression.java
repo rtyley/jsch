@@ -23,7 +23,8 @@ public class Compression{
       session.setUserInfo(ui);
       java.util.Hashtable config=new java.util.Hashtable();
       config.put("compression.s2c", "zlib,none");
-      //config.put("compression.c2s", "zlib,none");
+      config.put("compression.c2s", "zlib,none");
+      config.put("compression_level", "9");
       session.setConfig(config);
       session.connect();
 

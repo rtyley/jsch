@@ -58,7 +58,7 @@ public class KeyPairGenRSA implements com.jcraft.jsch.KeyPairGenRSA{
 
     d=((RSAPrivateKey)prvKey).getPrivateExponent().toByteArray();
     e=((RSAPublicKey)pubKey).getPublicExponent().toByteArray();
-    n=((RSAKey)prvKey).getModulus().toByteArray();
+    n=((RSAPrivateKey)prvKey).getModulus().toByteArray();
 
     c=((RSAPrivateCrtKey)prvKey).getCrtCoefficient().toByteArray();
     ep=((RSAPrivateCrtKey)prvKey).getPrimeExponentP().toByteArray();

@@ -6,7 +6,7 @@ import javax.swing.*;
 
 import java.io.*;
 
-public class Exec{
+public class Subsystem{
   public static void main(String[] arg){
     try{
       JSch jsch=new JSch();  
@@ -19,38 +19,25 @@ public class Exec{
 
       Session session=jsch.getSession(user, host, 22);
       
-      /*
-      String xhost="127.0.0.1";
-      int xport=0;
-      String display=JOptionPane.showInputDialog("Enter display name", 
-                                                 xhost+":"+xport);
-      xhost=display.substring(0, display.indexOf(':'));
-      xport=Integer.parseInt(display.substring(display.indexOf(':')+1));
-      session.setX11Host(xhost);
-      session.setX11Port(xport+6000);
-      */
-
-      // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
       session.connect();
 
-      String command=JOptionPane.showInputDialog("Enter command", 
-                                                 "set|grep SSH");
+      String subsystem=JOptionPane.showInputDialog("Enter subsystem name", "");
 
-      Channel channel=session.openChannel("exec");
-      ((ChannelExec)channel).setCommand(command);
-      channel.setXForwarding(true);
+      Channel channel=session.openChannel("subsystem");
+      ((ChannelSubsystem)channel).setSubsystem(subsystem);
+      ((ChannelSubsystem)channel).setPty(true);
 
       channel.setInputStream(System.in);
-      //channel.setOutputStream(System.out);
+      ((ChannelSubsystem)channel).setErrStream(System.err);
+      channel.setOutputStream(System.out);
+      channel.connect();
 
-      //FileOutputStream fos=new FileOutputStream("/tmp/stderr");
-      //((ChannelExec)channel).setErrStream(fos);
-      ((ChannelExec)channel).setErrStream(System.err);
-
+      /*
+      channel.setInputStream(System.in);
+      ((ChannelSubsystem)channel).setErrStream(System.err);
       InputStream in = channel.getInputStream();
-
       channel.connect();
 
       byte[] tmp=new byte[1024];
@@ -68,6 +55,7 @@ public class Exec{
       }
       channel.disconnect();
       session.disconnect();
+      */
     }
     catch(Exception e){
       System.out.println(e);

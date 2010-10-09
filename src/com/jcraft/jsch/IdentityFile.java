@@ -313,6 +313,12 @@ class IdentityFile implements Identity{
 	  }
 	  System.arraycopy(hn, 0, key, 0, key.length); 
 	}
+        if(passphrase!=null){
+          for(int i=0; i<passphrase.length; i++){
+            passphrase[i]=0;
+          }
+          passphrase=null;
+        }
       }
       if(decrypt()){
 	encrypted=false;
@@ -359,12 +365,12 @@ class IdentityFile implements Identity{
     return buf.buffer;
   }
 
-  public byte[] getSignature(Session session, byte[] data){
-    if(type==RSA) return getSignature_rsa(session, data);
-    return getSignature_dss(session, data);
+  public byte[] getSignature(byte[] data){
+    if(type==RSA) return getSignature_rsa(data);
+    return getSignature_dss(data);
   }
 
-  byte[] getSignature_rsa(Session session, byte[] data){
+  byte[] getSignature_rsa(byte[] data){
     try{      
       Class c=Class.forName((String)jsch.getConfig("signature.rsa"));
       SignatureRSA rsa=(SignatureRSA)(c.newInstance());
@@ -394,7 +400,7 @@ class IdentityFile implements Identity{
     return null;
   }
 
-  byte[] getSignature_dss(Session session, byte[] data){
+  byte[] getSignature_dss(byte[] data){
 /*
     byte[] foo;
     int i;

@@ -40,10 +40,13 @@ class ChannelSession extends Channel{
   
   public void run(){
 //System.out.println(this+":run >");
+/*
     if(thread!=null){ return; }
     thread=Thread.currentThread();
-    Buffer buf=new Buffer();
-//  Buffer buf=new Buffer(lmpsize);
+*/
+
+//    Buffer buf=new Buffer();
+    Buffer buf=new Buffer(rmpsize);
     Packet packet=new Packet(buf);
     int i=-1;
     try{

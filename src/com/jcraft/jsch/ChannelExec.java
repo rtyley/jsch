@@ -44,7 +44,7 @@ public class ChannelExec extends ChannelSession{
   */
   public void setXForwarding(boolean foo){ xforwading=foo; }
   public void setPty(boolean foo){ pty=foo; }
-  public void start(){
+  public void start() throws JSchException{
     try{
       Request request;
 
@@ -62,8 +62,9 @@ public class ChannelExec extends ChannelSession{
       request.request(session, this);
     }
     catch(Exception e){
+      throw new JSchException("ChannelExec");
     }
-    Thread thread=new Thread(this);
+    thread=new Thread(this);
     thread.setName("Exec thread "+session.getHost());
     thread.start();
   }

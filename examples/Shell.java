@@ -31,7 +31,8 @@ public class Shell{
       //config.put("StrictHostKeyChecking", "no");
       //session.setConfig(config);
 
-      session.connect();
+      //session.connect();
+      session.connect(3000);   // making connection with timeout.
 
       Channel channel=session.openChannel("shell");
 

@@ -310,11 +310,11 @@ loop:
     }
   }
 
-  private void sync() throws IOException { 
+  protected void sync() throws IOException { 
     if(known_hosts!=null)
       sync(known_hosts); 
   }
-  private void sync(String foo) throws IOException {
+  protected synchronized void sync(String foo) throws IOException {
     if(foo==null) return;
     FileOutputStream fos=new FileOutputStream(foo);
     dump(fos);

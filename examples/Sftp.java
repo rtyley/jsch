@@ -161,13 +161,13 @@ public class Sftp{
 	    java.util.Vector vv=c.ls(path);
 	    if(vv!=null){
 	      for(int ii=0; ii<vv.size(); ii++){
-		out.println(vv.elementAt(ii).toString());
-                /*
+//		out.println(vv.elementAt(ii).toString());
+
                 Object obj=vv.elementAt(ii);
                 if(obj instanceof com.jcraft.jsch.ChannelSftp.LsEntry){
                   out.println(((com.jcraft.jsch.ChannelSftp.LsEntry)obj).getLongname());
                 }
-                */
+
 	      }
 	    }
 	  }
@@ -399,6 +399,7 @@ public class Sftp{
                                    "put" : "get")+": "+src, 
                                   "",  0, (int)max);
       count=0;
+      percent=-1;
       monitor.setProgress((int)this.count);
       monitor.setMillisToDecideToPopup(1000);
     }

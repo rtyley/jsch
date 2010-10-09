@@ -62,6 +62,9 @@ public abstract class Channel implements Runnable{
     if(type.equals("sftp")){
       return new ChannelSftp();
     }
+    if(type.equals("subsystem")){
+      return new ChannelSubsystem();
+    }
     return null;
   }
   static Channel getChannel(int id, Session session){
@@ -176,20 +179,29 @@ public abstract class Channel implements Runnable{
   }
 
   public void setInputStream(InputStream in){
-    io.setInputStream(in);
+    io.setInputStream(in, false);
+  }
+  public void setInputStream(InputStream in, boolean dontclose){
+    io.setInputStream(in, dontclose);
   }
   public void setOutputStream(OutputStream out){
-    io.setOutputStream(out);
+    io.setOutputStream(out, false);
+  }
+  public void setOutputStream(OutputStream out, boolean dontclose){
+    io.setOutputStream(out, dontclose);
   }
   public void setExtOutputStream(OutputStream out){
-    io.setExtOutputStream(out);
+    io.setExtOutputStream(out, false);
+  }
+  public void setExtOutputStream(OutputStream out, boolean dontclose){
+    io.setExtOutputStream(out, dontclose);
   }
   public InputStream getInputStream() throws IOException {
     PipedInputStream in=
       new MyPipedInputStream(
                              32*1024  // this value should be customizable.
                              );
-    io.setOutputStream(new PassiveOutputStream(in));
+    io.setOutputStream(new PassiveOutputStream(in), false);
     return in;
   }
   public InputStream getExtInputStream() throws IOException {
@@ -197,16 +209,19 @@ public abstract class Channel implements Runnable{
       new MyPipedInputStream(
                              32*1024  // this value should be customizable.
                              );
-    io.setExtOutputStream(new PassiveOutputStream(in));
+    io.setExtOutputStream(new PassiveOutputStream(in), false);
     return in;
   }
   public OutputStream getOutputStream() throws IOException {
     PipedOutputStream out=new PipedOutputStream();
-    io.setInputStream(new PassiveInputStream(out, 32*1024));
-//    io.setInputStream(new PassiveInputStream(out));
+    io.setInputStream(new PassiveInputStream(out
+                                             , 32*1024
+                                             ), false);
+//  io.setInputStream(new PassiveInputStream(out), false);
     return out;
   }
   class MyPipedInputStream extends PipedInputStream{
+    MyPipedInputStream() throws IOException{ super(); }
     MyPipedInputStream(int size) throws IOException{
       super();
       buffer=new byte[size];
@@ -367,12 +382,15 @@ public abstract class Channel implements Runnable{
 
     try{
       if(io!=null){
+        io.close();
+        /*
 	try{
 	  //System.out.println(" io.in="+io.in);
 	  if(io.in!=null && 
 	     (io.in instanceof PassiveInputStream)
 	     )
 	    io.in.close();
+          io.in=null;
 	}
 	catch(Exception ee){}
 	try{
@@ -381,6 +399,7 @@ public abstract class Channel implements Runnable{
 	     (io.out instanceof PassiveOutputStream)
 	     )
 	    io.out.close();
+          io.out=null;
 	}
 	catch(Exception ee){}
 	try{
@@ -389,13 +408,16 @@ public abstract class Channel implements Runnable{
 	     (io.out_ext instanceof PassiveOutputStream)
 	     )
 	    io.out_ext.close();
+          io.out_ext=null;
 	}
 	catch(Exception ee){}
+        */
       }
     }
     catch(Exception e){
       //e.printStackTrace();
     }
+
     io=null;
     Channel.del(this);
   }

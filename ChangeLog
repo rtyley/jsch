@@ -1,8 +1,40 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Fri Jul 15 15:22:58 UTC 2005
+Last modified: Tue Oct  4 15:00:18 UTC 2005
 
 	
+Changes since version 0.1.21:		
+- bugfix: there is a bug in read() method implementation for the
+          input-stream returned from ChannelSftp.get().  FIXED. 
+- bugfix: at fail on requesting for the remote port forwarding,
+	  an exception should be thrown. FIXED. 
+- bugfix: SSH_MSG_CHANNEL_OPEN request for the X11 forwarding should not
+	  be accepted if clients don not expect it. FIXED.
+- bugfix: there is a problem in transferring large date(mote than 1GB)
+	  to sshd from recent OpenSSH(3.6.1 or later). FIXED.
+	  For security concerns, those sshd will re-key periodically and 
+	  jsch had failed to handle it.
+- bugfix: 'exec', 'shell' and 'sftp' channels will fail if the acceptable
+	  packet size by remote sshd is not so large. FIXED.
+- bugfix: there are problems in 'InputStream ChannelSftp.get(String)' 
+   	  and 'OutputStream put(String)'.  FIXED.
+- feature: added boolean flag 'dontclose' to 
+	   * setInputStream(),
+	   * setOutputStream() and
+	   * setExtOutputStream() 
+           methods of Channel class.
+- feature: added 'com.jcraft.jsch.ChannelSubsystem'
+- feature: allowed to control the compression level in the packet compression.
+ 	   Refer to 'examples/Compression.java'.
+- change: modified 'com/jcraft/jsch/jce/KeyPairGenRSA.java' to be complied
+	  on JDK 1.2.
+- change: 'examples/ScpTo.java' and 'examples/ScpFrom.java' will use
+	  'long' type for the file size instead of 'int'.
+- change: 'Identity.getSignature' method will not expect 'session'.
+- change: while waiting for socket connection establishment, Thread.join
+	  will be used instead of Thread.sleep.
+
+
 Changes since version 0.1.20:		
 - known issue: there are problems in 'InputStream ChannelSftp.get(String)' 
    	       and 'OutputStream put(String)'.  They will be re-implemented

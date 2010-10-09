@@ -48,7 +48,7 @@ public class ScpTo{
       }
 
       // send "C0644 filesize filename", where filename should not include '/'
-      int filesize=(int)(new File(lfile)).length();
+      long filesize=(new File(lfile)).length();
       command="C0644 "+filesize+" ";
       if(lfile.lastIndexOf('/')>0){
         command+=lfile.substring(lfile.lastIndexOf('/')+1);

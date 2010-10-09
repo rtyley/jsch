@@ -36,7 +36,7 @@ public class ChannelShell extends ChannelSession{
   public void setXForwarding(boolean foo){
     xforwading=true;
   }
-  public void start(){
+  public void start() throws JSchException{
     try{
       Request request;
       if(xforwading){
@@ -49,8 +49,9 @@ public class ChannelShell extends ChannelSession{
       request.request(session, this);
     }
     catch(Exception e){
+      throw new JSchException("ChannelShell");
     }
-    Thread thread=new Thread(this);
+    thread=new Thread(this);
     thread.setName("Shell for "+session.host);
     thread.start();
   }

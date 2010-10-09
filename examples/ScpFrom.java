@@ -59,11 +59,14 @@ public class ScpFrom{
         // read '0644 '
         in.read(buf, 0, 5);
 
-        int filesize=0;
+        long filesize=0L;
         while(true){
-          in.read(buf, 0, 1);
+          if(in.read(buf, 0, 1)<0){
+            // error
+            break; 
+          }
           if(buf[0]==' ')break;
-          filesize=filesize*10+(buf[0]-'0');
+          filesize=filesize*10L+(long)(buf[0]-'0');
         }
 
         String file=null;
@@ -87,11 +90,15 @@ public class ScpFrom{
         int foo;
         while(true){
           if(buf.length<filesize) foo=buf.length;
-	  else foo=filesize;
-          in.read(buf, 0, foo);
+	  else foo=(int)filesize;
+          foo=in.read(buf, 0, foo);
+          if(foo<0){
+            // error 
+            break;
+          }
           fos.write(buf, 0, foo);
           filesize-=foo;
-          if(filesize==0) break;
+          if(filesize==0L) break;
         }
         fos.close();
 

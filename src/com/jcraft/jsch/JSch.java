@@ -48,6 +48,8 @@ public class JSch{
     config.put("lang.s2c", "");
     config.put("lang.c2s", "");
 
+    config.put("compression_level", "6");
+
     config.put("diffie-hellman-group-exchange-sha1", 
                                 "com.jcraft.jsch.DHGEX");
     config.put("diffie-hellman-group1-sha1", 
@@ -94,9 +96,6 @@ public class JSch{
     s.setHost(host);
     s.setPort(port);
     pool.addElement(s);
-    synchronized(pool){
-      pool.addElement(s);
-    }
     return s;
   }
 

@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -29,12 +29,41 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-interface Identity{
-  boolean setPassphrase(String passphrase) throws JSchException;
-  byte[] getPublicKeyBlob();
-  byte[] getSignature(byte[] data);
-  boolean decrypt();
-  String getAlgName();
-  String getName();
-  public boolean isEncrypted();
+public class RequestSubsystem implements Request{
+  private boolean want_reply=true;
+  private String subsystem=null;
+  public void request(Session session, Channel channel, String subsystem, boolean want_reply) throws Exception{
+    this.subsystem=subsystem;
+    this.want_reply=want_reply;
+    this.request(session, channel);
+  }
+  public void request(Session session, Channel channel) throws Exception{
+    Buffer buf=new Buffer();
+    Packet packet=new Packet(buf);
+
+    boolean reply=waitForReply();
+    if(reply){
+      channel.reply=-1;
+    }
+
+    packet.reset();
+    buf.putByte((byte)Session.SSH_MSG_CHANNEL_REQUEST);
+    buf.putInt(channel.getRecipient());
+    buf.putString("subsystem".getBytes());
+    buf.putByte((byte)(waitForReply() ? 1 : 0));
+    buf.putString(subsystem.getBytes());
+    session.write(packet);
+
+    if(reply){
+      while(channel.reply==-1){
+	try{Thread.sleep(10);}
+	catch(Exception ee){
+	}
+      }
+      if(channel.reply==0){
+	throw new JSchException("failed to send subsystem request");
+      }
+    }
+  }
+  public boolean waitForReply(){ return want_reply; }
 }

@@ -55,6 +55,8 @@ class RequestX11 implements Request{
     buf.putString(ChannelX11.getFakedCookie(session));
     buf.putInt(0);
     session.write(packet);
+
+    session.x11_forwarding=true;
   }
   public boolean waitForReply(){ return false; }
 }
