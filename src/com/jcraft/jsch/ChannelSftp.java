@@ -34,7 +34,7 @@ import java.io.*;
 
 import java.util.Vector;
 
-public class ChannelSftp extends ChannelSubsystem{
+public class ChannelSftp extends ChannelSession{
 
   private static final byte SSH_FXP_INIT=               1;
   private static final byte SSH_FXP_VERSION=            2;
@@ -159,9 +159,7 @@ public class ChannelSftp extends ChannelSubsystem{
   private String home;
   private String lcwd;
 
-  ChannelSftp(){
-    setSubsystem("sftp");
-  }
+  //ChannelSftp(){}
 
   public void init(){
     /*
@@ -178,7 +176,7 @@ public class ChannelSftp extends ChannelSubsystem{
       PipedInputStream pis=new PipedInputStream(pos);
       io.setInputStream(pis);
 
-      Request request=new RequestSubsystem("sftp");
+      Request request=new RequestSftp();
       request.request(session, this);
 
       thread=this;

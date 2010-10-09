@@ -1,8 +1,15 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Mar 24 17:33:34 UTC 2004
+Last modified: Tue May 18 14:28:40 UTC 2004
 
+	
+Changes since version 0.1.14:		
+- fixed a crash bug in accepting keep-alive messages.
+- the parent directory of 'known_hosts' file will be created 
+  if it does not exist.
+- the Subsystem channel support was removed.
 
+	
 Changes since version 0.1.13:		
 - added 'setClientVersion' method to Session class.
 - fixed hung-up problem on SftpChannel in connecting to

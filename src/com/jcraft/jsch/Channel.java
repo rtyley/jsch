@@ -62,9 +62,6 @@ public abstract class Channel implements Runnable{
     if(type.equals("sftp")){
       return new ChannelSftp();
     }
-    if(type.equals("subsystem")){
-      return new ChannelSubsystem();
-    }
     return null;
   }
   static Channel getChannel(int id, Session session){

@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.14";
+  static private final String version="JSCH-0.1.15";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -522,13 +522,31 @@ kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
       String bar=jsch.getKnownHosts().getKnownHostsFile();
       if(bar!=null){
 	boolean foo=true;
-	if(!new File(bar).exists()){
+	File goo=new File(bar);
+	if(!goo.exists()){
 	  foo=false;
 	  if(userinfo!=null){
 	    foo=userinfo.promptYesNo(
 jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
 "Are you sure you want to create it (yes/no)?"
                                     );
+	    goo=goo.getParentFile();
+	    if(foo && goo!=null && !goo.exists()){
+	      foo=userinfo.promptYesNo(
+"The parent directory "+goo+" does not exist.\n"+
+"Are you sure you want to create it (yes/no)?"
+);
+	      if(foo){
+		if(!goo.mkdirs()){
+		  userinfo.showMessage(goo+" has not been created.");
+		  foo=false;
+		}
+		else{
+		  userinfo.showMessage(goo+" has been succesfully created.\nPlease check its access permission.");
+		}
+	      }
+	    }
+	    if(goo==null)foo=false;
 	  }
 	}
 	if(foo){
@@ -1070,7 +1088,7 @@ break;
 	  channel.reply=1;
 	  break;
 	case SSH_MSG_CHANNEL_FAILURE:
-          buf.getInt(); 
+	  buf.getInt(); 
 	  buf.getShort(); 
 	  i=buf.getInt(); 
 	  channel=Channel.getChannel(i, this);
@@ -1078,6 +1096,20 @@ break;
 	    break;
 	  }
 	  channel.reply=0;
+	  break;
+	case SSH_MSG_GLOBAL_REQUEST:
+	  buf.getInt(); 
+	  buf.getShort(); 
+	  foo=buf.getString();       // request name
+	  reply=(buf.getByte()!=0);
+	  if(reply){
+	    packet.reset();
+	    buf.putByte((byte)SSH_MSG_REQUEST_FAILURE);
+	    write(packet);
+	  }
+	  break;
+	case SSH_MSG_REQUEST_SUCCESS:
+	case SSH_MSG_REQUEST_FAILURE:
 	  break;
 	default:
           System.out.println("Session.run: unsupported type "+msgType); 

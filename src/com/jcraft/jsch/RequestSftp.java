@@ -1,7 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
 Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
-Copyright (c) 2003 Erwin Bolwidt, Amsterdam, The Netherlands.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,13 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-public class RequestSubsystem implements Request {
-  private String subsystem;
-
-  RequestSubsystem(String subsystem){
-    this.subsystem=subsystem;
-  }
-
+public class RequestSftp implements Request{
   public void request(Session session, Channel channel) throws Exception{
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
@@ -51,7 +44,7 @@ public class RequestSubsystem implements Request {
     buf.putInt(channel.getRecipient());
     buf.putString("subsystem".getBytes());
     buf.putByte((byte)(waitForReply() ? 1 : 0));
-    buf.putString(subsystem.getBytes());
+    buf.putString("sftp".getBytes());
     session.write(packet);
 
     if(reply){
@@ -61,12 +54,9 @@ public class RequestSubsystem implements Request {
 	}
       }
       if(channel.reply==0){
-	throw new JSchException("failed to send "+getSubsystem()+" request");
+	throw new JSchException("failed to send sftp request");
       }
     }
-  }
-  public String getSubsystem(){
-    return subsystem;
   }
   public boolean waitForReply(){ return true; }
 }
