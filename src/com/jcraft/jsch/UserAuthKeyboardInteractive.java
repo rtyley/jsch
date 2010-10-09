@@ -36,7 +36,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
   }
 
   public boolean start(Session session) throws Exception{
-//System.out.println("UserAuthKeyboardInteractive: start");
+//System.err.println("UserAuthKeyboardInteractive: start");
     Packet packet=session.packet;
     Buffer buf=session.buf;
     final String username=session.username;
@@ -48,10 +48,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
     boolean cancel=false;
 
     byte[] _username=null;
-    try{ _username=username.getBytes("UTF-8"); }
-    catch(java.io.UnsupportedEncodingException e){
-      _username=username.getBytes();
-    }
+    _username=Util.str2byte(username);
 
     while(true){
       // send
@@ -84,7 +81,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	catch(java.io.IOException e){
 	  return false;
 	}
-	//System.out.println("read: 52 ? "+    buf.buffer[5]);
+	//System.err.println("read: 52 ? "+    buf.buffer[5]);
 	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
 	  return true;
 	}
@@ -106,7 +103,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  buf.getInt(); buf.getByte(); buf.getByte(); 
 	  byte[] foo=buf.getString();
 	  int partial_success=buf.getByte();
-//	  System.out.println(new String(foo)+
+//	  System.err.println(new String(foo)+
 //			     " partial_success:"+(partial_success!=0));
 
 	  if(partial_success!=0){
@@ -127,29 +124,35 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  String instruction=new String(buf.getString());
 	  String languate_tag=new String(buf.getString());
 	  int num=buf.getInt();
-//System.out.println("name: "+name);
-//System.out.println("instruction: "+instruction);
-//System.out.println("lang: "+languate_tag);
-//System.out.println("num: "+num);
+//System.err.println("name: "+name);
+//System.err.println("instruction: "+instruction);
+//System.err.println("lang: "+languate_tag);
+//System.err.println("num: "+num);
 	  String[] prompt=new String[num];
 	  boolean[] echo=new boolean[num];
 	  for(int i=0; i<num; i++){
 	    prompt[i]=new String(buf.getString());
 	    echo[i]=(buf.getByte()!=0);
-//System.out.println("  "+prompt[i]+","+echo[i]);
+//System.err.println("  "+prompt[i]+","+echo[i]);
 	  }
 
-	  String[] response=null;
+	  byte[][] response=null;
 	  if(num>0
 	     ||(name.length()>0 || instruction.length()>0)
 	     ){
 	    UIKeyboardInteractive kbi=(UIKeyboardInteractive)userinfo;
 	    if(userinfo!=null){
-	    response=kbi.promptKeyboardInteractive(dest,
-						   name,
-						   instruction,
-						   prompt,
-						   echo);
+              String[] _response=kbi.promptKeyboardInteractive(dest,
+                                                               name,
+                                                               instruction,
+                                                               prompt,
+                                                               echo);
+              if(_response!=null){
+                response=new byte[_response.length][];
+                for(int i=0; i<_response.length; i++){
+                  response[i]=Util.str2byte(_response[i]);
+                }
+              }
 	    }
 	  }
 	  // byte      SSH_MSG_USERAUTH_INFO_RESPONSE(61)
@@ -158,9 +161,9 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  // ...
 	  // string    response[num-responses] (ISO-10646 UTF-8)
 //if(response!=null)
-//System.out.println("response.length="+response.length);
+//System.err.println("response.length="+response.length);
 //else
-//System.out.println("response is null");
+//System.err.println("response is null");
 	  packet.reset();
 	  buf.putByte((byte)Session.SSH_MSG_USERAUTH_INFO_RESPONSE);
 	  if(num>0 &&
@@ -173,14 +176,14 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  else{
 	    buf.putInt(num);
 	    for(int i=0; i<num; i++){
-//System.out.println("response: |"+response[i]+"| <- replace here with **** if you need");
-	      buf.putString(response[i].getBytes());
+//System.err.println("response: |"+new String(response[i])+"| <- replace here with **** if you need");
+	      buf.putString(response[i]);
 	    }
 	  }
 	  session.write(packet);
 	  if(cancel)
 	    break;
-//System.out.println("continue loop");
+//System.err.println("continue loop");
 	  continue loop;
 	}
 	//throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");

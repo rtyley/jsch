@@ -1,9 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 import com.jcraft.jsch.*;
-import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
-import java.io.*;
 
 class ChangePassphrase{
   public static void main(String[] arg){

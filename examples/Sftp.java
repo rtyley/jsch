@@ -1,7 +1,5 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 import com.jcraft.jsch.*;
-import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
 
 public class Sftp{
@@ -100,7 +98,7 @@ public class Sftp{
 	    else c.lcd(path);
 	  }
 	  catch(SftpException e){
-	    System.out.println(e.message);
+	    System.out.println(e.toString());
 	  }
 	  continue;
 	}
@@ -113,7 +111,7 @@ public class Sftp{
 	    else c.mkdir(path);
 	  }
 	  catch(SftpException e){
-	    System.out.println(e.message);
+	    System.out.println(e.toString());
 	  }
 	  continue;
 	}
@@ -142,7 +140,7 @@ public class Sftp{
 	    else if(cmd.equals("chmod")){ c.chmod(foo, path); }
 	  }
 	  catch(SftpException e){
-	    System.out.println(e.message);
+	    System.out.println(e.toString());
 	  }
 	  continue;
 	}
@@ -172,7 +170,7 @@ public class Sftp{
 	    }
 	  }
 	  catch(SftpException e){
-	    System.out.println(e.message);
+	    System.out.println(e.toString());
 	  }
 	  continue;
 	}
@@ -225,45 +223,10 @@ public class Sftp{
 	    }
 	  }
 	  catch(SftpException e){
-	    System.out.println(e.message);
+	    System.out.println(e.toString());
 	  }
 	  continue;
 	}
-/*
-	if(cmd.equals("foo")){
-	  try{
-	    java.io.InputStream pis=c.get((String)cmds.elementAt(1));
-	    try{
-	      while(true){
-		int iii=pis.read();
-		if(iii<=0)break;
-		System.out.print(new Character((char)(iii&0xff)));
-	      }
-	    }
-	    catch(Exception ee){
-	      System.out.println("!!!!"+ee);
-	      ee.printStackTrace();
-	    }
-	    pis.close();
-	  }
-	  catch(Exception e){
-	    System.out.println("!!!"+e);
-	  }
-	  continue;
-	}
-	if(cmd.equals("bar")){
-	  try{
-	    java.io.OutputStream pos=c.put((String)cmds.elementAt(1));
-	    pos.write(((String)cmds.elementAt(2)).getBytes());
-	    pos.flush();
-	    pos.close();
-	  }
-	  catch(Exception e){
-	    System.out.println("!!!"+e);
-	  }
-	  continue;
-	}
-*/
 	if(cmd.equals("ln") || cmd.equals("symlink") || cmd.equals("rename")){
           if(cmds.size()!=3) continue;
 	  String p1=(String)cmds.elementAt(1);
@@ -273,7 +236,7 @@ public class Sftp{
 	    else c.symlink(p1, p2);
 	  }
 	  catch(SftpException e){
-	    System.out.println(e.message);
+	    System.out.println(e.toString());
 	  }
 	  continue;
 	}
@@ -286,12 +249,25 @@ public class Sftp{
 	    else attrs=c.lstat(p1);
 	  }
 	  catch(SftpException e){
-	    System.out.println(e.message);
+	    System.out.println(e.toString());
 	  }
 	  if(attrs!=null){
             out.println(attrs);
 	  }
 	  else{
+	  }
+	  continue;
+	}
+	if(cmd.equals("readlink")){
+          if(cmds.size()!=2) continue;
+	  String p1=(String)cmds.elementAt(1);
+	  String filename=null;
+	  try{
+	    filename=c.readlink(p1);
+            out.println(filename);
+	  }
+	  catch(SftpException e){
+	    System.out.println(e.toString());
 	  }
 	  continue;
 	}
@@ -450,6 +426,7 @@ public class Sftp{
 "rmdir path                    Remove remote directory\n"+
 "rm path                       Delete remote file\n"+
 "symlink oldpath newpath       Symlink remote file\n"+
+"readlink path                 Check the target of a symbolic link\n"+
 "rekey                         Key re-exchanging\n"+
 "compression level             Packet compression will be enabled\n"+
 "version                       Show SFTP version\n"+

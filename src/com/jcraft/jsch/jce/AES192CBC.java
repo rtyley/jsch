@@ -30,7 +30,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch.jce;
 
 import com.jcraft.jsch.Cipher;
-import javax.crypto.*;
 import javax.crypto.spec.*;
 
 public class AES192CBC implements Cipher{
@@ -61,7 +60,7 @@ public class AES192CBC implements Cipher{
                   keyspec, new IvParameterSpec(iv));
     }
     catch(Exception e){
-      System.out.println(e);
+      //System.err.println(e);
       cipher=null;
     }
   }

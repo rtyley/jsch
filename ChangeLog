@@ -1,6 +1,68 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Thu May  4 02:11:44 UTC 2006
+Last modified: Fri Aug 25 17:29:09 UTC 2006
+
+	
+Changes since version 0.1.28:	
+- bugfix: ChannelSftp#put will stack in some situations              FIXED.
+- bugfix: ChannelSftp invoked 'glob_remote' redundantly.             FIXED.
+- bugfix: ChannelSftp failed to make globing for some file names.    FIXED.
+- bugfix: ChannelSftp did not carefully read its input-stream.       FIXED.
+- bugfix: ChannelSftp#lstat did not try globing for given path.      FIXED.
+- bugfix: at closing channel, eof_lcoal and eof_remote did not
+          become true.                                               FIXED.
+- bugfix: IdentityFile did not carefully read file input-streams.    FIXED.
+- bugfix: KeyPair did not carefully read file input-streams.         FIXED.
+- bugfix: ProxySOCKS4 did not carefully read file input-streams.     FIXED.
+- bugfix: ProxySOCKS5 did not carefully read file input-streams.     FIXED.
+- bugfix: ForwardedTCPIPDaemom may fail in some situation.           FIXED.
+- bugfix: X forwarding failed to handle the magic-cookie 
+	  in some case                                               FIXED.
+          Thanks to Walter Pfannenmller.
+- bugfix: setKnownHosts in KnownHosts.java doesn't read the last
+	  line if linefeed is missing                                FIXED.
+          Thanks to Henrik Langos.
+- bugfix: With StrictHostKeyChecking set to yes connect()
+          shouldn't ask.                                             FIXED.
+          Thanks to Henrik Langos.
+- change: Identity#setPassphrase(String passphrase) is replaced with
+          Identity#setPassphrase(byte[] passphrase).
+- change: IdentityFile will clear its internal secrets at finalizing.
+- change: KeyPair will clear its internal secrets at finalizing.
+- change: KeyPair will clear its internal secrets at finalizing.
+- change: MAC#doFinal() is replaced with
+          MAC#doFile(byte[] buf, int offset)
+- change: at TCP socket reading timeout, keep-alive message will be sent
+          to the remote sshd.  To disable this functionality, invoke
+          explicitly Session.setServerAliveCountMax(0)
+- change: PortWatcher stops to use InetAddress.getByAddress().
+- change: in the user authentication, username, password and passphrase
+	  will be encoded in UTF-8.
+- change: JSch#addIdentity will check duplicate keys.
+- change: SftpException#message has been deleted.
+- change: SftpException#getMessage() will return the detailed message.
+- feature: IdentityFile#setPassphrase(byte[] passphrase) is added.
+- feature: IdentityFile#clear() is added to clear its internal secrets.
+- feature: KeyPair#decrypt(byte[] passphrase) is added.
+- feature: JSch#addIdentity(String path, byte[] passphrase) is added.
+- feature: JSch#getIdentityNames() is added.
+- feature: JSch#removeIdentity(String name) is added.
+- feature: JSch.#emoveAllIdentity() is added.
+- feature: Channel#readlin(String path) is added.
+- feature: Channel#getHome() is added.
+- feature: Channel#connect(int connectTimeout) is added.
+- feature: ChannelShell#setPtyType(String ttype) is added.
+- feature: Session#setPassword(byte[] password) is added.
+- feature: Session#setHostKeyAlias(String alias) is added.
+- feature: KeepAlive is implemented and 
+	   Session#setServerAliveInterval(int interval) and
+	   Session#setServerAliveCountMax(int count) are added.
+- feature: Session#sendKeepAliveMsg() is added.
+- feature: JSchException#getCause() may return a reason.
+- feature: SftpException#getCause() may return a reason.	
+- feature: ChannelExec#setErrStream(OutputStream out, boolean dontclose)
+           is added.
+	
 
 Changes since version 0.1.27:	
 - bugfix: ChannelSftp.localAbsolutePath did not work correctly.      FIXED.
@@ -9,6 +71,7 @@ Changes since version 0.1.27:
 - bugfix: messages before server's version string should be ignored. FIXED.
 - feature: Environment Variable Passing.
 
+	
 Changes since version 0.1.26:
 - bugfix: there was a session crash bug. That occurrence is rare, but 
           depends on the thread scheduling.  FIXED.

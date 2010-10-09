@@ -31,11 +31,8 @@ package com.jcraft.jsch.jce;
 
 import java.math.BigInteger;
 import java.security.*;
-import java.security.spec.*;
-import java.security.interfaces.*;
 import javax.crypto.*;
 import javax.crypto.spec.*;
-import javax.crypto.interfaces.*;
 
 public class DH implements com.jcraft.jsch.DH{
   BigInteger p;
@@ -77,7 +74,7 @@ public class DH implements com.jcraft.jsch.DH{
       K=new BigInteger(mySharedSecret);
       K_array=K.toByteArray();
 
-//System.out.println("K.signum(): "+K.signum()+
+//System.err.println("K.signum(): "+K.signum()+
 //		   " "+Integer.toHexString(mySharedSecret[0]&0xff)+
 //		   " "+Integer.toHexString(K_array[0]&0xff));
 

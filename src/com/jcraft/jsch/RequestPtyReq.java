@@ -29,10 +29,30 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class RequestPtyReq implements Request{
+class RequestPtyReq extends Request{
+  private String ttype="vt100";
+  private int tcol=80;
+  private int trow=24;
+  private int twp=640;
+  private int thp=480;
+
   void setCode(String cookie){
   }
+
+  void setTType(String ttype){
+    this.ttype=ttype;
+  }
+
+  void setTSize(int tcol, int trow, int twp, int thp){
+    this.tcol=tcol;
+    this.trow=trow;
+    this.twp=twp;
+    this.thp=thp;
+  }
+
   public void request(Session session, Channel channel) throws Exception{
+    super.request(session, channel);
+
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
@@ -41,13 +61,12 @@ class RequestPtyReq implements Request{
     buf.putInt(channel.getRecipient());
     buf.putString("pty-req".getBytes());
     buf.putByte((byte)(waitForReply() ? 1 : 0));
-    buf.putString("vt100".getBytes());
-    buf.putInt(80);
-    buf.putInt(24);
-    buf.putInt(640);
-    buf.putInt(480);
+    buf.putString(ttype.getBytes());
+    buf.putInt(tcol);
+    buf.putInt(trow);
+    buf.putInt(twp);
+    buf.putInt(thp);
     buf.putString("".getBytes());
-    session.write(packet);
+    write(packet);
   }
-  public boolean waitForReply(){ return false; }
 }

@@ -30,6 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 import java.net.*;
+
 class ChannelX11 extends Channel{
 
   static private final int LOCAL_WINDOW_SIZE_MAX=0x20000;
@@ -68,17 +69,17 @@ class ChannelX11 extends Channel{
     synchronized(faked_cookie_hex_pool){
       byte[] foo=(byte[])faked_cookie_hex_pool.get(session);
       if(foo==null){
-	Random random=session.random;
+	Random random=Session.random;
 	foo=new byte[16];
 	synchronized(random){
 	  random.fill(foo, 0, 16);
 	}
 /*
-System.out.print("faked_cookie: ");
+System.err.print("faked_cookie: ");
 for(int i=0; i<foo.length; i++){
-    System.out.print(Integer.toHexString(foo[i]&0xff)+":");
+    System.err.print(Integer.toHexString(foo[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
 	faked_cookie_pool.put(session, foo);
 	byte[] bar=new byte[32];
@@ -110,7 +111,7 @@ System.out.println("");
       io.setOutputStream(socket.getOutputStream());
     }
     catch(Exception e){
-      System.out.println(e);
+      System.err.println(e);
     }
   }
 
@@ -140,18 +141,37 @@ System.out.println("");
       }
     }
     catch(Exception e){
-      //System.out.println(e);
+      //System.err.println(e);
     }
 //    thread.notifyAll();
 //    thread=null;
+  }
+
+  private byte[] cache=new byte[0];
+  private byte[] addCache(byte[] foo, int s, int l){
+    byte[] bar=new byte[cache.length+l];
+    System.arraycopy(foo, s, bar, cache.length, l);
+    if(cache.length>0)
+      System.arraycopy(cache, 0, bar, 0, cache.length);
+    cache=bar;
+    return cache;
   }
 
   void write(byte[] foo, int s, int l) throws java.io.IOException {
     //if(eof_local)return;
 
     if(init){
+
+      foo=addCache(foo, s, l);
+      s=0; 
+      l=foo.length;
+
+      if(l<9)
+        return;
+
       int plen=(foo[s+6]&0xff)*256+(foo[s+7]&0xff);
       int dlen=(foo[s+8]&0xff)*256+(foo[s+9]&0xff);
+
       if((foo[s]&0xff)==0x42){
       }
       else if((foo[s]&0xff)==0x6c){
@@ -161,6 +181,10 @@ System.out.println("");
       else{
 	  // ??
       }
+
+      if(l<12+plen+((-plen)&3)+dlen)
+        return;
+
       byte[] bar=new byte[dlen];
       System.arraycopy(foo, s+12+plen+((-plen)&3), bar, 0, dlen);
       byte[] faked_cookie=null;
@@ -170,29 +194,33 @@ System.out.println("");
       }
 
       /*
-System.out.print("faked_cookie: ");
+System.err.print("faked_cookie: ");
 for(int i=0; i<faked_cookie.length; i++){
-    System.out.print(Integer.toHexString(faked_cookie[i]&0xff)+":");
+    System.err.print(Integer.toHexString(faked_cookie[i]&0xff)+":");
 }
-System.out.println("");
-System.out.print("bar: ");
+System.err.println("");
+System.err.print("bar: ");
 for(int i=0; i<bar.length; i++){
-    System.out.print(Integer.toHexString(bar[i]&0xff)+":");
+    System.err.print(Integer.toHexString(bar[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
       */
+
       if(equals(bar, faked_cookie)){
         if(cookie!=null)
           System.arraycopy(cookie, 0, foo, s+12+plen+((-plen)&3), dlen);
       }
       else{
-	  //System.out.println("wrong cookie");
+	  //System.err.println("wrong cookie");
           thread=null;
           eof();
           io.close();
           disconnect();
       }
       init=false;
+      io.put(foo, s, l);
+      cache=null;
+      return;
     }
     io.put(foo, s, l);
   }

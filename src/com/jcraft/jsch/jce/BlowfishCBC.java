@@ -30,7 +30,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch.jce;
 
 import com.jcraft.jsch.Cipher;
-import javax.crypto.*;
 import javax.crypto.spec.*;
 
 public class BlowfishCBC implements Cipher{
@@ -62,7 +61,7 @@ public class BlowfishCBC implements Cipher{
 		  skeySpec, new IvParameterSpec(iv));
     }
     catch(Exception e){
-      System.out.println(e);
+      System.err.println(e);
     }
   }
   public void update(byte[] foo, int s1, int len, byte[] bar, int s2) throws Exception{

@@ -64,7 +64,7 @@ public class DHGEX extends KeyExchange{
   private byte[] p;
   private byte[] g;
   private byte[] e;
-  private byte[] f;
+  //private byte[] f;
 
   public void init(Session session,
 		   byte[] V_S, byte[] V_C, byte[] I_S, byte[] I_C) throws Exception{
@@ -73,9 +73,6 @@ public class DHGEX extends KeyExchange{
     this.V_C=V_C;      
     this.I_S=I_S;      
     this.I_C=I_C;      
-
-//    sha=new SHA1();
-//    sha.init();
 
     try{
       Class c=Class.forName(session.getConfig("sha-1"));
@@ -128,11 +125,11 @@ public class DHGEX extends KeyExchange{
       g=_buf.getMPInt();
       /*
 for(int iii=0; iii<p.length; iii++){
-System.out.println("0x"+Integer.toHexString(p[iii]&0xff)+",");
+System.err.println("0x"+Integer.toHexString(p[iii]&0xff)+",");
 }
-System.out.println("");
+System.err.println("");
 for(int iii=0; iii<g.length; iii++){
-System.out.println("0x"+Integer.toHexString(g[iii]&0xff)+",");
+System.err.println("0x"+Integer.toHexString(g[iii]&0xff)+",");
 }
       */
       dh.setP(p);
@@ -175,7 +172,7 @@ System.out.println("0x"+Integer.toHexString(g[iii]&0xff)+",");
       // impint q of dsa
       // impint g of dsa
       // impint pub_key of dsa
-      //System.out.print("K_S: "); dump(K_S, 0, K_S.length);
+      //System.err.print("K_S: "); dump(K_S, 0, K_S.length);
 
       byte[] f=_buf.getMPInt();
       byte[] sig_of_H=_buf.getString();
@@ -215,7 +212,7 @@ System.out.println("0x"+Integer.toHexString(g[iii]&0xff)+",");
 
       H=sha.digest();
 
-      // System.out.print("H -> "); dump(H, 0, H.length);
+      // System.err.print("H -> "); dump(H, 0, H.length);
 
       i=0;
       j=0;
@@ -299,7 +296,7 @@ System.out.println("0x"+Integer.toHexString(g[iii]&0xff)+",");
 	result=sig.verify(sig_of_H);
       }
       else{
-	System.out.println("unknow alg");
+	System.err.println("unknow alg");
       }	    
       state=STATE_END;
       return result;

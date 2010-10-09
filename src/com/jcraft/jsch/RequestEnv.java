@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class RequestEnv implements Request{
+class RequestEnv extends Request{
   String name=null;
   String value=null;
   void setEnv(String name, String value){
@@ -37,6 +37,8 @@ class RequestEnv implements Request{
     this.value=value;
   }
   public void request(Session session, Channel channel) throws Exception{
+    super.request(session, channel);
+
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
@@ -47,7 +49,6 @@ class RequestEnv implements Request{
     buf.putByte((byte)(waitForReply() ? 1 : 0));
     buf.putString(name.getBytes());
     buf.putString(value.getBytes());
-    session.write(packet);
+    write(packet);
   }
-  public boolean waitForReply(){ return false; }
 }

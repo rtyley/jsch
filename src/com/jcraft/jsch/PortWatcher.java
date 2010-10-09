@@ -37,7 +37,12 @@ class PortWatcher implements Runnable{
   private static InetAddress anyLocalAddress=null;
   static{
     // 0.0.0.0
+/*
     try{ anyLocalAddress=InetAddress.getByAddress(new byte[4]); }
+    catch(UnknownHostException e){
+    }
+*/
+    try{ anyLocalAddress=InetAddress.getByName("0.0.0.0"); }
     catch(UnknownHostException e){
     }
   }
@@ -72,7 +77,7 @@ class PortWatcher implements Runnable{
       addr=InetAddress.getByName(address);
     }
     catch(UnknownHostException uhe){
-      throw new JSchException("PortForwardingL: invalid address "+address+" specified.");
+      throw new JSchException("PortForwardingL: invalid address "+address+" specified.", uhe);
     }
     synchronized(pool){
       for(int i=0; i<pool.size(); i++){
@@ -135,14 +140,15 @@ class PortWatcher implements Runnable{
         factory.createServerSocket(lport, 0, boundaddress);
     }
     catch(Exception e){ 
-      System.out.println(e);
-      throw new JSchException("PortForwardingL: local port "+address+":"+lport+" cannot be bound.");
+      //System.err.println(e);
+      String message="PortForwardingL: local port "+address+":"+lport+" cannot be bound.";
+      if(e instanceof Throwable)
+        throw new JSchException(message, (Throwable)e);
+      throw new JSchException(message);
     }
   }
 
   public void run(){
-    Buffer buf=new Buffer(300); // ??
-    Packet packet=new Packet(buf);
     thread=this;
     try{
       while(thread!=null){
@@ -165,7 +171,7 @@ class PortWatcher implements Runnable{
       }
     }
     catch(Exception e){
-      //System.out.println("! "+e);
+      //System.err.println("! "+e);
     }
 
     delete();

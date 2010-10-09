@@ -29,14 +29,17 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class RequestExec implements Request{
+class RequestExec extends Request{
   private String command="";
   RequestExec(String foo){
     this.command=foo;
   }
   public void request(Session session, Channel channel) throws Exception{
+    super.request(session, channel);
+
     Packet packet=session.packet;
     Buffer buf=session.buf;
+
     // send
     // byte     SSH_MSG_CHANNEL_REQUEST(98)
     // uint32 recipient channel
@@ -49,7 +52,6 @@ class RequestExec implements Request{
     buf.putString("exec".getBytes());
     buf.putByte((byte)(waitForReply() ? 1 : 0));
     buf.putString(command.getBytes());
-    session.write(packet);
+    write(packet);
   }
-  public boolean waitForReply(){ return false; }
 }

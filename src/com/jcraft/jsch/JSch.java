@@ -30,6 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 import java.io.InputStream;
+import java.util.Vector;
+
 public class JSch{
   static java.util.Hashtable config=new java.util.Hashtable();
   static{
@@ -93,6 +95,12 @@ public class JSch{
 
   public Session getSession(String username, String host) throws JSchException { return getSession(username, host, 22); }
   public Session getSession(String username, String host, int port) throws JSchException {
+    if(username==null){
+      throw new JSchException("username must not be null.");
+    }
+    if(host==null){
+      throw new JSchException("host must not be null.");
+    }
     Session s=new Session(this); 
     s.setUserName(username);
     s.setHost(host);
@@ -106,55 +114,59 @@ public class JSch{
       return pool.remove(session);
     }
   }
-  public void setHostKeyRepository(HostKeyRepository foo){
-    known_hosts=foo;
+  public void setHostKeyRepository(HostKeyRepository hkrepo){
+    known_hosts=hkrepo;
   }
-  public void setKnownHosts(String foo) throws JSchException{
+
+  public void setKnownHosts(String filename) throws JSchException{
     if(known_hosts==null) known_hosts=new KnownHosts(this);
     if(known_hosts instanceof KnownHosts){
       synchronized(known_hosts){
-	((KnownHosts)known_hosts).setKnownHosts(foo); 
+	((KnownHosts)known_hosts).setKnownHosts(filename); 
       }
     }
   }
-  public void setKnownHosts(InputStream foo) throws JSchException{ 
+
+  public void setKnownHosts(InputStream stream) throws JSchException{ 
     if(known_hosts==null) known_hosts=new KnownHosts(this);
     if(known_hosts instanceof KnownHosts){
       synchronized(known_hosts){
-	((KnownHosts)known_hosts).setKnownHosts(foo); 
+	((KnownHosts)known_hosts).setKnownHosts(stream); 
       }
     }
   }
-  /*
-  HostKeyRepository getKnownHosts(){ 
-    if(known_hosts==null) known_hosts=new KnownHosts(this);
-    return known_hosts; 
-  }
-  */
+
   public HostKeyRepository getHostKeyRepository(){ 
     if(known_hosts==null) known_hosts=new KnownHosts(this);
     return known_hosts; 
   }
-  /*
-  public HostKey[] getHostKey(){
-    if(known_hosts==null) return null;
-    return known_hosts.getHostKey(); 
+
+  public void addIdentity(String pkey) throws JSchException{
+    addIdentity(pkey, (byte[])null);
   }
-  public void removeHostKey(String foo, String type){
-    removeHostKey(foo, type, null);
+
+  public void addIdentity(String pkey, String passphrase) throws JSchException{
+    byte[] _passphrase=null;
+    if(passphrase!=null){
+      _passphrase=Util.str2byte(passphrase);
+    }
+    addIdentity(pkey, _passphrase);
+    if(_passphrase!=null)
+      Util.bzero(_passphrase);
   }
-  public void removeHostKey(String foo, String type, byte[] key){
-    if(known_hosts==null) return;
-    known_hosts.remove(foo, type, key); 
-  }
-  */
-  public void addIdentity(String foo) throws JSchException{
-    addIdentity(foo, (String)null);
-  }
-  public void addIdentity(String foo, String bar) throws JSchException{
-    Identity identity=new IdentityFile(foo, this);
-    if(bar!=null){
-      identity.setPassphrase(bar);
+
+  public void addIdentity(String pkey, byte[] passphrase) throws JSchException{
+    Identity identity=new IdentityFile(pkey, this);
+    if(passphrase!=null){
+      try{ 
+        byte[] goo=new byte[passphrase.length];
+        System.arraycopy(passphrase, 0, goo, 0, passphrase.length);
+        passphrase=goo;
+        identity.setPassphrase(passphrase); 
+      }
+      finally{
+        Util.bzero(passphrase);
+      }
     }
     synchronized(identities){
       if(!identities.contains(identity)){
@@ -162,7 +174,45 @@ public class JSch{
       }
     }
   }
-  String getConfig(String foo){ return (String)(config.get(foo)); }
+
+  public void removeIdentity(String name) throws JSchException{
+    synchronized(identities){
+      for(int i=0; i<identities.size(); i++){
+        Identity identity=(Identity)(identities.elementAt(i));
+	if(!identity.getName().equals(name))
+          continue;
+        identities.removeElement(identity);
+        if(identity instanceof IdentityFile)
+          ((IdentityFile)identity).clear();
+        break;
+      }
+    }
+  }
+
+  public Vector getIdentityNames() throws JSchException{
+    Vector foo=new Vector();
+    synchronized(identities){
+      for(int i=0; i<identities.size(); i++){
+        Identity identity=(Identity)(identities.elementAt(i));
+        foo.addElement(identity.getName());
+      }
+    }
+    return foo;
+  }
+
+  public void removeAllIdentity() throws JSchException{
+    synchronized(identities){
+      Vector foo=getIdentityNames();
+      for(int i=0; i<foo.size(); i++){
+        String name=((String)foo.elementAt(i));
+        removeIdentity(name);
+      }
+    }
+  }
+
+  String getConfig(String key){ 
+    return (String)(config.get(key)); 
+  }
 
   private java.util.Vector proxies;
   void setProxy(String hosts, Proxy proxy){
@@ -197,11 +247,11 @@ public class JSch{
     proxies=null;
   }
 
-  public static void setConfig(java.util.Hashtable foo){
+  public static void setConfig(java.util.Hashtable newconf){
     synchronized(config){
-      for(java.util.Enumeration e=foo.keys() ; e.hasMoreElements() ;) {
+      for(java.util.Enumeration e=newconf.keys() ; e.hasMoreElements() ;) {
 	String key=(String)(e.nextElement());
-	config.put(key, (String)(foo.get(key)));
+	config.put(key, (String)(newconf.get(key)));
       }
     }
   }

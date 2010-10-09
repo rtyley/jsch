@@ -73,7 +73,7 @@ public class TripleDESCBC implements Cipher{
 		  _key, new IvParameterSpec(iv));
     }
     catch(Exception e){
-      System.out.println(e);
+      System.err.println(e);
       cipher=null;
     }
   }

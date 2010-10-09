@@ -30,7 +30,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch.jce;
 
 import java.security.SecureRandom;
-import java.security.NoSuchAlgorithmException;
 
 public class Random implements com.jcraft.jsch.Random{
   private byte[] tmp=new byte[16];
@@ -39,12 +38,12 @@ public class Random implements com.jcraft.jsch.Random{
     random=null;
     try{ random=SecureRandom.getInstance("SHA1PRNG"); }
     catch(java.security.NoSuchAlgorithmException e){ 
-      // System.out.println(e); 
+      // System.err.println(e); 
 
       // The following code is for IBM's JCE
       try{ random=SecureRandom.getInstance("IBMSecureRandom"); }
       catch(java.security.NoSuchAlgorithmException ee){ 
-	System.out.println(ee); 
+	System.err.println(ee); 
       }
     }
   }

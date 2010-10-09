@@ -45,7 +45,7 @@ abstract class UserAuth{
     // byte      SSH_MSG_SERVICE_ACCEPT(6)
     // string    service name
     buf=session.read(buf);
-    //System.out.println("read: 6 ? "+buf.buffer[5]);
+    //System.err.println("read: 6 ? "+buf.buffer[5]);
     return buf.buffer[5]==6;
   }
 }

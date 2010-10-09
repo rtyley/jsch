@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class RequestWindowChange implements Request{
+class RequestWindowChange extends Request{
   int width_columns=80;
   int height_rows=24;
   int width_pixels=640;
@@ -41,6 +41,8 @@ class RequestWindowChange implements Request{
     this.height_pixels=hp;
   }
   public void request(Session session, Channel channel) throws Exception{
+    super.request(session, channel);
+
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
@@ -61,7 +63,6 @@ class RequestWindowChange implements Request{
     buf.putInt(height_rows);
     buf.putInt(width_pixels);
     buf.putInt(height_pixels);
-    session.write(packet);
+    write(packet);
   }
-  public boolean waitForReply(){ return false; }
 }

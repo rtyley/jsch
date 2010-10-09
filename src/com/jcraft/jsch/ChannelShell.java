@@ -29,13 +29,18 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
 import java.util.*;
 
 public class ChannelShell extends ChannelSession{
-  boolean xforwading=false;
-  boolean pty=true;
-  Hashtable env=null;
+  private boolean xforwading=false;
+  private boolean pty=true;
+  private Hashtable env=null;
+  private String ttype="vt100";
+  private int tcol=80;
+  private int trow=24;
+  private int twp=640;
+  private int thp=480;
+
   public void setXForwarding(boolean foo){ xforwading=foo; }
   public void setPty(boolean foo){ pty=foo; }
   public void setEnv(Hashtable foo){ env=foo; }
@@ -49,6 +54,8 @@ public class ChannelShell extends ChannelSession{
 
       if(pty){
         request=new RequestPtyReq();
+        ((RequestPtyReq)request).setTType(ttype);
+        ((RequestPtyReq)request).setTSize(tcol, trow, twp, thp);
         request.request(session, this);
       }
 
@@ -66,6 +73,9 @@ public class ChannelShell extends ChannelSession{
       request.request(session, this);
     }
     catch(Exception e){
+      if(e instanceof JSchException) throw (JSchException)e;
+      if(e instanceof Throwable)
+        throw new JSchException("ChannelShell", (Throwable)e);
       throw new JSchException("ChannelShell");
     }
     thread=new Thread(this);
@@ -85,7 +95,17 @@ public class ChannelShell extends ChannelSession{
       request.request(session, this);
     }
     catch(Exception e){
-      System.out.println("ChannelShell.setPtySize: "+e);
+      //System.err.println("ChannelShell.setPtySize: "+e);
     }
+  }
+  public void setPtyType(String ttype){
+    setPtyType(ttype, 80, 24, 640, 480);
+  }
+  public void setPtyType(String ttype, int col, int row, int wp, int hp){
+    this.ttype=ttype;
+    this.tcol=col;
+    this.trow=row;
+    this.twp=wp;
+    this.thp=hp;
   }
 }

@@ -29,11 +29,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class RequestX11 implements Request{
+class RequestX11 extends Request{
   public void setCookie(String cookie){
     ChannelX11.cookie=cookie.getBytes();
   }
   public void request(Session session, Channel channel) throws Exception{
+    super.request(session, channel);
+
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
@@ -54,9 +56,8 @@ class RequestX11 implements Request{
     buf.putString("MIT-MAGIC-COOKIE-1".getBytes());
     buf.putString(ChannelX11.getFakedCookie(session));
     buf.putInt(0);
-    session.write(packet);
+    write(packet);
 
     session.x11_forwarding=true;
   }
-  public boolean waitForReply(){ return false; }
 }

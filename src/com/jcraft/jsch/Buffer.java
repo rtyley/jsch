@@ -196,26 +196,26 @@ public class Buffer{
     int foo;
     for(int i=0; i<tmp_buffer_index; i++){
         foo=tmp_buffer[i]&0xff;
-	System.out.print(chars[(foo>>>4)&0xf]);
-	System.out.print(chars[foo&0xf]);
+	System.err.print(chars[(foo>>>4)&0xf]);
+	System.err.print(chars[foo&0xf]);
         if(i%16==15){
-          System.out.println("");
+          System.err.println("");
 	  continue;
 	}
         if(i>0 && i%2==1){
-          System.out.print(" ");
+          System.err.print(" ");
 	}
     }
-    System.out.println("");
+    System.err.println("");
   }
   static void dump(byte[] b){
     dump(b, 0, b.length);
   }
   static void dump(byte[] b, int s, int l){
     for(int i=s; i<s+l; i++){
-      System.out.print(Integer.toHexString(b[i]&0xff)+":");
+      System.err.print(Integer.toHexString(b[i]&0xff)+":");
     }
-    System.out.println("");
+    System.err.println("");
   }
 */
 

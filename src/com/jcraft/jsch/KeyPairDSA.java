@@ -58,7 +58,9 @@ public class KeyPairDSA extends KeyPair{
       keypairgen=null;
     }
     catch(Exception e){
-      System.err.println("KeyPairDSA: "+e); 
+      //System.err.println("KeyPairDSA: "+e); 
+      if(e instanceof Throwable)
+        throw new JSchException(e.toString(), (Throwable)e);
       throw new JSchException(e.toString());
     }
   }
@@ -181,7 +183,7 @@ public class KeyPairDSA extends KeyPair{
       index+=length;
     }
     catch(Exception e){
-      //System.out.println(e);
+      //System.err.println(e);
       //e.printStackTrace();
       return false;
     }
@@ -214,10 +216,6 @@ public class KeyPairDSA extends KeyPair{
   public int getKeySize(){return key_size; }
   public void dispose(){
     super.dispose();
-    P_array=null;
-    Q_array=null;
-    G_array=null;
-    pub_array=null;
-    prv_array=null;
+    Util.bzero(prv_array);
   }
 }

@@ -29,7 +29,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
 import java.io.*;
 
 public class ChannelDirectTCPIP extends Channel{
@@ -55,7 +54,7 @@ public class ChannelDirectTCPIP extends Channel{
       io=new IO();
     }
     catch(Exception e){
-      System.out.println(e);
+      System.err.println(e);
     }
   }
 
@@ -128,7 +127,7 @@ public class ChannelDirectTCPIP extends Channel{
 
   public void run(){
 //    thread=Thread.currentThread();
-//System.out.println("rmpsize: "+rmpsize+", lmpsize: "+lmpsize);
+//System.err.println("rmpsize: "+rmpsize+", lmpsize: "+lmpsize);
     Buffer buf=new Buffer(rmpsize);
 //    Buffer buf=new Buffer(lmpsize);
     Packet packet=new Packet(buf);
@@ -159,7 +158,7 @@ public class ChannelDirectTCPIP extends Channel{
     catch(Exception e){
     }
     disconnect();
-//System.out.println("connect end");
+//System.err.println("connect end");
 
 /*
     try{

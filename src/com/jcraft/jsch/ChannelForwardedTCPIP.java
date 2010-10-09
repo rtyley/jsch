@@ -30,7 +30,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 import java.net.*;
-import java.io.*;
 
 public class ChannelForwardedTCPIP extends Channel{
 
@@ -50,19 +49,19 @@ public class ChannelForwardedTCPIP extends Channel{
     setLocalWindowSizeMax(LOCAL_WINDOW_SIZE_MAX);
     setLocalWindowSize(LOCAL_WINDOW_SIZE_MAX);
     setLocalPacketSize(LOCAL_MAXIMUM_PACKET_SIZE);
+    io=new IO();
   }
 
   void init (){
     try{ 
-      io=new IO();
       if(lport==-1){
         Class c=Class.forName(target);
         ForwardedTCPIPDaemon daemon=(ForwardedTCPIPDaemon)c.newInstance();
         daemon.setChannel(this);
         Object[] foo=getPort(session, rport);
         daemon.setArg((Object[])foo[3]);
-        new Thread(daemon).start();
         connected=true;
+        new Thread(daemon).start();
         return;
       }
       else{
@@ -76,7 +75,7 @@ public class ChannelForwardedTCPIP extends Channel{
       }
     }
     catch(Exception e){
-      System.out.println(e);
+      System.err.println(e);
     }
   }
 
@@ -106,7 +105,7 @@ public class ChannelForwardedTCPIP extends Channel{
       }
     }
     catch(Exception e){
-      //System.out.println(e);
+      //System.err.println(e);
     }
     //thread=null;
     //eof();
@@ -116,16 +115,17 @@ public class ChannelForwardedTCPIP extends Channel{
     setRecipient(buf.getInt());
     setRemoteWindowSize(buf.getInt());
     setRemotePacketSize(buf.getInt());
-    byte[] addr=buf.getString();
+
     int port=buf.getInt();
-    byte[] orgaddr=buf.getString();
-    int orgport=buf.getInt();
 
     /*
-    System.out.println("addr: "+new String(addr));
-    System.out.println("port: "+port);
-    System.out.println("orgaddr: "+new String(orgaddr));
-    System.out.println("orgport: "+orgport);
+    byte[] addr=buf.getString();
+    byte[] orgaddr=buf.getString();
+    int orgport=buf.getInt();
+    System.err.println("addr: "+new String(addr));
+    System.err.println("port: "+port);
+    System.err.println("orgaddr: "+new String(orgaddr));
+    System.err.println("orgport: "+orgport);
     */
 
     synchronized(pool){
@@ -143,7 +143,7 @@ public class ChannelForwardedTCPIP extends Channel{
         break;
       }
       if(target==null){
-        System.out.println("??");
+        System.err.println("??");
       }
     }
   }

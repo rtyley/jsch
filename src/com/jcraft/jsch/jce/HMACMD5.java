@@ -60,9 +60,14 @@ public class HMACMD5 implements MAC{
   public void update(byte foo[], int s, int l){
     mac.update(foo, s, l);      
   }
-  public byte[] doFinal(){
-    return mac.doFinal();
+  public void doFinal(byte[] buf, int offset){
+    try{
+      mac.doFinal(buf, offset);
+    }
+    catch(ShortBufferException e){
+    }
   }
+
   public String getName(){
     return name;
   }

@@ -29,22 +29,18 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-public class RequestSubsystem implements Request{
-  private boolean want_reply=true;
+public class RequestSubsystem extends Request{
   private String subsystem=null;
   public void request(Session session, Channel channel, String subsystem, boolean want_reply) throws Exception{
+    setReply(want_reply);
     this.subsystem=subsystem;
-    this.want_reply=want_reply;
     this.request(session, channel);
   }
   public void request(Session session, Channel channel) throws Exception{
+    super.request(session, channel);
+
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
-
-    boolean reply=waitForReply();
-    if(reply){
-      channel.reply=-1;
-    }
 
     packet.reset();
     buf.putByte((byte)Session.SSH_MSG_CHANNEL_REQUEST);
@@ -52,18 +48,6 @@ public class RequestSubsystem implements Request{
     buf.putString("subsystem".getBytes());
     buf.putByte((byte)(waitForReply() ? 1 : 0));
     buf.putString(subsystem.getBytes());
-    session.write(packet);
-
-    if(reply){
-      while(channel.reply==-1){
-	try{Thread.sleep(10);}
-	catch(Exception ee){
-	}
-      }
-      if(channel.reply==0){
-	throw new JSchException("failed to send subsystem request");
-      }
-    }
+    write(packet);
   }
-  public boolean waitForReply(){ return want_reply; }
 }

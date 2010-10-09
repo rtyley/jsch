@@ -43,7 +43,6 @@ class Util{
   static byte[] fromBase64(byte[] buf, int start, int length){
     byte[] foo=new byte[length];
     int j=0;
-    int l=length;
     for (int i=start;i<start+length;i+=4){
       foo[j]=(byte)((val(buf[i])<<2)|((val(buf[i+1])&0x30)>>>4));
       if(buf[i+2]==(byte)'='){ j++; break;}
@@ -121,11 +120,22 @@ class Util{
     return result;
   }
   static boolean glob(byte[] pattern, byte[] name){
-    return glob(pattern, 0, name, 0);
+    return glob0(pattern, 0, name, 0);
+  }
+  static private boolean glob0(byte[] pattern, int pattern_index,
+			      byte[] name, int name_index){
+    if(name.length>0 && name[0]=='.'){
+      if(pattern.length>0 && pattern[0]=='.'){
+        if(pattern.length==2 && pattern[1]=='*') return true;
+        return glob(pattern, pattern_index+1, name, name_index+1);
+      }
+      return false;
+    }
+    return glob(pattern, pattern_index, name, name_index);
   }
   static private boolean glob(byte[] pattern, int pattern_index,
 			      byte[] name, int name_index){
-//System.out.println("glob: "+new String(pattern)+", "+new String(name));
+//System.err.println("glob: "+new String(pattern)+", "+new String(name));
     int patternlen=pattern.length;
     if(patternlen==0)
       return false;
@@ -133,7 +143,7 @@ class Util{
     int i=pattern_index;
     int j=name_index;
     while(i<patternlen && j<namelen){
-//System.out.println("i="+i+", j="+j);
+//System.err.println("i="+i+", j="+j);
       if(pattern[i]=='\\'){
 	if(i+1==patternlen)
 	  return false;
@@ -183,6 +193,26 @@ class Util{
     return false;
   }
 
+  static String unquote(String _path){
+    byte[] path=_path.getBytes();
+    int pathlen=path.length;
+    int i=0;
+    while(i<pathlen){
+      if(path[i]=='\\'){
+        if(i+1==pathlen)
+          break;
+        System.arraycopy(path, i+1, path, i, path.length-(i+1));
+        pathlen--;
+        continue;
+      }
+      i++;
+    }
+    if(pathlen==path.length)return _path;
+    byte[] foo=new byte[pathlen];
+    System.arraycopy(path, 0, foo, 0, pathlen);
+    return new String(foo);
+  }
+
   private static String[] chars={
     "0","1","2","3","4","5","6","7","8","9", "a","b","c","d","e","f"
   };
@@ -222,13 +252,14 @@ class Util{
       }
       catch(Exception e){
         String message=e.toString();
+        if(e instanceof Throwable)
+          throw new JSchException(message, (Throwable)e);
         throw new JSchException(message);
       }
     }
     final String _host=host;
     final int _port=port;
     final Socket[] sockp=new Socket[1];
-    final Thread currentThread=Thread.currentThread();
     final Exception[] ee=new Exception[1];
     String message="";
     Thread tmp=new Thread(new Runnable(){
@@ -271,4 +302,40 @@ class Util{
     }
     return socket;
   } 
+
+  static byte[] str2byte(String str){
+    if(str==null) 
+      return null;
+    try{ return str.getBytes("UTF-8"); }
+    catch(java.io.UnsupportedEncodingException e){
+      return str.getBytes();
+    }
+  }
+
+  /*
+  static byte[] char2byte(char[] foo){
+    int len=0;
+    for(int i=0; i<foo.length; i++){
+      if((foo[i]&0xff00)==0) len++;
+      else len+=2;
+    }
+    byte[] bar=new byte[len];
+    for(int i=0, j=0; i<foo.length; i++){
+      if((foo[i]&0xff00)==0){
+        bar[j++]=(byte)foo[i];
+      }
+      else{
+        bar[j++]=(byte)(foo[i]>>>8);
+        bar[j++]=(byte)foo[i];
+      }
+    }
+    return bar;
+  }
+  */
+  static void bzero(byte[] foo){
+    if(foo==null)
+      return;
+    for(int i=0; i<foo.length; i++)
+      foo[i]=0;
+  }
 }

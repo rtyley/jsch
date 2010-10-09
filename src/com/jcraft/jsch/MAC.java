@@ -35,5 +35,5 @@ public interface MAC{
   void init(byte[] key) throws Exception; 
   void update(byte[] foo, int start, int len);
   void update(int foo);
-  byte[] doFinal();
+  void doFinal(byte[] buf, int offset);
 }

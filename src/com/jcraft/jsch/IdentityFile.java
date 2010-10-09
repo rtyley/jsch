@@ -87,7 +87,13 @@ class IdentityFile implements Identity{
       File file=new File(identity);
       FileInputStream fis = new FileInputStream(identity);
       byte[] buf=new byte[(int)(file.length())];
-      int len=fis.read(buf, 0, buf.length);
+      int len=0;
+      while(true){
+        int i=fis.read(buf, len, buf.length-len);
+        if(i<=0)
+          break;
+        len+=i;
+      }
       fis.close();
 
       int i=0;
@@ -101,7 +107,7 @@ class IdentityFile implements Identity{
 	    keytype=FSECURE;
 	  }
 	  else{
-            //System.out.println("invalid format: "+identity);
+            //System.err.println("invalid format: "+identity);
 	    throw new JSchException("invaid privatekey: "+identity);
 	  }
           i+=3;
@@ -173,10 +179,10 @@ class IdentityFile implements Identity{
 	_buf.getInt();  // 0x3f6ff9be
 	_buf.getInt();
 	byte[]_type=_buf.getString();
-	//System.out.println("type: "+new String(_type)); 
+	//System.err.println("type: "+new String(_type)); 
 	byte[] _cipher=_buf.getString();
 	String cipher=new String(_cipher);
-	//System.out.println("cipher: "+cipher); 
+	//System.err.println("cipher: "+cipher); 
 	if(cipher.equals("3des-cbc")){
   	   _buf.getInt();
 	   byte[] foo=new byte[encoded_data.length-_buf.getOffSet()];
@@ -202,7 +208,13 @@ class IdentityFile implements Identity{
         file=new File(identity+".pub");
         fis=new FileInputStream(identity+".pub");
         buf=new byte[(int)(file.length())];
-        len=fis.read(buf, 0, buf.length);
+        len=0;
+        while(true){
+          i=fis.read(buf, len, buf.length-len);
+          if(i<=0)
+            break;
+          len+=i;
+        }
         fis.close();
       }
       catch(Exception ee){
@@ -265,8 +277,10 @@ class IdentityFile implements Identity{
 
     }
     catch(Exception e){
-      System.out.println("Identity: "+e);
+      //System.err.println("Identity: "+e);
       if(e instanceof JSchException) throw (JSchException)e;
+      if(e instanceof Throwable)
+        throw new JSchException(e.toString(), (Throwable)e);
       throw new JSchException(e.toString());
     }
 
@@ -277,7 +291,7 @@ class IdentityFile implements Identity{
     return "ssh-dss"; 
   }
 
-  public boolean setPassphrase(String _passphrase) throws JSchException{
+  public boolean setPassphrase(byte[] _passphrase) throws JSchException{
     /*
       hash is MD5
       h(0) <- hash(passphrase, iv);
@@ -287,7 +301,7 @@ class IdentityFile implements Identity{
     try{
       if(encrypted){
 	if(_passphrase==null) return false;
-	byte[] passphrase=_passphrase.getBytes();
+	byte[] passphrase=_passphrase;
 	int hsize=hash.getBlockSize();
 	byte[] hn=new byte[key.length/hsize*hsize+
 			   (key.length%hsize==0?0:hsize)];
@@ -313,12 +327,7 @@ class IdentityFile implements Identity{
 	  }
 	  System.arraycopy(hn, 0, key, 0, key.length); 
 	}
-        if(passphrase!=null){
-          for(int i=0; i<passphrase.length; i++){
-            passphrase[i]=0;
-          }
-          passphrase=null;
-        }
+        Util.bzero(passphrase);
       }
       if(decrypt()){
 	encrypted=false;
@@ -329,6 +338,8 @@ class IdentityFile implements Identity{
     }
     catch(Exception e){
       if(e instanceof JSchException) throw (JSchException)e;
+      if(e instanceof Throwable)
+        throw new JSchException(e.toString(), (Throwable)e);
       throw new JSchException(e.toString());
     }
   }
@@ -404,24 +415,24 @@ class IdentityFile implements Identity{
 /*
     byte[] foo;
     int i;
-    System.out.print("P ");
+    System.err.print("P ");
     foo=P_array;
     for(i=0;  i<foo.length; i++){
-      System.out.print(Integer.toHexString(foo[i]&0xff)+":");
+      System.err.print(Integer.toHexString(foo[i]&0xff)+":");
     }
-    System.out.println("");
-    System.out.print("Q ");
+    System.err.println("");
+    System.err.print("Q ");
     foo=Q_array;
     for(i=0;  i<foo.length; i++){
-      System.out.print(Integer.toHexString(foo[i]&0xff)+":");
+      System.err.print(Integer.toHexString(foo[i]&0xff)+":");
     }
-    System.out.println("");
-    System.out.print("G ");
+    System.err.println("");
+    System.err.print("G ");
     foo=G_array;
     for(i=0;  i<foo.length; i++){
-      System.out.print(Integer.toHexString(foo[i]&0xff)+":");
+      System.err.print(Integer.toHexString(foo[i]&0xff)+":");
     }
-    System.out.println("");
+    System.err.println("");
 */
 
     try{      
@@ -449,7 +460,7 @@ class IdentityFile implements Identity{
       return buf.buffer;
     }
     catch(Exception e){
-      //System.out.println("e "+e);
+      //System.err.println("e "+e);
     }
     return null;
   }
@@ -524,9 +535,9 @@ class IdentityFile implements Identity{
       }
       index+=length;
 
-//System.out.println("int: len="+length);
-//System.out.print(Integer.toHexString(plain[index-1]&0xff)+":");
-//System.out.println("");
+//System.err.println("int: len="+length);
+//System.err.print(Integer.toHexString(plain[index-1]&0xff)+":");
+//System.err.println("");
 
       index++;
       length=plain[index++]&0xff;
@@ -538,11 +549,11 @@ class IdentityFile implements Identity{
       System.arraycopy(plain, index, n_array, 0, length);
       index+=length;
 /*
-System.out.println("int: N len="+length);
+System.err.println("int: N len="+length);
 for(int i=0; i<n_array.length; i++){
-System.out.print(Integer.toHexString(n_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(n_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -554,11 +565,11 @@ System.out.println("");
       System.arraycopy(plain, index, e_array, 0, length);
       index+=length;
 /*
-System.out.println("int: E len="+length);
+System.err.println("int: E len="+length);
 for(int i=0; i<e_array.length; i++){
-System.out.print(Integer.toHexString(e_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(e_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -570,11 +581,11 @@ System.out.println("");
       System.arraycopy(plain, index, d_array, 0, length);
       index+=length;
 /*
-System.out.println("int: D len="+length);
+System.err.println("int: D len="+length);
 for(int i=0; i<d_array.length; i++){
-System.out.print(Integer.toHexString(d_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(d_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
 
       index++;
@@ -587,11 +598,11 @@ System.out.println("");
       System.arraycopy(plain, index, p_array, 0, length);
       index+=length;
 /*
-System.out.println("int: P len="+length);
+System.err.println("int: P len="+length);
 for(int i=0; i<p_array.length; i++){
-System.out.print(Integer.toHexString(p_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(p_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -603,11 +614,11 @@ System.out.println("");
       System.arraycopy(plain, index, q_array, 0, length);
       index+=length;
 /*
-System.out.println("int: q len="+length);
+System.err.println("int: q len="+length);
 for(int i=0; i<q_array.length; i++){
-System.out.print(Integer.toHexString(q_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(q_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -619,11 +630,11 @@ System.out.println("");
       System.arraycopy(plain, index, dmp1_array, 0, length);
       index+=length;
 /*
-System.out.println("int: dmp1 len="+length);
+System.err.println("int: dmp1 len="+length);
 for(int i=0; i<dmp1_array.length; i++){
-System.out.print(Integer.toHexString(dmp1_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(dmp1_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -635,11 +646,11 @@ System.out.println("");
       System.arraycopy(plain, index, dmq1_array, 0, length);
       index+=length;
 /*
-System.out.println("int: dmq1 len="+length);
+System.err.println("int: dmq1 len="+length);
 for(int i=0; i<dmq1_array.length; i++){
-System.out.print(Integer.toHexString(dmq1_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(dmq1_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -651,15 +662,15 @@ System.out.println("");
       System.arraycopy(plain, index, iqmp_array, 0, length);
       index+=length;
 /*
-System.out.println("int: iqmp len="+length);
+System.err.println("int: iqmp len="+length);
 for(int i=0; i<iqmp_array.length; i++){
-System.out.print(Integer.toHexString(iqmp_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(iqmp_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
     }
     catch(Exception e){
-      //System.out.println(e);
+      //System.err.println(e);
       return false;
     }
     return true;
@@ -675,9 +686,9 @@ System.out.println("");
 	  cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
 /*
 for(int i=0; i<plain.length; i++){
-System.out.print(Integer.toHexString(plain[i]&0xff)+":");
+System.err.print(Integer.toHexString(plain[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
 	}
 	else if(keytype==FSECURE){
@@ -778,7 +789,7 @@ System.out.println("");
       index+=length;
     }
     catch(Exception e){
-      //System.out.println(e);
+      //System.err.println(e);
       //e.printStackTrace();
       return false;
     }
@@ -789,7 +800,7 @@ System.out.println("");
     return encrypted;
   }
   public String getName(){return identity;}
-
+  /*
   private int writeSEQUENCE(byte[] buf, int index, int len){
     buf[index++]=0x30;
     index=writeLength(buf, index, len);
@@ -802,6 +813,7 @@ System.out.println("");
     index+=data.length;
     return index;
   }
+  */
 
   private int countLength(int len){
     int i=1;
@@ -834,8 +846,27 @@ System.out.println("");
     if('a'<=c&&c<='z') return (byte)(c-'a'+10);
     return (byte)(c-'A'+10);
   }
+  /*
   private byte b2a(byte c){
     if(0<=c&&c<=9) return (byte)(c+'0');
     return (byte)(c-10+'A');
+  }
+  */
+  public boolean equals(Object o){
+    if(!(o instanceof IdentityFile)) return super.equals(o);
+    IdentityFile foo=(IdentityFile)o;
+    return identity.equals(foo.identity);
+  }
+
+  void clear(){
+    Util.bzero(encoded_data);
+    Util.bzero(prv_array);
+    Util.bzero(d_array);
+    Util.bzero(key);
+    Util.bzero(iv);
+  }
+
+  public void finalize (){
+    clear();
   }
 }

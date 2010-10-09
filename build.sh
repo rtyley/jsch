@@ -4,7 +4,7 @@ echo
 echo "JSch Build System"
 echo "-----------------"
 
-export ANT_HOME=$ANT_HOME
+export OLD_ANT_HOME=$ANT_HOME
 ANT_HOME=./tools
 
 export OLD_CLASSPATH=$CLASSPATH

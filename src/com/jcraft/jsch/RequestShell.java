@@ -29,8 +29,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class RequestShell implements Request{
+class RequestShell extends Request{
   public void request(Session session, Channel channel) throws Exception{
+    super.request(session, channel);
+
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
@@ -44,7 +46,6 @@ class RequestShell implements Request{
     buf.putInt(channel.getRecipient());
     buf.putString("shell".getBytes());
     buf.putByte((byte)(waitForReply() ? 1 : 0));
-    session.write(packet);
+    write(packet);
   }
-  public boolean waitForReply(){ return false; }
 }

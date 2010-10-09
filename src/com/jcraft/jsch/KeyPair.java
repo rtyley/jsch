@@ -84,6 +84,8 @@ public abstract class KeyPair{
     byte[] plain=getPrivateKey();
     byte[][] _iv=new byte[1][];
     byte[] encoded=encrypt(plain, _iv);
+    if(encoded!=plain)
+      Util.bzero(plain);
     byte[] iv=_iv[0];
     byte[] prv=Util.toBase64(encoded, 0, encoded.length);
 
@@ -206,8 +208,9 @@ public abstract class KeyPair{
       cipher.update(encoded, 0, encoded.length, encoded, 0);
     }
     catch(Exception e){
-      //System.out.println(e);
+      //System.err.println(e);
     }
+    Util.bzero(key);
     return encoded;
   }
 
@@ -223,12 +226,13 @@ public abstract class KeyPair{
     try{
       byte[] key=genKey(passphrase, iv);
       cipher.init(Cipher.DECRYPT_MODE, key, iv);
+      Util.bzero(key);
       byte[] plain=new byte[data.length];
       cipher.update(data, 0, data.length, plain, 0);
       return plain;
     }
     catch(Exception e){
-      //System.out.println(e);
+      //System.err.println(e);
     }
     return null;
   }
@@ -343,7 +347,7 @@ public abstract class KeyPair{
       }
     }
     catch(Exception e){
-      System.out.println(e);
+      System.err.println(e);
     }
     return key;
   } 
@@ -353,7 +357,7 @@ public abstract class KeyPair{
       setPassphrase((byte[])null);
     }
     else{
-      setPassphrase(passphrase.getBytes());
+      setPassphrase(Util.str2byte(passphrase));
     }
   }
   public void setPassphrase(byte[] passphrase){
@@ -369,8 +373,23 @@ public abstract class KeyPair{
 
   public boolean isEncrypted(){ return encrypted; }
   public boolean decrypt(String _passphrase){
-    byte[] passphrase=_passphrase.getBytes();
-    byte[] foo=decrypt(data, passphrase, iv);
+    if(_passphrase==null || _passphrase.length()==0){
+      return !encrypted;
+    }
+    return decrypt(Util.str2byte(_passphrase));
+  }
+  public boolean decrypt(byte[] _passphrase){
+    if(!encrypted){
+      return true;
+    }
+    if(_passphrase==null){
+      return !encrypted;
+    }
+    byte[] bar=new byte[_passphrase.length];
+    System.arraycopy(_passphrase, 0, bar, 0, bar.length);
+    _passphrase=bar;
+    byte[] foo=decrypt(data, _passphrase, iv);
+    Util.bzero(_passphrase);
     if(parse(foo)){
       encrypted=false;
     }
@@ -399,7 +418,13 @@ public abstract class KeyPair{
       File file=new File(prvkey);
       FileInputStream fis=new FileInputStream(prvkey);
       byte[] buf=new byte[(int)(file.length())];
-      int len=fis.read(buf, 0, buf.length);
+      int len=0;
+      while(true){
+        int i=fis.read(buf, len, buf.length-len);
+        if(i<=0)
+          break;
+        len+=i;
+      }
       fis.close();
 
       int i=0;
@@ -414,7 +439,7 @@ public abstract class KeyPair{
 	    vendor=VENDOR_FSECURE;
 	  }
 	  else{
-            //System.out.println("invalid format: "+identity);
+            //System.err.println("invalid format: "+identity);
 	    throw new JSchException("invaid privatekey: "+prvkey);
 	  }
           i+=3;
@@ -485,10 +510,10 @@ public abstract class KeyPair{
 	_buf.getInt();  // 0x3f6ff9be
 	_buf.getInt();
 	byte[]_type=_buf.getString();
-	//System.out.println("type: "+new String(_type)); 
+	//System.err.println("type: "+new String(_type)); 
 	byte[] _cipher=_buf.getString();
 	String cipher=new String(_cipher);
-	//System.out.println("cipher: "+cipher); 
+	//System.err.println("cipher: "+cipher); 
 	if(cipher.equals("3des-cbc")){
   	   _buf.getInt();
 	   byte[] foo=new byte[data.length-_buf.getOffSet()];
@@ -514,7 +539,13 @@ public abstract class KeyPair{
 	  file=new File(pubkey);
 	  fis=new FileInputStream(pubkey);
 	  buf=new byte[(int)(file.length())];
-	  len=fis.read(buf, 0, buf.length);
+          len=0;
+          while(true){
+            i=fis.read(buf, len, buf.length-len);
+            if(i<=0)
+              break;
+            len+=i;
+          }
 	  fis.close();
 
 	  if(buf.length>4 &&             // FSecure's public key
@@ -577,6 +608,8 @@ public abstract class KeyPair{
     }
     catch(Exception e){
       if(e instanceof JSchException) throw (JSchException)e;
+      if(e instanceof Throwable)
+        throw new JSchException(e.toString(), (Throwable)e);
       throw new JSchException(e.toString());
     }
 
@@ -616,6 +649,10 @@ public abstract class KeyPair{
   }
 
   public void dispose(){
-    passphrase=null;
+    Util.bzero(passphrase);
+  }
+
+  public void finalize (){
+    dispose();
   }
 }

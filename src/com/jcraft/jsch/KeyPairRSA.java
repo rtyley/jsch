@@ -66,7 +66,9 @@ public class KeyPairRSA extends KeyPair{
       keypairgen=null;
     }
     catch(Exception e){
-      System.err.println("KeyPairRSA: "+e); 
+      //System.err.println("KeyPairRSA: "+e); 
+      if(e instanceof Throwable)
+        throw new JSchException(e.toString(), (Throwable)e);
       throw new JSchException(e.toString());
     }
   }
@@ -149,9 +151,9 @@ public class KeyPairRSA extends KeyPair{
       }
       index+=length;
 
-//System.out.println("int: len="+length);
-//System.out.print(Integer.toHexString(plain[index-1]&0xff)+":");
-//System.out.println("");
+//System.err.println("int: len="+length);
+//System.err.print(Integer.toHexString(plain[index-1]&0xff)+":");
+//System.err.println("");
 
       index++;
       length=plain[index++]&0xff;
@@ -163,11 +165,11 @@ public class KeyPairRSA extends KeyPair{
       System.arraycopy(plain, index, n_array, 0, length);
       index+=length;
 /*
-System.out.println("int: N len="+length);
+System.err.println("int: N len="+length);
 for(int i=0; i<n_array.length; i++){
-System.out.print(Integer.toHexString(n_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(n_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -179,11 +181,11 @@ System.out.println("");
       System.arraycopy(plain, index, pub_array, 0, length);
       index+=length;
 /*
-System.out.println("int: E len="+length);
+System.err.println("int: E len="+length);
 for(int i=0; i<pub_array.length; i++){
-System.out.print(Integer.toHexString(pub_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(pub_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -195,11 +197,11 @@ System.out.println("");
       System.arraycopy(plain, index, prv_array, 0, length);
       index+=length;
 /*
-System.out.println("int: prv len="+length);
+System.err.println("int: prv len="+length);
 for(int i=0; i<prv_array.length; i++){
-System.out.print(Integer.toHexString(prv_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(prv_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
 
       index++;
@@ -212,11 +214,11 @@ System.out.println("");
       System.arraycopy(plain, index, p_array, 0, length);
       index+=length;
 /*
-System.out.println("int: P len="+length);
+System.err.println("int: P len="+length);
 for(int i=0; i<p_array.length; i++){
-System.out.print(Integer.toHexString(p_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(p_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -228,11 +230,11 @@ System.out.println("");
       System.arraycopy(plain, index, q_array, 0, length);
       index+=length;
 /*
-System.out.println("int: q len="+length);
+System.err.println("int: q len="+length);
 for(int i=0; i<q_array.length; i++){
-System.out.print(Integer.toHexString(q_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(q_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -244,11 +246,11 @@ System.out.println("");
       System.arraycopy(plain, index, ep_array, 0, length);
       index+=length;
 /*
-System.out.println("int: ep len="+length);
+System.err.println("int: ep len="+length);
 for(int i=0; i<ep_array.length; i++){
-System.out.print(Integer.toHexString(ep_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(ep_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -260,11 +262,11 @@ System.out.println("");
       System.arraycopy(plain, index, eq_array, 0, length);
       index+=length;
 /*
-System.out.println("int: eq len="+length);
+System.err.println("int: eq len="+length);
 for(int i=0; i<eq_array.length; i++){
-System.out.print(Integer.toHexString(eq_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(eq_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
       index++;
       length=plain[index++]&0xff;
@@ -276,15 +278,15 @@ System.out.println("");
       System.arraycopy(plain, index, c_array, 0, length);
       index+=length;
 /*
-System.out.println("int: c len="+length);
+System.err.println("int: c len="+length);
 for(int i=0; i<c_array.length; i++){
-System.out.print(Integer.toHexString(c_array[i]&0xff)+":");
+System.err.print(Integer.toHexString(c_array[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
     }
     catch(Exception e){
-      //System.out.println(e);
+      //System.err.println(e);
       return false;
     }
     return true;
@@ -313,14 +315,6 @@ System.out.println("");
   public int getKeySize(){return key_size; }
   public void dispose(){
     super.dispose();
-    pub_array=null;
-    prv_array=null;
-    n_array=null;
-
-    p_array=null;
-    q_array=null;
-    ep_array=null;
-    eq_array=null;
-    c_array=null;
+    Util.bzero(prv_array);
   }
 }

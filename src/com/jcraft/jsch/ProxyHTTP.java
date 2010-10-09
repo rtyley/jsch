@@ -36,8 +36,6 @@ public class ProxyHTTP implements Proxy{
   private static int DEFAULTPORT=80;
   private String proxy_host;
   private int proxy_port;
-  private String host;
-  private int port;
   private InputStream in;
   private OutputStream out;
   private Socket socket;
@@ -68,8 +66,6 @@ public class ProxyHTTP implements Proxy{
     this.passwd=passwd;
   }
   public void connect(SocketFactory socket_factory, String host, int port, int timeout) throws JSchException{
-    this.host=host;
-    this.port=port;
     try{
       if(socket_factory==null){
         socket=Util.createSocket(proxy_host, proxy_port, timeout);    
@@ -157,7 +153,10 @@ public class ProxyHTTP implements Proxy{
       try{ if(socket!=null)socket.close(); }
       catch(Exception eee){
       }
-      throw new JSchException("ProxyHTTP: "+e.toString());
+      String message="ProxyHTTP: "+e.toString();
+      if(e instanceof Throwable)
+        throw new JSchException(message, (Throwable)e);
+      throw new JSchException(message);
     }
   }
   public InputStream getInputStream(){ return in; }

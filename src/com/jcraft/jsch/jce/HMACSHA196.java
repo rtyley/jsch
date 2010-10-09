@@ -59,11 +59,17 @@ public class HMACSHA196 implements MAC{
   public void update(byte foo[], int s, int l){
     mac.update(foo, s, l);      
   }
-  private final byte[] buf=new byte[12];
-  public byte[] doFinal(){
-    System.arraycopy(mac.doFinal(), 0, buf, 0, 12);
-    return buf;
+
+  private final byte[] _buf20=new byte[20];
+  public void doFinal(byte[] buf, int offset){
+    try{
+      mac.doFinal(_buf20, 0);
+    }
+    catch(ShortBufferException e){
+    }
+    System.arraycopy(_buf20, 0, buf, 0, 12);
   }
+
   public String getName(){
     return name;
   }

@@ -39,7 +39,7 @@ public class MD5 implements HASH{
   public void init() throws Exception{
     try{ md=MessageDigest.getInstance("MD5"); }
     catch(Exception e){
-      System.out.println(e);
+      System.err.println(e);
     }
   }
   public void update(byte[] foo, int start, int len) throws Exception{

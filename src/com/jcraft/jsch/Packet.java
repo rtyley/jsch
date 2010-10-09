@@ -62,9 +62,9 @@ public class Packet{
     //buffer.putPad(pad);
 /*
 for(int i=0; i<buffer.index; i++){
-System.out.print(Integer.toHexString(buffer.buffer[i]&0xff)+":");
+System.err.print(Integer.toHexString(buffer.buffer[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
   }
 

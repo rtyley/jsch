@@ -42,8 +42,6 @@ public class ProxySOCKS5 implements Proxy{
   private static int DEFAULTPORT=1080;
   private String proxy_host;
   private int proxy_port;
-  private String host;
-  private int port;
   private InputStream in;
   private OutputStream out;
   private Socket socket;
@@ -73,8 +71,6 @@ public class ProxySOCKS5 implements Proxy{
     this.passwd=passwd;
   }
   public void connect(SocketFactory socket_factory, String host, int port, int timeout) throws JSchException{
-    this.host=host;
-    this.port=port;
     try{
       if(socket_factory==null){
         socket=Util.createSocket(proxy_host, proxy_port, timeout);
@@ -134,7 +130,8 @@ public class ProxySOCKS5 implements Proxy{
                          | 1  |   1    |
                          +----+--------+
 */
-      in.read(buf, 0, 2);
+      //in.read(buf, 0, 2);
+      fill(in, buf, 2);
  
       boolean check=false;
       switch((buf[1])&0xff){
@@ -188,7 +185,8 @@ public class ProxySOCKS5 implements Proxy{
    `failure' (STATUS value other than X'00') status, it MUST close the
    connection.
 */
-          in.read(buf, 0, 2);
+          //in.read(buf, 0, 2);
+          fill(in, buf, 2);
           if(buf[1]==0)
             check=true;
           break;
@@ -279,7 +277,8 @@ public class ProxySOCKS5 implements Proxy{
     o  BND.PORT       server bound port in network octet order
 */
 
-      in.read(buf, 0, 4);
+      //in.read(buf, 0, 4);
+      fill(in, buf, 4);
 
       if(buf[1]!=0){
         try{ socket.close(); }
@@ -290,14 +289,18 @@ public class ProxySOCKS5 implements Proxy{
 
       switch(buf[3]&0xff){
         case 1:
-          in.read(buf, 0, 6);
+          //in.read(buf, 0, 6);
+          fill(in, buf, 6);
 	  break;
         case 3:
-          in.read(buf, 0, 1);
-          in.read(buf, 0, buf[0]+2);
+          //in.read(buf, 0, 1);
+          fill(in, buf, 1);
+          //in.read(buf, 0, buf[0]+2);
+          fill(in, buf, (buf[0]&0xff)+2);
 	  break;
         case 4:
-          in.read(buf, 0, 18);
+          //in.read(buf, 0, 18);
+          fill(in, buf, 18);
           break;
         default:
       }
@@ -309,7 +312,10 @@ public class ProxySOCKS5 implements Proxy{
       try{ if(socket!=null)socket.close(); }
       catch(Exception eee){
       }
-      throw new JSchException("ProxySOCKS5: "+e.toString());
+      String message="ProxySOCKS5: "+e.toString();
+      if(e instanceof Throwable)
+        throw new JSchException(message, (Throwable)e);
+      throw new JSchException(message);
     }
   }
   public InputStream getInputStream(){ return in; }
@@ -329,5 +335,15 @@ public class ProxySOCKS5 implements Proxy{
   }
   public static int getDefaultPort(){
     return DEFAULTPORT;
+  }
+  private void fill(InputStream in, byte[] buf, int len) throws JSchException, IOException{
+    int s=0;
+    while(s<len){
+      int i=in.read(buf, s, len-s);
+      if(i<=0){
+        throw new JSchException("ProxySOCKS5: stream is closed");
+      }
+      s+=i;
+    }
   }
 }

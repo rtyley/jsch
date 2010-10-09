@@ -1,10 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 import com.jcraft.jsch.*;
-import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
-
-import java.io.*;
 
 public class Shell{
   public static void main(String[] arg){
@@ -32,7 +28,7 @@ public class Shell{
       //session.setConfig(config);
 
       //session.connect();
-      session.connect(3000);   // making connection with timeout.
+      session.connect(3000);   // making a connection with timeout.
 
       Channel channel=session.openChannel("shell");
 
@@ -40,12 +36,14 @@ public class Shell{
       channel.setOutputStream(System.out);
 
       /*
+      ((ChannelShell)channel).setPtyType("vt102");
       java.util.Hashtable env=new java.util.Hashtable();
       env.put("LANG", "ja_JP.eucJP");
       ((ChannelShell)channel).setEnv(env);
       */
 
-      channel.connect();
+      //channel.connect();
+      channel.connect(3*1000);
     }
     catch(Exception e){
       System.out.println(e);

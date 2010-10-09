@@ -1,10 +1,7 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 import com.jcraft.jsch.*;
-
-import java.io.*;
-import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
+import java.io.*;
 
 public class ScpTo{
   public static void main(String[] arg){
@@ -41,8 +38,6 @@ public class ScpTo{
       InputStream in=channel.getInputStream();
 
       channel.connect();
-
-      byte[] tmp=new byte[1];
 
       if(checkAck(in)!=0){
 	System.exit(0);

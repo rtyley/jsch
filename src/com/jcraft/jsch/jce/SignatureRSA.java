@@ -32,10 +32,6 @@ package com.jcraft.jsch.jce;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.spec.*;
-import java.security.interfaces.*;
-import javax.crypto.*;
-import javax.crypto.spec.*;
-import javax.crypto.interfaces.*;
 
 public class SignatureRSA implements com.jcraft.jsch.SignatureRSA{
 
@@ -81,7 +77,7 @@ public class SignatureRSA implements com.jcraft.jsch.SignatureRSA{
     tmp=new byte[j]; 
     System.arraycopy(sig, i, tmp, 0, j); sig=tmp;
     }
-//System.out.println("j="+j+" "+Integer.toHexString(sig[0]&0xff));
+//System.err.println("j="+j+" "+Integer.toHexString(sig[0]&0xff));
     return signature.verify(sig);
   }
 }

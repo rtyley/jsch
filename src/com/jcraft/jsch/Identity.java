@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 interface Identity{
-  boolean setPassphrase(String passphrase) throws JSchException;
+  boolean setPassphrase(byte[] passphrase) throws JSchException;
   byte[] getPublicKeyBlob();
   byte[] getSignature(byte[] data);
   boolean decrypt();

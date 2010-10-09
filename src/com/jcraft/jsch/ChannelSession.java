@@ -29,7 +29,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
 class ChannelSession extends Channel{
   private static byte[] _session="session".getBytes();
   ChannelSession(){
@@ -39,7 +38,7 @@ class ChannelSession extends Channel{
   }
   
   public void run(){
-//System.out.println(this+":run >");
+//System.err.println(this+":run >");
 /*
     if(thread!=null){ return; }
     thread=Thread.currentThread();
@@ -74,13 +73,13 @@ class ChannelSession extends Channel{
       }
     }
     catch(Exception e){
-      //System.out.println("# ChannelExec.run");
+      //System.err.println("# ChannelExec.run");
       //e.printStackTrace();
     }
     if(thread!=null){
       synchronized(thread){ thread.notifyAll(); }
     }
     thread=null;
-    //System.out.println(this+":run <");
+    //System.err.println(this+":run <");
   }
 }

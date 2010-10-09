@@ -29,7 +29,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
 import java.util.*;
 
 public class ChannelExec extends ChannelSession{
@@ -68,6 +67,9 @@ public class ChannelExec extends ChannelSession{
       request.request(session, this);
     }
     catch(Exception e){
+      if(e instanceof JSchException) throw (JSchException)e;
+      if(e instanceof Throwable)
+        throw new JSchException("ChannelExec", (Throwable)e);
       throw new JSchException("ChannelExec");
     }
     thread=new Thread(this);
@@ -82,6 +84,9 @@ public class ChannelExec extends ChannelSession{
   //public void finalize() throws java.lang.Throwable{ super.finalize(); }
   public void setErrStream(java.io.OutputStream out){
     setExtOutputStream(out);
+  }
+  public void setErrStream(java.io.OutputStream out, boolean dontclose){
+    setExtOutputStream(out, dontclose);
   }
   public java.io.InputStream getErrStream() throws java.io.IOException {
     return getExtInputStream();

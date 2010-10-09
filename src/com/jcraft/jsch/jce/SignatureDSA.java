@@ -32,10 +32,6 @@ package com.jcraft.jsch.jce;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.spec.*;
-import java.security.interfaces.*;
-import javax.crypto.*;
-import javax.crypto.spec.*;
-import javax.crypto.interfaces.*;
 
 public class SignatureDSA implements com.jcraft.jsch.SignatureDSA{
 
@@ -67,23 +63,23 @@ public class SignatureDSA implements com.jcraft.jsch.SignatureDSA{
   public byte[] sign() throws Exception{
     byte[] sig=signature.sign();      
 /*
-System.out.print("sign["+sig.length+"] ");
+System.err.print("sign["+sig.length+"] ");
 for(int i=0; i<sig.length;i++){
-System.out.print(Integer.toHexString(sig[i]&0xff)+":");
+System.err.print(Integer.toHexString(sig[i]&0xff)+":");
 }
-System.out.println("");
+System.err.println("");
 */
     // sig is in ASN.1
     // SEQUENCE::={ r INTEGER, s INTEGER }
     int len=0;	
     int index=3;
     len=sig[index++]&0xff;
-//System.out.println("! len="+len);
+//System.err.println("! len="+len);
     byte[] r=new byte[len];
     System.arraycopy(sig, index, r, 0, r.length);
     index=index+len+1;
     len=sig[index++]&0xff;
-//System.out.println("!! len="+len);
+//System.err.println("!! len="+len);
     byte[] s=new byte[len];
     System.arraycopy(sig, index, s, 0, s.length);
 
@@ -124,7 +120,7 @@ System.out.println("");
     // ASN.1
     int frst=((sig[0]&0x80)!=0?1:0);
     int scnd=((sig[20]&0x80)!=0?1:0);
-    //System.out.println("frst: "+frst+", scnd: "+scnd);
+    //System.err.println("frst: "+frst+", scnd: "+scnd);
 
     int length=sig.length+6+frst+scnd;
     tmp=new byte[length];

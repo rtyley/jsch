@@ -29,7 +29,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.InputStream;
@@ -106,6 +105,7 @@ public abstract class Channel implements Runnable{
   int exitstatus=-1;
 
   int reply=0; 
+  int connectTimeout=0;
 
   Session session;
 
@@ -126,9 +126,14 @@ public abstract class Channel implements Runnable{
   }
 
   public void connect() throws JSchException{
+    connect(0);
+  }
+
+  public void connect(int connectTimeout) throws JSchException{
     if(!session.isConnected()){
       throw new JSchException("session is down");
     }
+    this.connectTimeout=connectTimeout;
     try{
       Buffer buf=new Buffer(100);
       Packet packet=new Packet(buf);
@@ -145,11 +150,18 @@ public abstract class Channel implements Runnable{
       buf.putInt(this.lwsize);
       buf.putInt(this.lmpsize);
       session.write(packet);
-
       int retry=1000;
+      long start=System.currentTimeMillis();
+      long timeout=connectTimeout;
       while(this.getRecipient()==-1 &&
 	    session.isConnected() &&
 	    retry>0){
+        if(timeout>0L){
+          if((System.currentTimeMillis()-start)>timeout){
+            retry=0;
+            continue;
+          }
+        }
 	try{Thread.sleep(50);}catch(Exception ee){}
 	retry--;
       }
@@ -274,7 +286,7 @@ public abstract class Channel implements Runnable{
   }
 
   void eof(){
-//System.out.println("EOF!!!! "+this);
+//System.err.println("EOF!!!! "+this);
 //Thread.dumpStack();
     if(close)return;
     if(eof_local)return;
@@ -289,7 +301,7 @@ public abstract class Channel implements Runnable{
       session.write(packet);
     }
     catch(Exception e){
-      //System.out.println("Channel.eof");
+      //System.err.println("Channel.eof");
       //e.printStackTrace();
     }
     /*
@@ -334,9 +346,12 @@ public abstract class Channel implements Runnable{
   */
 
   void close(){
-    //System.out.println("close!!!!");
+    //System.err.println("close!!!!");
     if(close)return;
     close=true;
+
+    eof_local=eof_remote=true;
+
     try{
       Buffer buf=new Buffer(100);
       Packet packet=new Packet(buf);
@@ -382,7 +397,7 @@ public abstract class Channel implements Runnable{
   */
 
   public void disconnect(){
-//System.out.println(this+":disconnect "+io+" "+io.in);
+//System.err.println(this+":disconnect "+io+" "+io.in);
     if(!connected){
       return;
     }

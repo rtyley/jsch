@@ -29,10 +29,12 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class RequestSignal implements Request{
-  String signal="KILL";
+class RequestSignal extends Request{
+  private String signal="KILL";
   public void setSignal(String foo){ signal=foo; }
   public void request(Session session, Channel channel) throws Exception{
+    super.request(session, channel);
+
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
@@ -42,7 +44,6 @@ class RequestSignal implements Request{
     buf.putString("signal".getBytes());
     buf.putByte((byte)(waitForReply() ? 1 : 0));
     buf.putString(signal.getBytes());
-    session.write(packet);
+    write(packet);
   }
-  public boolean waitForReply(){ return false; }
 }

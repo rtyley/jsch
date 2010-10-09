@@ -42,8 +42,6 @@ public class ProxySOCKS4 implements Proxy{
   private static int DEFAULTPORT=1080;
   private String proxy_host;
   private int proxy_port;
-  private String host;
-  private int port;
   private InputStream in;
   private OutputStream out;
   private Socket socket;
@@ -73,8 +71,6 @@ public class ProxySOCKS4 implements Proxy{
     this.passwd=passwd;
   }
   public void connect(SocketFactory socket_factory, String host, int port, int timeout) throws JSchException{
-    this.host=host;
-    this.port=port;
     try{
       if(socket_factory==null){
         socket=Util.createSocket(proxy_host, proxy_port, timeout);
@@ -128,7 +124,7 @@ public class ProxySOCKS4 implements Proxy{
         }
       }
       catch(UnknownHostException uhe){
-        throw new JSchException("ProxySOCKS4: "+uhe.toString());
+        throw new JSchException("ProxySOCKS4: "+uhe.toString(), uhe);
       }
 
       if(user!=null){
@@ -165,7 +161,15 @@ public class ProxySOCKS4 implements Proxy{
    The remaining fields are ignored.
 */
 
-      in.read(buf, 0, 6);
+      int len=6;
+      int s=0;
+      while(s<len){
+        int i=in.read(buf, s, len-s);
+        if(i<=0){
+          throw new JSchException("ProxySOCKS4: stream is closed");
+        }
+        s+=i;
+      }
       if(buf[0]!=0){
         throw new JSchException("ProxySOCKS4: server returns VN "+buf[0]);
       }
@@ -173,7 +177,8 @@ public class ProxySOCKS4 implements Proxy{
         try{ socket.close(); }
 	catch(Exception eee){
 	}
-        throw new JSchException("ProxySOCKS4: server returns CD "+buf[1]);
+        String message="ProxySOCKS4: server returns CD "+buf[1];
+        throw new JSchException(message);
       }
     }
     catch(RuntimeException e){

@@ -56,14 +56,21 @@ public class HMACMD596 implements MAC{
     tmp[3]=(byte)i;
     update(tmp, 0, 4);
   }
+
   public void update(byte foo[], int s, int l){
     mac.update(foo, s, l);      
   }
-  private final byte[] buf=new byte[12];
-  public byte[] doFinal(){
-    System.arraycopy(mac.doFinal(), 0, buf, 0, 12);
-    return buf;
+
+  private final byte[] _buf16=new byte[16];
+  public void doFinal(byte[] buf, int offset){
+    try{
+      mac.doFinal(_buf16, 0);
+    }
+    catch(ShortBufferException e){
+    }
+    System.arraycopy(_buf16, 0, buf, 0, 12);
   }
+
   public String getName(){
     return name;
   }

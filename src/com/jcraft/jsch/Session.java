@@ -31,10 +31,9 @@ package com.jcraft.jsch;
 
 import java.io.*;
 import java.net.*;
-import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.28";
+  static private final String version="JSCH-0.1.29";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -92,7 +91,9 @@ public class Session implements Runnable{
   private Cipher c2scipher;
   private MAC s2cmac;
   private MAC c2smac;
-  private byte[] mac_buf;
+  //private byte[] mac_buf;
+  private byte[] s2cmac_result1;
+  private byte[] s2cmac_result2;
 
   private Compression deflater;
   private Compression inflater;
@@ -124,11 +125,15 @@ public class Session implements Runnable{
   private Proxy proxy=null;
   private UserInfo userinfo;
 
+  private String hostKeyAlias=null;
+  private int serverAliveInterval=0;
+  private int serverAliveCountMax=1;
+
   String host="127.0.0.1";
   int port=22;
 
   String username=null;
-  String password=null;
+  byte[] password=null;
 
   JSch jsch;
 
@@ -147,6 +152,7 @@ public class Session implements Runnable{
     if(isConnected){
       throw new JSchException("session is already connected");
     }
+
     io=new IO();
     if(random==null){
       try{
@@ -161,7 +167,6 @@ public class Session implements Runnable{
 
     try	{
       int i, j;
-      int pad=0;
 
       if(proxy==null){
 	proxy=jsch.getProxy(host);
@@ -242,7 +247,7 @@ public class Session implements Runnable{
       }
 
       V_S=new byte[i]; System.arraycopy(buf.buffer, 0, V_S, 0, i);
-      //System.out.println("V_S: ("+i+") ["+new String(V_S)+"]");
+      //System.err.println("V_S: ("+i+") ["+new String(V_S)+"]");
 
       //io.put(V_C, 0, V_C.length); io.put("\n".getBytes(), 0, 1);
       {
@@ -254,7 +259,7 @@ public class Session implements Runnable{
       }
 
       buf=read(buf);
-      //System.out.println("read: 20 ? "+buf.buffer[5]);
+      //System.err.println("read: 20 ? "+buf.buffer[5]);
       if(buf.buffer[5]!=SSH_MSG_KEXINIT){
 	throw new JSchException("invalid protocol: "+buf.buffer[5]);
       }
@@ -265,7 +270,7 @@ public class Session implements Runnable{
 	if(kex.getState()==buf.buffer[5]){
           boolean result=kex.next(buf);
 	  if(!result){
-	    //System.out.println("verify: "+result);
+	    //System.err.println("verify: "+result);
             in_kex=false;
 	    throw new JSchException("verify: "+result);
 	  }
@@ -289,7 +294,7 @@ public class Session implements Runnable{
 
       // receive SSH_MSG_NEWKEYS(21)
       buf=read(buf);
-      //System.out.println("read: 21 ? "+buf.buffer[5]);
+      //System.err.println("read: 21 ? "+buf.buffer[5]);
       if(buf.buffer[5]==SSH_MSG_NEWKEYS){
 	receive_newkeys(buf, kex);
       }
@@ -319,16 +324,16 @@ public class Session implements Runnable{
       loop:
       while(true){
 
-//System.out.println("methods: "+methods);
+//System.err.println("methods: "+methods);
 
 	while(!auth && 
 	      methods!=null && methods.length()>0){
 
-//System.out.println("  methods: "+methods);
+//System.err.println("  methods: "+methods);
 
 	  UserAuth us=null;
 	  if(methods.startsWith("publickey")){
-//System.out.println("   jsch.identities.size()="+jsch.identities.size());
+//System.err.println("   jsch.identities.size()="+jsch.identities.size());
 	    synchronized(jsch.identities){
 	      if(jsch.identities.size()>0){
 		us=new UserAuthPublicKey(userinfo);
@@ -349,12 +354,12 @@ public class Session implements Runnable{
 	      auth_cancel=false;
 	    }
 	    catch(JSchAuthCancelException ee){
-	      //System.out.println(ee);
+	      //System.err.println(ee);
 	      auth_cancel=true;
 	    }
 	    catch(JSchPartialAuthException ee){
 	      methods=ee.getMethods();
-	      //System.out.println("PartialAuth: "+methods);
+	      //System.err.println("PartialAuth: "+methods);
 	      auth_cancel=false;
 	      continue loop;
 	    }
@@ -362,7 +367,7 @@ public class Session implements Runnable{
 	      throw ee;
 	    }
 	    catch(Exception ee){
-	      //System.out.println("ee: "+ee); // SSH_MSG_DISCONNECT: 2 Too many authentication failures
+	      //System.err.println("ee: "+ee); // SSH_MSG_DISCONNECT: 2 Too many authentication failures
 	    }
 	  }
 	  if(!auth){
@@ -410,6 +415,10 @@ public class Session implements Runnable{
       if(e instanceof JSchException) throw (JSchException)e;
       throw new JSchException("Session.connect: "+e);
     }
+    finally{
+      Util.bzero(this.password);
+      this.password=null;
+    }
   }
 
   private KeyExchange receive_kexinit(Buffer buf) throws Exception {
@@ -427,23 +436,23 @@ try{
 byte[] tmp=new byte[I_S.length];
 System.arraycopy(I_S, 0, tmp, 0, I_S.length);
 Buffer tmpb=new Buffer(tmp);
-System.out.println("I_S: len="+I_S.length);
+System.err.println("I_S: len="+I_S.length);
 tmpb.setOffSet(17);
-System.out.println("kex: "+new String(tmpb.getString()));
-System.out.println("server_host_key: "+new String(tmpb.getString()));
-System.out.println("cipher.c2s: "+new String(tmpb.getString()));
-System.out.println("cipher.s2c: "+new String(tmpb.getString()));
-System.out.println("mac.c2s: "+new String(tmpb.getString()));
-System.out.println("mac.s2c: "+new String(tmpb.getString()));
-System.out.println("compression.c2s: "+new String(tmpb.getString()));
-System.out.println("compression.s2c: "+new String(tmpb.getString()));
-System.out.println("lang.c2s: "+new String(tmpb.getString()));
-System.out.println("lang.s2c: "+new String(tmpb.getString()));
-System.out.println("?: "+(tmpb.getByte()&0xff));
-System.out.println("??: "+tmpb.getInt());
+System.err.println("kex: "+new String(tmpb.getString()));
+System.err.println("server_host_key: "+new String(tmpb.getString()));
+System.err.println("cipher.c2s: "+new String(tmpb.getString()));
+System.err.println("cipher.s2c: "+new String(tmpb.getString()));
+System.err.println("mac.c2s: "+new String(tmpb.getString()));
+System.err.println("mac.s2c: "+new String(tmpb.getString()));
+System.err.println("compression.c2s: "+new String(tmpb.getString()));
+System.err.println("compression.s2c: "+new String(tmpb.getString()));
+System.err.println("lang.c2s: "+new String(tmpb.getString()));
+System.err.println("lang.s2c: "+new String(tmpb.getString()));
+System.err.println("?: "+(tmpb.getByte()&0xff));
+System.err.println("??: "+tmpb.getInt());
 }
 catch(Exception e){
-System.out.println(e);
+System.err.println(e);
 }
 */
 
@@ -525,7 +534,11 @@ System.out.println(e);
   private void checkHost(String host, KeyExchange kex) throws JSchException {
     String shkc=getConfig("StrictHostKeyChecking");
 
-    //System.out.println("shkc: "+shkc);
+    if(hostKeyAlias!=null){
+      host=hostKeyAlias;
+    }
+
+    //System.err.println("shkc: "+shkc);
 
     byte[] K_S=kex.getHostKey();
     String key_type=kex.getKeyType();
@@ -548,45 +561,47 @@ System.out.println(e);
 	file=hkr.getKnownHostsRepositoryID();
       }
       if(file==null){file="known_hosts";}
-      String message=
+
+      boolean b=false;
+
+      if(userinfo!=null){
+        String message=
 "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!\n"+
 "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!\n"+
 "Someone could be eavesdropping on you right now (man-in-the-middle attack)!\n"+
 "It is also possible that the "+key_type+" host key has just been changed.\n"+
 "The fingerprint for the "+key_type+" key sent by the remote host is\n"+
-	  key_fprint+".\n"+
+key_fprint+".\n"+
 "Please contact your system administrator.\n"+
 "Add correct host key in "+file+" to get rid of this message.";
 
-      boolean b=false;
-
-      if(userinfo!=null){
-	//userinfo.showMessage(message);
-        b=userinfo.promptYesNo(message+
-                               "\nDo you want to delete the old key and insert the new key?");
+        if(shkc.equals("ask")){
+          b=userinfo.promptYesNo(message+
+                                 "\nDo you want to delete the old key and insert the new key?");
+        }
+        else{  // shkc.equals("yes")
+          userinfo.showMessage(message);
+        }
       }
-      //throw new JSchException("HostKey has been changed: "+host);
+
       if(!b){
         throw new JSchException("HostKey has been changed: "+host);
       }
-      else{
-        synchronized(hkr){
-          hkr.remove(host, 
-                     (key_type.equals("DSA") ? "ssh-dss" : "ssh-rsa"), 
-                     null);
-          insert=true;
-        }
+
+      synchronized(hkr){
+        hkr.remove(host, 
+                   (key_type.equals("DSA") ? "ssh-dss" : "ssh-rsa"), 
+                   null);
+        insert=true;
       }
     }
 
-//    boolean insert=false;
- 
     if((shkc.equals("ask") || shkc.equals("yes")) &&
        (i!=HostKeyRepository.OK) && !insert){
       if(shkc.equals("yes")){
 	throw new JSchException("reject HostKey: "+host);
       }
-      //System.out.println("finger-print: "+key_fprint);
+      //System.err.println("finger-print: "+key_fprint);
       if(userinfo!=null){
 	boolean foo=userinfo.promptYesNo(
 "The authenticity of host '"+host+"' can't be established.\n"+
@@ -601,7 +616,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
       else{
 	if(i==HostKeyRepository.NOT_INCLUDED) 
 	  throw new JSchException("UnknownHostKey: "+host+". "+key_type+" key fingerprint is "+key_fprint);
-	else throw new JSchException("HostKey has been changed: "+host);
+	else 
+          throw new JSchException("HostKey has been changed: "+host);
       }
     }
 
@@ -638,8 +654,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 
   // encode will bin invoked in write with synchronization.
   public void encode(Packet packet) throws Exception{
-//System.out.println("encode: "+packet.buffer.buffer[5]);
-//System.out.println("        "+packet.buffer.index);
+//System.err.println("encode: "+packet.buffer.buffer[5]);
+//System.err.println("        "+packet.buffer.index);
 //if(packet.buffer.buffer[5]==96){
 //Thread.dumpStack();
 //}
@@ -648,7 +664,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 					    5, packet.buffer.index);
     }
     if(c2scipher!=null){
-      packet.padding(c2scipher.getIVSize());
+      //packet.padding(c2scipher.getIVSize());
+      packet.padding(c2scipher_size);
       int pad=packet.buffer.buffer[4];
       synchronized(random){
 	random.fill(packet.buffer.buffer, packet.buffer.index-pad, pad);
@@ -657,55 +674,57 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
     else{
       packet.padding(8);
     }
-    byte[] mac=null;
+
     if(c2smac!=null){
       c2smac.update(seqo);
       c2smac.update(packet.buffer.buffer, 0, packet.buffer.index);
-      mac=c2smac.doFinal();
+      c2smac.doFinal(packet.buffer.buffer, packet.buffer.index);
     }
     if(c2scipher!=null){
       byte[] buf=packet.buffer.buffer;
       c2scipher.update(buf, 0, packet.buffer.index, buf, 0);
     }
-    if(mac!=null){
-      packet.buffer.putByte(mac);
+    if(c2smac!=null){
+      packet.buffer.skip(c2smac.getBlockSize());
     }
   }
 
   int[] uncompress_len=new int[1];
 
-  private int cipher_size=8;
+  private int s2ccipher_size=8;
+  private int c2scipher_size=8;
   public Buffer read(Buffer buf) throws Exception{
     int j=0;
     while(true){
       buf.reset();
-      io.getByte(buf.buffer, buf.index, cipher_size); buf.index+=cipher_size;
+      io.getByte(buf.buffer, buf.index, s2ccipher_size); 
+      buf.index+=s2ccipher_size;
       if(s2ccipher!=null){
-        s2ccipher.update(buf.buffer, 0, cipher_size, buf.buffer, 0);
+        s2ccipher.update(buf.buffer, 0, s2ccipher_size, buf.buffer, 0);
       }
       j=((buf.buffer[0]<<24)&0xff000000)|
         ((buf.buffer[1]<<16)&0x00ff0000)|
         ((buf.buffer[2]<< 8)&0x0000ff00)|
         ((buf.buffer[3]    )&0x000000ff);
-      j=j-4-cipher_size+8;
+      j=j-4-s2ccipher_size+8;
       if(j<0 || (buf.index+j)>buf.buffer.length){
         throw new IOException("invalid data");
       }
       if(j>0){
 	io.getByte(buf.buffer, buf.index, j); buf.index+=(j);
 	if(s2ccipher!=null){
-	  s2ccipher.update(buf.buffer, cipher_size, j, buf.buffer, cipher_size);
+	  s2ccipher.update(buf.buffer, s2ccipher_size, j, buf.buffer, s2ccipher_size);
 	}
       }
 
       if(s2cmac!=null){
 	s2cmac.update(seqi);
 	s2cmac.update(buf.buffer, 0, buf.index);
-	byte[] result=s2cmac.doFinal();
-	io.getByte(mac_buf, 0, mac_buf.length);
-        if(!java.util.Arrays.equals(result, mac_buf)){
-          //System.err.println("mac error");
-	  throw new IOException("MAC Error");
+
+        s2cmac.doFinal(s2cmac_result1, 0);
+	io.getByte(s2cmac_result2, 0, s2cmac_result2.length);
+        if(!java.util.Arrays.equals(s2cmac_result1, s2cmac_result2)){
+          throw new IOException("MAC Error");
 	}
       }
       seqi++;
@@ -726,19 +745,13 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
       }
 
       int type=buf.buffer[5]&0xff;
-//System.out.println("read: "+type);
+//System.err.println("read: "+type);
       if(type==SSH_MSG_DISCONNECT){
         buf.rewind();
         buf.getInt();buf.getShort();
 	int reason_code=buf.getInt();
 	byte[] description=buf.getString();
 	byte[] language_tag=buf.getString();
-/*
-	System.err.println("SSH_MSG_DISCONNECT:"+
-                           " "+reason_code+
-			   " "+new String(description)+
-			   " "+new String(language_tag));
-*/
 	throw new JSchException("SSH_MSG_DISCONNECT:"+
 				" "+reason_code+
 				" "+new String(description)+
@@ -782,7 +795,6 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
   }
 
   private void receive_newkeys(Buffer buf, KeyExchange kex) throws Exception {
-//    send_newkeys();
     updateKeys(kex);
     in_kex=false;
   }
@@ -855,11 +867,13 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	Es2c=bar;
       }
       s2ccipher.init(Cipher.DECRYPT_MODE, Es2c, IVs2c);
-      cipher_size=s2ccipher.getIVSize();
+      s2ccipher_size=s2ccipher.getIVSize();
       c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_MAC_ALGS_STOC]));
       s2cmac=(MAC)(c.newInstance());
       s2cmac.init(MACs2c);
-      mac_buf=new byte[s2cmac.getBlockSize()];
+      //mac_buf=new byte[s2cmac.getBlockSize()];
+      s2cmac_result1=new byte[s2cmac.getBlockSize()];
+      s2cmac_result2=new byte[s2cmac.getBlockSize()];
 
       c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_ENC_ALGS_CTOS]));
       c2scipher=(Cipher)(c.newInstance());
@@ -876,6 +890,7 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	Ec2s=bar;
       }
       c2scipher.init(Cipher.ENCRYPT_MODE, Ec2s, IVc2s);
+      c2scipher_size=s2ccipher.getIVSize();
 
       c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_MAC_ALGS_CTOS]));
       c2smac=(MAC)(c.newInstance());
@@ -994,10 +1009,10 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
   }
   */
   public void write(Packet packet) throws Exception{
-    // System.out.println("in_kex="+in_kex+" "+(packet.buffer.buffer[5]));
+    // System.err.println("in_kex="+in_kex+" "+(packet.buffer.buffer[5]));
     while(in_kex){
       byte command=packet.buffer.buffer[5];
-      //System.out.println("command: "+command);
+      //System.err.println("command: "+command);
       if(command==SSH_MSG_KEXINIT ||
          command==SSH_MSG_NEWKEYS ||
          command==SSH_MSG_KEXDH_INIT ||
@@ -1031,13 +1046,26 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
     int[] length=new int[1];
     KeyExchange kex=null;
 
+    int stimeout=0;
     try{
       while(isConnected &&
 	    thread!=null){
-        buf=read(buf);
+        try{
+          buf=read(buf);
+          stimeout=0;
+        }
+        catch(InterruptedIOException/*SocketTimeoutException*/ ee){
+          if(!in_kex && stimeout<serverAliveCountMax){
+            sendKeepAliveMsg();
+            stimeout++;
+            continue;
+          }
+          throw ee;
+        }
+
 	int msgType=buf.buffer[5]&0xff;
 //      if(msgType!=94)
-//System.out.println("read: 94 ? "+msgType);
+//System.err.println("read: 94 ? "+msgType);
 
 	if(kex!=null && kex.getState()==msgType){
 	  boolean result=kex.next(buf);
@@ -1049,12 +1077,12 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 
         switch(msgType){
 	case SSH_MSG_KEXINIT:
-//System.out.println("KEXINIT");
+//System.err.println("KEXINIT");
 	  kex=receive_kexinit(buf);
 	  break;
 
 	case SSH_MSG_NEWKEYS:
-//System.out.println("NEWKEYS");
+//System.err.println("NEWKEYS");
           send_newkeys();
 	  receive_newkeys(buf, kex);
 	  kex=null;
@@ -1074,7 +1102,7 @@ try{
 	  channel.write(foo, start[0], length[0]);
 }
 catch(Exception e){
-//System.out.println(e);
+//System.err.println(e);
   try{channel.disconnect();}catch(Exception ee){}
 break;
 }
@@ -1097,7 +1125,7 @@ break;
 	  channel=Channel.getChannel(i, this);
 	  buf.getInt();                   // data_type_code == 1
 	  foo=buf.getString(start, length);
-	  //System.out.println("stderr: "+new String(foo,start[0],length[0]));
+	  //System.err.println("stderr: "+new String(foo,start[0],length[0]));
 	  if(channel==null){
 	    break;
 	  }
@@ -1199,7 +1227,7 @@ break;
 	    if((new String(foo)).equals("exit-status")){
 	      i=buf.getInt();             // exit-status
 	      channel.setExitStatus(i);
-//	    System.out.println("exit-stauts: "+i);
+//	    System.err.println("exit-stauts: "+i);
 //          channel.close();
 	      reply_type=(byte)SSH_MSG_CHANNEL_SUCCESS;
 	    }
@@ -1218,10 +1246,10 @@ break;
 	  buf.getShort(); 
 	  foo=buf.getString(); 
 	  String ctyp=new String(foo);
-	  //System.out.println("type="+ctyp);
+	  //System.err.println("type="+ctyp);
           if(!"forwarded-tcpip".equals(ctyp) &&
 	     !("x11".equals(ctyp) && x11_forwarding)){
-            System.out.println("Session.run: CHANNEL OPEN "+ctyp); 
+            System.err.println("Session.run: CHANNEL OPEN "+ctyp); 
 	    throw new IOException("Session.run: CHANNEL OPEN "+ctyp);
 	  }
 	  else{
@@ -1282,24 +1310,24 @@ break;
           }
 	  break;
 	default:
-          System.out.println("Session.run: unsupported type "+msgType); 
+          //System.err.println("Session.run: unsupported type "+msgType); 
 	  throw new IOException("Unknown SSH message type "+msgType);
 	}
       }
     }
     catch(Exception e){
-      //System.out.println("# Session.run");
+      //System.err.println("# Session.run");
       //e.printStackTrace();
     }
     try{
       disconnect();
     }
     catch(NullPointerException e){
-      //System.out.println("@1");
+      //System.err.println("@1");
       //e.printStackTrace();
     }
     catch(Exception e){
-      //System.out.println("@2");
+      //System.err.println("@2");
       //e.printStackTrace();
     }
     isConnected=false;
@@ -1315,7 +1343,7 @@ break;
   public void disconnect(){
     if(!isConnected) return;
 
-    //System.out.println(this+": disconnect");
+    //System.err.println(this+": disconnect");
     //Thread.dumpStack();
     /*
     for(int i=0; i<Channel.pool.size(); i++){
@@ -1336,7 +1364,7 @@ break;
     ChannelForwardedTCPIP.delPort(this);
 
     synchronized(connectThread){
-      connectThread.yield();
+      Thread.yield();
       connectThread.interrupt();
       connectThread=null;
     }
@@ -1443,6 +1471,8 @@ break;
       write(packet);
     }
     catch(Exception e){
+      if(e instanceof Throwable)
+        throw new JSchException(e.toString(), (Throwable)e);
       throw new JSchException(e.toString());
     }
 
@@ -1479,16 +1509,25 @@ break;
   public void setHost(String host){ this.host=host; }
   public void setPort(int port){ this.port=port; }
   void setUserName(String foo){ this.username=foo; }
-  public void setPassword(String foo){ this.password=foo; }
   public void setUserInfo(UserInfo userinfo){ this.userinfo=userinfo; }
   public void setInputStream(InputStream in){ this.in=in; }
   public void setOutputStream(OutputStream out){ this.out=out; }
   public void setX11Host(String host){ ChannelX11.setHost(host); }
   public void setX11Port(int port){ ChannelX11.setPort(port); }
   public void setX11Cookie(String cookie){ ChannelX11.setCookie(cookie); }
+  public void setPassword(String foo){
+    if(foo!=null)
+      this.password=Util.str2byte(foo);
+  }
+  public void setPassword(byte[] foo){ 
+    if(foo!=null){
+      this.password=new byte[foo.length];
+      System.arraycopy(foo, 0, this.password, 0, foo.length);
+    }
+  }
 
   public void setConfig(java.util.Properties foo){
-setConfig((java.util.Hashtable)foo);
+    setConfig((java.util.Hashtable)foo);
   }
  
   public void setConfig(java.util.Hashtable foo){
@@ -1514,6 +1553,8 @@ setConfig((java.util.Hashtable)foo);
       timeout=foo;
     }
     catch(Exception e){
+      if(e instanceof Throwable)
+        throw new JSchException(e.toString(), (Throwable)e);
       throw new JSchException(e.toString());
     }
   }
@@ -1534,10 +1575,34 @@ setConfig((java.util.Hashtable)foo);
     buf.putByte((byte)SSH_MSG_IGNORE);
     write(packet);
   }
+
+  private static final byte[] keepalivemsg="keepalive@jcraft.com".getBytes();
+  public void sendKeepAliveMsg() throws Exception{
+    Buffer buf=new Buffer();
+    Packet packet=new Packet(buf);
+    packet.reset();
+    buf.putByte((byte)SSH_MSG_GLOBAL_REQUEST);
+    buf.putString(keepalivemsg);
+    buf.putByte((byte)1);
+    write(packet);
+  }
   
   private HostKey hostkey=null;
   public HostKey getHostKey(){ return hostkey; }
   public String getHost(){return host;}
   public String getUserName(){return username;}
   public int getPort(){return port;}
+  public void setHostKeyAlias(String hostKeyAlias){
+    this.hostKeyAlias=hostKeyAlias;
+  }
+  public String getHostKeyAlias(){
+    return hostKeyAlias;
+  }
+  public void setServerAliveInterval(int interval) throws JSchException {
+    setTimeout(interval);
+    this.serverAliveInterval=interval;
+  }
+  public void setServerAliveCountMax(int count){
+    this.serverAliveCountMax=count;
+  }
 }

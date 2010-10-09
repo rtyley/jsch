@@ -77,16 +77,16 @@ public abstract class KeyExchange{
   /*
   void dump(byte[] foo){
     for(int i=0; i<foo.length; i++){
-      if((foo[i]&0xf0)==0)System.out.print("0");
-      System.out.print(Integer.toHexString(foo[i]&0xff));
-      if(i%16==15){System.out.println(""); continue;}
-      if(i%2==1)System.out.print(" ");
+      if((foo[i]&0xf0)==0)System.err.print("0");
+      System.err.print(Integer.toHexString(foo[i]&0xff));
+      if(i%16==15){System.err.println(""); continue;}
+      if(i%2==1)System.err.print(" ");
     }
   } 
   */
 
   protected static String[] guess(byte[]I_S, byte[]I_C){
-//System.out.println("guess: ");
+//System.err.println("guess: ");
     String[] guess=new String[PROPOSAL_MAX];
     Buffer sb=new Buffer(I_S); sb.setOffSet(17);
     Buffer cb=new Buffer(I_C); cb.setOffSet(17);
@@ -95,27 +95,27 @@ public abstract class KeyExchange{
       byte[] sp=sb.getString();  // server proposal
       byte[] cp=cb.getString();  // client proposal
 
-//System.out.println("server-proposal: |"+new String(sp)+"|");
-//System.out.println("client-proposal: |"+new String(cp)+"|");
+//System.err.println("server-proposal: |"+new String(sp)+"|");
+//System.err.println("client-proposal: |"+new String(cp)+"|");
 
       int j=0;
       int k=0;
-//System.out.println(new String(cp));
+//System.err.println(new String(cp));
       loop:
       while(j<cp.length){
 	while(j<cp.length && cp[j]!=',')j++; 
 	if(k==j) return null;
 	String algorithm=new String(cp, k, j-k);
-//System.out.println("algorithm: "+algorithm);
+//System.err.println("algorithm: "+algorithm);
 	int l=0;
 	int m=0;
 	while(l<sp.length){
 	  while(l<sp.length && sp[l]!=',')l++; 
 	  if(m==l) return null;
-//System.out.println("  "+new String(sp, m, l-m));
+//System.err.println("  "+new String(sp, m, l-m));
 	  if(algorithm.equals(new String(sp, m, l-m))){
 	    guess[i]=algorithm;
-//System.out.println("  "+algorithm);
+//System.err.println("  "+algorithm);
 	    break loop;
 	  }
 	  l++;
@@ -128,13 +128,13 @@ public abstract class KeyExchange{
 	guess[i]="";
       }
       else if(guess[i]==null){
-//System.out.println("  fail");
+//System.err.println("  fail");
 	return null;
       }
     }
 
 //    for(int i=0; i<PROPOSAL_MAX; i++){
-//      System.out.println("guess: ["+guess[i]+"]");
+//      System.err.println("guess: ["+guess[i]+"]");
 //    }
 
     return guess;

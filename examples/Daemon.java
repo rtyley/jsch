@@ -1,15 +1,12 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 import com.jcraft.jsch.*;
 import java.io.*;
-import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
 
 public class Daemon{
   public static void main(String[] arg){
 
     int rport;
-    String classname;
 
     try{
       JSch jsch=new JSch();

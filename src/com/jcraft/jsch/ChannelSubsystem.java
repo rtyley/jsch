@@ -29,8 +29,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
-
 public class ChannelSubsystem extends ChannelSession{
   boolean xforwading=false;
   boolean pty=false;
@@ -56,6 +54,8 @@ public class ChannelSubsystem extends ChannelSession{
     }
     catch(Exception e){
       if(e instanceof JSchException){ throw (JSchException)e; }
+      if(e instanceof Throwable)
+        throw new JSchException("ChannelSubsystem", (Throwable)e);
       throw new JSchException("ChannelSubsystem");
     }
     Thread thread=new Thread(this);

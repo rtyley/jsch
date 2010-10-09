@@ -83,7 +83,10 @@ loop:
 	bufl=0;
         while(true){
           j=fis.read();
-	  if(j==-1){ break loop;}
+          if(j==-1){
+            if(bufl==0){ break loop; }
+            else{ break; }
+          }
 	  if(j==0x0d){ continue; }
 	  if(j==0x0a){ break; }
           if(buf.length<=bufl){
@@ -150,8 +153,8 @@ loop:
 	  continue loop; 
 	}
 
-	//System.out.println(host);
-	//System.out.println("|"+key+"|");
+	//System.err.println(host);
+	//System.err.println("|"+key+"|");
 
 	HostKey hk = new HostKey(host, type, 
 				 Util.fromBase64(key.getBytes(), 0, 
@@ -164,9 +167,10 @@ loop:
       }
     }
     catch(Exception e){
-      if(e instanceof JSchException){
+      if(e instanceof JSchException)
 	throw (JSchException)e;         
-      }
+      if(e instanceof Throwable)
+        throw new JSchException(e.toString(), (Throwable)e);
       throw new JSchException(e.toString());
     }
   }
@@ -178,8 +182,6 @@ loop:
   public String getKnownHostsRepositoryID(){ return known_hosts; }
 
   public int check(String host, byte[] key){
-    String foo; 
-    byte[] bar;
     HostKey hk;
     int result=NOT_INCLUDED;
     int type=getType(key);
@@ -189,7 +191,7 @@ loop:
       hk=(HostKey)(pool.elementAt(i));
       if(isIncluded(hk.host, host) && hk.type==type){
         if(Util.array_equals(hk.key, key)){
-	  //System.out.println("find!!");
+	  //System.err.println("find!!");
           return OK;
 	}
 	else{
@@ -198,7 +200,7 @@ loop:
       }
     }
     }
-    //System.out.println("fail!!");
+    //System.err.println("fail!!");
     return result;
   }
   public void add(String host, byte[] key, UserInfo userinfo){
@@ -259,7 +261,7 @@ loop:
         try{ 
           sync(bar); 
         }
-        catch(Exception e){ System.out.println("sync known_hosts: "+e); }
+        catch(Exception e){ System.err.println("sync known_hosts: "+e); }
       }
     }
   }
@@ -359,7 +361,7 @@ loop:
       }
     }
     catch(Exception e){
-      System.out.println(e);
+      System.err.println(e);
     }
   }
   private int getType(byte[] key){
