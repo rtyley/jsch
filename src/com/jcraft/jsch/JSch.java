@@ -41,9 +41,9 @@ public class JSch{
 //    config.put("server_host_key", "ssh-dss,ssh-rsa");
 
     config.put("cipher.s2c", 
-               "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc");
+               "aes128-ctr,aes128-cbc,3des-ctr,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc");
     config.put("cipher.c2s",
-               "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc");
+               "aes128-ctr,aes128-cbc,3des-ctr,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc");
 
     config.put("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
     config.put("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
@@ -82,8 +82,14 @@ public class JSch{
     config.put("aes128-cbc",    "com.jcraft.jsch.jce.AES128CBC");
     config.put("aes192-cbc",    "com.jcraft.jsch.jce.AES192CBC");
     config.put("aes256-cbc",    "com.jcraft.jsch.jce.AES256CBC");
-//  config.put("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc");
-//  config.put("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc");
+
+    config.put("aes128-ctr",    "com.jcraft.jsch.jce.AES128CTR");
+    config.put("aes192-ctr",    "com.jcraft.jsch.jce.AES192CTR");
+    config.put("aes256-ctr",    "com.jcraft.jsch.jce.AES256CTR");
+    config.put("3des-ctr",      "com.jcraft.jsch.jce.TripleDESCTR");
+    config.put("arcfour",      "com.jcraft.jsch.jce.ARCFOUR");
+    config.put("arcfour128",      "com.jcraft.jsch.jce.ARCFOUR128");
+    config.put("arcfour256",      "com.jcraft.jsch.jce.ARCFOUR256");
 
     config.put("userauth.none",    "com.jcraft.jsch.UserAuthNone");
     config.put("userauth.password",    "com.jcraft.jsch.UserAuthPassword");
@@ -100,7 +106,7 @@ public class JSch{
     //config.put("HashKnownHosts",  "yes");
     config.put("PreferredAuthentications", "gssapi-with-mic,publickey,keyboard-interactive,password");
 
-    config.put("CheckCiphers", "aes256-cbc,aes192-cbc,aes128-cbc");
+    config.put("CheckCiphers", "aes256-ctr,aes192-ctr,aes128-ctr,aes256-cbc,aes192-cbc,aes128-cbc,3des-ctr,arcfour,arcfour128,arcfour256");
   }
   java.util.Vector pool=new java.util.Vector();
   java.util.Vector identities=new java.util.Vector();

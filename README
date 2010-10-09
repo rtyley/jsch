@@ -52,6 +52,8 @@ Features
 * SSH2 protocol support.
 * Key exchange: diffie-hellman-group-exchange-sha1, diffie-hellman-group1-sha1
 * Cipher: blowfish-cbc,3des-cbc,aes128-cbc,aes192-cbc,aes256-cbc
+          3des-ctr,aes128-ctr,aes192-ctr,aes256-ctc,
+          arcfour,arcfour128,arcfour256
 * MAC: hmac-md5,hmac-md5-96,hmac-sha1,hmac-sha1-96
 * Host key type: ssh-dss, ssh-rsa
 * Userauth: password
@@ -72,7 +74,7 @@ Features
 * generating DSA and RSA key pairs.
 * SSH File Transfer Protocol(version 0, 1, 2, 3)
 * partial authentication
-* packet compression.
+* packet compression: zlib, zlib@openssh.com
   JZlib(http://www.jcraft.com/jzlib/) has been used.
 * hashed known_hosts file.
 * NONE Cipher switching.
@@ -92,8 +94,8 @@ JSch can do.  Please refer to '/examples/README' file.
 
 AES cipher
 ==========
-Since version 0.1.21, jsch can support aes128-cbc,aes192-cbc,aes256-cbc,
-but you require AES support in your J2SE to choose some of them.  
+JSch supports aes128-cbc,aes192-cbc,aes256-cbc,aes128-ctr,aes192-ctr,
+aes256-ctr but you require AES support in your J2SE to choose some of them.  
 If you are using Sun's J2SE, J2SE 1.4.2 or later is required.  
 And then, J2SE 1.4.2(or later) does not support aes256 by the default, 
 because of 'import control restrictions of some countries'.
@@ -102,7 +104,7 @@ We have confirmed that by applying
   Unlimited Strength Jurisdiction Policy Files 1.4.2"
 on
   http://java.sun.com/j2se/1.4.2/download.html#docs
-we can enjoy 'aes256-cbc'.
+we can enjoy 'aes256-cbc,aes256-ctr'.
 
 
 Stream Forwarding

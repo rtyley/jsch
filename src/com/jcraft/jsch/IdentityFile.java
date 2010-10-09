@@ -172,6 +172,20 @@ class IdentityFile implements Identity{
           i+=3;
 	  continue;
 	}
+        if(buf[i]=='A'&& buf[i+1]=='E'&& buf[i+2]=='S'&& buf[i+3]=='-' && 
+           buf[i+4]=='2'&& buf[i+5]=='5'&& buf[i+6]=='6'&& buf[i+7]=='-'){
+          i+=8;
+          if(Session.checkCipher((String)jsch.getConfig("aes256-cbc"))){
+            c=Class.forName((String)jsch.getConfig("aes256-cbc"));
+            cipher=(Cipher)(c.newInstance());
+            key=new byte[cipher.getBlockSize()];
+            iv=new byte[cipher.getIVSize()];
+          }
+          else{
+            throw new JSchException("privatekey: aes256-cbc is not available "+identity);
+          }
+          continue;
+        }
         if(buf[i]=='C'&& buf[i+1]=='B'&& buf[i+2]=='C'&& buf[i+3]==','){
           i+=4;
 	  for(int ii=0; ii<iv.length; ii++){
@@ -362,7 +376,7 @@ class IdentityFile implements Identity{
 	  for(int index=0; index+hsize<=hn.length;){
 	    if(tmp!=null){ hash.update(tmp, 0, tmp.length); }
 	    hash.update(passphrase, 0, passphrase.length);
-	    hash.update(iv, 0, iv.length);
+	    hash.update(iv, 0, iv.length > 8 ? 8: iv.length);
 	    tmp=hash.digest();
 	    System.arraycopy(tmp, 0, hn, index, tmp.length);
 	    index+=tmp.length;

@@ -821,15 +821,21 @@ public class ChannelSftp extends ChannelSession{
 	}
 
 	FileOutputStream fos=null;
-	if(mode==OVERWRITE){
-	  fos=new FileOutputStream(_dst);
-	}
-	else{
-	  fos=new FileOutputStream(_dst, true); // append
-	}
-        // System.err.println("_get: "+_src+", "+_dst);
-	_get(_src, fos, monitor, mode, new File(_dst).length());
-	fos.close();
+        try{
+          if(mode==OVERWRITE){
+            fos=new FileOutputStream(_dst);
+          }
+          else{
+            fos=new FileOutputStream(_dst, true); // append
+          }
+          // System.err.println("_get: "+_src+", "+_dst);
+          _get(_src, fos, monitor, mode, new File(_dst).length());
+        }
+        finally{
+          if(fos!=null){
+            fos.close();
+          }
+        }
       }
     }
     catch(Exception e){
@@ -1312,10 +1318,6 @@ public class ChannelSftp extends ChannelSession{
          }
        }
        _sendCLOSE(handle, header);
-
-       if(v.size()==0){
-         throw new SftpException(SSH_FX_NO_SUCH_FILE, "No such file: "+path);
-       }
 
        /*
        if(v.size()==1 && pattern_has_wildcard){

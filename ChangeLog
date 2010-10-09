@@ -1,7 +1,22 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Fri Jun 13 02:12:52 UTC 2008
+Last modified: Wed Dec 31 07:44:52 UTC 2008
 
+	
+Changes since version 0.1.40:			
+- bugfix: canceling the remote port-forwarding with the incorrect 
+	  bind-address.                                         FIXED.
+- bugfix: sftp had missed to close the file in some case.       FIXED.
+- bugfix: ls(sftp) will throw an exception for the empty directory
+	  in connecting to some sftpd server.                   FIXED.
+- change: dropping the session gently in accepting incorrect packets.
+- change: by the default, aes128-ctr will be chosen if it is available
+	  on the local and the remote.
+- feature: adding the support for the private key ciphered in AES256.
+- feature: new ciphers: aes128-ctr,aes192-ctr,aes256-ctr,
+	   3des-ctr,arcfour,arcfour128 ,arcfour256
+
+	
 Changes since version 0.1.39:			
 - bugfix: ProxySOCKS4 had not been functional.                  FIXED.
 - bugfix: NPE at closing the session when it is not opened.     FIXED.

@@ -33,7 +33,7 @@ import java.io.*;
 import java.net.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.39";
+  static private final String version="JSCH-0.1.41";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -828,6 +828,22 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
         System.arraycopy(buf.buffer, 0, foo, 0, buf.index);
         buf.buffer=foo;
       }
+
+      if((j%s2ccipher_size)!=0){
+        String message="Bad packet length "+j;
+        if(JSch.getLogger().isEnabled(Logger.FATAL)){
+          JSch.getLogger().log(Logger.FATAL, message); 
+        }
+        packet.reset();
+	buf.putByte((byte)SSH_MSG_DISCONNECT);
+	buf.putInt(3);
+	buf.putString(message.getBytes());
+	buf.putString("en".getBytes());
+	write(packet);
+	disconnect();
+	throw new JSchException("SSH_MSG_DISCONNECT: "+message);
+      }
+
       if(j>0){
 	io.getByte(buf.buffer, buf.index, j); buf.index+=(j);
 	if(s2ccipher!=null){
@@ -871,8 +887,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	int reason_code=buf.getInt();
 	byte[] description=buf.getString();
 	byte[] language_tag=buf.getString();
-	throw new JSchException("SSH_MSG_DISCONNECT:"+
-				" "+reason_code+
+	throw new JSchException("SSH_MSG_DISCONNECT: "+
+				    reason_code+
 				" "+new String(description)+
 				" "+new String(language_tag));
 	//break;
@@ -1575,7 +1591,7 @@ break;
     setPortForwardingR(null, rport, host, lport, sf);
   }
   public void setPortForwardingR(String bind_address, int rport, String host, int lport, SocketFactory sf) throws JSchException{
-    ChannelForwardedTCPIP.addPort(this, rport, host, lport, sf);
+    ChannelForwardedTCPIP.addPort(this, bind_address, rport, host, lport, sf);
     setPortForwarding(bind_address, rport);
   }
 
@@ -1586,7 +1602,7 @@ break;
     setPortForwardingR(null, rport, daemon, arg);
   }
   public void setPortForwardingR(String bind_address, int rport, String daemon, Object[] arg) throws JSchException{
-    ChannelForwardedTCPIP.addPort(this, rport, daemon, arg);
+    ChannelForwardedTCPIP.addPort(this, bind_address, rport, daemon, arg);
     setPortForwarding(bind_address, rport);
   }
 
@@ -1607,17 +1623,7 @@ break;
     Buffer buf=new Buffer(100); // ??
     Packet packet=new Packet(buf);
 
-    String address_to_bind="localhost";
-    if(bind_address==null){
-      //address_to_bind="localhost";
-    }
-    else if(bind_address.length()==0 ||
-            bind_address.equals("*")){
-      address_to_bind="";
-    }
-    else{
-      address_to_bind=bind_address;
-    }
+    String address_to_bind=ChannelForwardedTCPIP.normalize(bind_address);
 
     try{
       // byte SSH_MSG_GLOBAL_REQUEST 80
@@ -1631,7 +1637,6 @@ break;
 //      buf.putByte((byte)0);
       buf.putByte((byte)1);
       buf.putString(address_to_bind.getBytes());
-      //buf.putString("0.0.0.0".getBytes());
       buf.putInt(rport);
       write(packet);
     }
@@ -1858,14 +1863,7 @@ break;
     java.util.Vector result=new java.util.Vector();
     String[] _ciphers=Util.split(ciphers, ",");
     for(int i=0; i<_ciphers.length; i++){
-      try{
-        Class c=Class.forName(getConfig(_ciphers[i]));
-        Cipher _c=(Cipher)(c.newInstance());
-        _c.init(Cipher.ENCRYPT_MODE, 
-                new byte[_c.getBlockSize()],
-                new byte[_c.getIVSize()]);
-      }
-      catch(Exception e){
+      if(!checkCipher(getConfig(_ciphers[i]))){
         result.addElement(_ciphers[i]);
       }
     }
@@ -1882,5 +1880,19 @@ break;
     }
 
     return foo;
+  }
+
+  static boolean checkCipher(String cipher){
+    try{
+      Class c=Class.forName(cipher);
+      Cipher _c=(Cipher)(c.newInstance());
+      _c.init(Cipher.ENCRYPT_MODE,
+              new byte[_c.getBlockSize()],
+              new byte[_c.getIVSize()]);
+      return true;
+    }
+    catch(Exception e){
+      return false;
+    }
   }
 }

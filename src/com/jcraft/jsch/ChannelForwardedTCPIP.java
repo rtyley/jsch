@@ -159,8 +159,8 @@ public class ChannelForwardedTCPIP extends Channel{
         this.target=(String)foo[2];
         if(foo[3]==null || (foo[3] instanceof Object[])){ this.lport=-1; }
         else{ this.lport=((Integer)foo[3]).intValue(); }
-        if(foo.length>=5){
-          this.factory=((SocketFactory)foo[4]);
+        if(foo.length>=6){
+          this.factory=((SocketFactory)foo[5]);
         }
         break;
       }
@@ -199,26 +199,36 @@ public class ChannelForwardedTCPIP extends Channel{
     return bar;
   }
 
-  static void addPort(Session session, int port, String target, int lport, SocketFactory factory) throws JSchException{
+  static String normalize(String address){
+    if(address==null){ return "localhost"; }
+    else if(address.length()==0 || address.equals("*")){ return ""; }
+    else{ return address; }
+  }
+
+  static void addPort(Session session, String _address_to_bind, int port, String target, int lport, SocketFactory factory) throws JSchException{
+    String address_to_bind=normalize(_address_to_bind);
+    synchronized(pool){
+      if(getPort(session, port)!=null){
+        throw new JSchException("PortForwardingR: remote port "+port+" is already registered.");
+      }
+      Object[] foo=new Object[6];
+      foo[0]=session; foo[1]=new Integer(port);
+      foo[2]=target; foo[3]=new Integer(lport);
+      foo[4]=address_to_bind;
+      foo[5]=factory;
+      pool.addElement(foo);
+    }
+  }
+  static void addPort(Session session, String _address_to_bind, int port, String daemon, Object[] arg) throws JSchException{
+    String address_to_bind=normalize(_address_to_bind);
     synchronized(pool){
       if(getPort(session, port)!=null){
         throw new JSchException("PortForwardingR: remote port "+port+" is already registered.");
       }
       Object[] foo=new Object[5];
       foo[0]=session; foo[1]=new Integer(port);
-      foo[2]=target; foo[3]=new Integer(lport);
-      foo[4]=factory;
-      pool.addElement(foo);
-    }
-  }
-  static void addPort(Session session, int port, String daemon, Object[] arg) throws JSchException{
-    synchronized(pool){
-      if(getPort(session, port)!=null){
-        throw new JSchException("PortForwardingR: remote port "+port+" is already registered.");
-      }
-      Object[] foo=new Object[4];
-      foo[0]=session; foo[1]=new Integer(port);
       foo[2]=daemon; foo[3]=arg;
+      foo[4]=address_to_bind; 
       pool.addElement(foo);
     }
   }
@@ -234,6 +244,9 @@ public class ChannelForwardedTCPIP extends Channel{
       delPort(_session, c.rport);
   }
   static void delPort(Session session, int rport){
+    delPort(session, null, rport);
+  }
+  static void delPort(Session session, String address_to_bind, int rport){
     synchronized(pool){
       Object[] foo=null;
       for(int i=0; i<pool.size(); i++){
@@ -244,7 +257,13 @@ public class ChannelForwardedTCPIP extends Channel{
         break;
       }
       if(foo==null)return;
-      pool.removeElement(foo);	
+      pool.removeElement(foo);
+      if(address_to_bind==null){
+        address_to_bind=(String)foo[4];
+      }	
+      if(address_to_bind==null){
+        address_to_bind="0.0.0.0";
+      }
     }
 
     Buffer buf=new Buffer(100); // ??
@@ -260,7 +279,7 @@ public class ChannelForwardedTCPIP extends Channel{
       buf.putByte((byte) 80/*SSH_MSG_GLOBAL_REQUEST*/);
       buf.putString("cancel-tcpip-forward".getBytes());
       buf.putByte((byte)0);
-      buf.putString("0.0.0.0".getBytes());
+      buf.putString(address_to_bind.getBytes());
       buf.putInt(rport);
       session.write(packet);
     }
