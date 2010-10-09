@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2008 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -112,8 +112,14 @@ public class ChannelDirectTCPIP extends Channel{
 
       connected=true;
 
-      thread=new Thread(this);
-      thread.start();
+      if(io.in!=null){
+        thread=new Thread(this);
+        thread.setName("DirectTCPIP thread "+session.getHost());
+        if(session.daemon_thread){
+          thread.setDaemon(session.daemon_thread);
+        }
+        thread.start();
+      }
     }
     catch(Exception e){
       io.close();
@@ -126,9 +132,11 @@ public class ChannelDirectTCPIP extends Channel{
   }
 
   public void run(){
+
     Buffer buf=new Buffer(rmpsize);
     Packet packet=new Packet(buf);
     int i=0;
+
     try{
       while(isConnected() &&
             thread!=null && 

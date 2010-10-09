@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2008 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -40,6 +40,7 @@ public abstract class Channel implements Runnable{
 
   static final int SSH_MSG_CHANNEL_OPEN_CONFIRMATION=      91;
   static final int SSH_MSG_CHANNEL_OPEN_FAILURE=           92;
+  static final int SSH_MSG_CHANNEL_WINDOW_ADJUST=          93;
 
   static final int SSH_OPEN_ADMINISTRATIVELY_PROHIBITED=    1;
   static final int SSH_OPEN_CONNECT_FAILED=                 2;
@@ -183,6 +184,15 @@ public abstract class Channel implements Runnable{
 	throw new JSchException("session is down");
       }
       if(retry==0){
+        throw new JSchException("channel is not opened.");
+      }
+
+      /*
+       * At the failure in opening the channel on the sshd, 
+       * 'SSH_MSG_CHANNEL_OPEN_FAILURE' will be sent from sshd and it will
+       * be processed in Session#run().
+       */
+      if(this.isClosed()){
         throw new JSchException("channel is not opened.");
       }
       connected=true;
@@ -347,8 +357,8 @@ public abstract class Channel implements Runnable{
         }
       };
     return out;
-
   }
+
   class MyPipedInputStream extends PipedInputStream{
     MyPipedInputStream() throws IOException{ super(); }
     MyPipedInputStream(int size) throws IOException{

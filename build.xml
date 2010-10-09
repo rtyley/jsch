@@ -12,7 +12,7 @@ you can integrate its functionality into your own Java programs
   <property name="exabuild" location="examples"/>
   <property name="dist"  location="dist"/>
   <property name="javadoc" location="javadoc"/>
-  <property name="javac.debug" value="false"/>
+  <property name="javac.debug" value="true"/>
   <path id="project.cp">
     <pathelement location="${build}"/>
   </path>

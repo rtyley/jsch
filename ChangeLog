@@ -1,11 +1,36 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Oct 30 07:52:32 UTC 2007
+Last modified: Mon Jan 21 07:57:03 UTC 2008
+
+	
+Changes since version 0.1.36:			
+- bugfix: some sftpd will send invalid data in sftp protocol 
+          point of view, and we need to work around such data. FIXED.
+- bugfix: the stream forwarding had been broken since 0.1.30.  FIXED.
+- bugfix: failed to detect 'SSH_MSG_CHANNEL_OPEN_FAILURE'.     FIXED.
+- bugfix: ChannelSftp will generate the unfavorable absolute pathname
+	  in some case.                                        FIXED.
+- bugfix: failed to ignore the invalid public-key file.        FIXED.
+- change: ignoring empty data sent by 'SSH_MSG_CHANNEL_DATA' and
+           'SSH_MSG_CHANNEL_EXTENDED_DATA'.
+- change: updating copyright messages; 2007 -> 2008
+- change: build.xml will enable 'javac.debug' option by the default.
+- change: added logging messages to IndentityFile and Session class.
+- change: followings are deprecated methods,
+	   InputStream ChannelSftp#get(String src, 
+	                               int mode)
+	   InputStream ChannelSftp#get(String src, 
+	                               SftpProgressMonitor, 
+	                               int mode)
+- feature: following method is added,
+	   InputStream ChannelSftp#get(String src, 
+	                               SftpProgressMonitor monitor, 
+	                               long skip)
 
 	
 Changes since version 0.1.35:			
-- bugfix: ChannelSftp can not handle the local filenames correctly on Windows.
-- bugfix: '/' must be handled as the file separator on JVM for Windows.
+- bugfix: ChannelSftp can not handle the local filenames correctly on Windows. FIXED.
+- bugfix: '/' must be handled as the file separator on JVM for Windows.  FIXED.
 - change: the system property
 	    "javax.security.auth.useSubjectCredsOnly"
 	  will be set to "false" for "gssapi-with-mic"

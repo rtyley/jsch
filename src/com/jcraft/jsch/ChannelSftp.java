@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2008 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -212,8 +212,7 @@ public class ChannelSftp extends ChannelSession{
       if(length>0){
         extensions=new java.util.Hashtable();
         // extension data
-        buf.rewind();
-        fill(buf.buffer, 0, length);
+        fill(buf, length);
         byte[] extension_name=null;
         byte[] extension_data=null;
         while(length>0){
@@ -467,8 +466,8 @@ public class ChannelSftp extends ChannelSession{
       header=header(buf, header);
       int length=header.length;
       int type=header.type;
-      buf.rewind();
-      fill(buf.buffer, 0, length);
+
+      fill(buf, length);
 
       if(type!=SSH_FXP_STATUS && type!=SSH_FXP_HANDLE){
 	throw new SftpException(SSH_FX_FAILURE, "invalid type="+type);
@@ -613,8 +612,8 @@ public class ChannelSftp extends ChannelSession{
       header=header(buf, header);
       int length=header.length;
       int type=header.type;
-      buf.rewind();
-      fill(buf.buffer, 0, length);
+
+      fill(buf, length);
 
       if(type!=SSH_FXP_STATUS && type!=SSH_FXP_HANDLE){
 	throw new SftpException(SSH_FX_FAILURE, "");
@@ -875,8 +874,8 @@ public class ChannelSftp extends ChannelSession{
       header=header(buf, header);
       int length=header.length;
       int type=header.type;
-      buf.rewind();
-      fill(buf.buffer, 0, length);
+
+      fill(buf, length);
 
       if(type!=SSH_FXP_STATUS && type!=SSH_FXP_HANDLE){
 	throw new SftpException(SSH_FX_FAILURE, "");
@@ -907,8 +906,7 @@ public class ChannelSftp extends ChannelSession{
         type=header.type;
 
         if(type==SSH_FXP_STATUS){
-          buf.rewind();
-          fill(buf.buffer, 0, length);
+          fill(buf, length);
           int i=buf.getInt();    
           if(i==SSH_FX_EOF){
             break loop;
@@ -970,18 +968,25 @@ public class ChannelSftp extends ChannelSession{
   }
 
   public InputStream get(String src) throws SftpException{
-    return get(src, null, OVERWRITE);
+    return get(src, null, 0L);
   }
   public InputStream get(String src, SftpProgressMonitor monitor) throws SftpException{
-    return get(src, monitor, OVERWRITE);
+    return get(src, monitor, 0L);
   }
+
+  /**
+   * @deprecated  This method will be deleted in the future.
+   */
   public InputStream get(String src, int mode) throws SftpException{
-    return get(src, null, mode);
+    return get(src, null, 0L);
   }
+  /**
+   * @deprecated  This method will be deleted in the future.
+   */
   public InputStream get(String src, final SftpProgressMonitor monitor, final int mode) throws SftpException{
-    if(mode==RESUME){
-      throw new SftpException(SSH_FX_FAILURE, "faile to resume from "+src);
-    }
+    return get(src, monitor, 0L);
+  }
+  public InputStream get(String src, final SftpProgressMonitor monitor, final long skip) throws SftpException{
     src=remoteAbsolutePath(src);
     try{
       src=isUnique(src);
@@ -999,8 +1004,8 @@ public class ChannelSftp extends ChannelSession{
       header=header(buf, header);
       int length=header.length;
       int type=header.type;
-      buf.rewind();
-      fill(buf.buffer, 0, length);
+
+      fill(buf, length);
 
       if(type!=SSH_FXP_STATUS && type!=SSH_FXP_HANDLE){
 	throw new SftpException(SSH_FX_FAILURE, "");
@@ -1013,7 +1018,7 @@ public class ChannelSftp extends ChannelSession{
       final byte[] handle=buf.getString();         // handle
 
       java.io.InputStream in=new java.io.InputStream(){
-           long offset=0;
+           long offset=skip;
            boolean closed=false;
            int rest_length=0;
            byte[] _data=new byte[1];
@@ -1079,8 +1084,7 @@ public class ChannelSftp extends ChannelSession{
                throw new IOException("error");
              }
              if(type==SSH_FXP_STATUS){
-               buf.rewind();
-               fill(buf.buffer, 0, rest_length);
+               fill(buf, rest_length);
                int i=buf.getInt();    
                rest_length=0;
                if(i==SSH_FX_EOF){
@@ -1217,8 +1221,8 @@ public class ChannelSftp extends ChannelSession{
        header=header(buf, header);
        int length=header.length;
        int type=header.type;
-       buf.rewind();
-       fill(buf.buffer, 0, length);
+
+       fill(buf, length);
 
        if(type!=SSH_FXP_STATUS && type!=SSH_FXP_HANDLE){
          throw new SftpException(SSH_FX_FAILURE, "");
@@ -1240,8 +1244,7 @@ public class ChannelSftp extends ChannelSession{
            throw new SftpException(SSH_FX_FAILURE, "");
          }
          if(type==SSH_FXP_STATUS){ 
-           buf.rewind();
-           fill(buf.buffer, 0, length);
+           fill(buf, length);
            int i=buf.getInt();
            if(i==SSH_FX_EOF)
              break;
@@ -1359,8 +1362,8 @@ public class ChannelSftp extends ChannelSession{
        header=header(buf, header);
        int length=header.length;
        int type=header.type;
-       buf.rewind();
-       fill(buf.buffer, 0, length);
+
+       fill(buf, length);
 
        if(type!=SSH_FXP_STATUS && type!=SSH_FXP_NAME){
          throw new SftpException(SSH_FX_FAILURE, "");
@@ -1413,8 +1416,8 @@ public class ChannelSftp extends ChannelSession{
        header=header(buf, header);
        int length=header.length;
        int type=header.type;
-       buf.rewind();
-       fill(buf.buffer, 0, length);
+
+       fill(buf, length);
 
        if(type!=SSH_FXP_STATUS){
          throw new SftpException(SSH_FX_FAILURE, "");
@@ -1465,8 +1468,8 @@ public class ChannelSftp extends ChannelSession{
        header=header(buf, header);
        int length=header.length;
        int type=header.type;
-       buf.rewind();
-       fill(buf.buffer, 0, length);
+
+       fill(buf, length);
 
        if(type!=SSH_FXP_STATUS){
          throw new SftpException(SSH_FX_FAILURE, "");
@@ -1499,8 +1502,8 @@ public class ChannelSftp extends ChannelSession{
         header=header(buf, header);
         int length=header.length;
         int type=header.type;
-        buf.rewind();
-        fill(buf.buffer, 0, length);
+
+        fill(buf, length);
 
         if(type!=SSH_FXP_STATUS){
 	  throw new SftpException(SSH_FX_FAILURE, "");
@@ -1527,8 +1530,8 @@ public class ChannelSftp extends ChannelSession{
       header=header(buf, header);
       int length=header.length;
       int type=header.type;
-      buf.rewind();
-      fill(buf.buffer, 0, length);
+
+      fill(buf, length);
 
       if(type!=SSH_FXP_ATTRS){
         return false; 
@@ -1652,8 +1655,8 @@ public class ChannelSftp extends ChannelSession{
         header=header(buf, header);
         int length=header.length;
         int type=header.type;
-        buf.rewind();
-        fill(buf.buffer, 0, length);
+
+        fill(buf, length);
 
 	if(type!=SSH_FXP_STATUS){
 	  throw new SftpException(SSH_FX_FAILURE, "");
@@ -1683,8 +1686,8 @@ public class ChannelSftp extends ChannelSession{
       header=header(buf, header);
       int length=header.length;
       int type=header.type;
-      buf.rewind();
-      fill(buf.buffer, 0, length);
+
+      fill(buf, length);
 
       if(type!=SSH_FXP_STATUS){
 	throw new SftpException(SSH_FX_FAILURE, "");
@@ -1728,8 +1731,8 @@ public class ChannelSftp extends ChannelSession{
       header=header(buf, header);
       int length=header.length;
       int type=header.type;
-      buf.rewind();
-      fill(buf.buffer, 0, length);
+
+      fill(buf, length);
 
       if(type!=SSH_FXP_ATTRS){
 	if(type==SSH_FXP_STATUS){
@@ -1778,8 +1781,8 @@ public class ChannelSftp extends ChannelSession{
       header=header(buf, header);
       int length=header.length;
       int type=header.type;
-      buf.rewind();
-      fill(buf.buffer, 0, length);
+
+      fill(buf, length);
 
       if(type!=SSH_FXP_ATTRS){
 	if(type==SSH_FXP_STATUS){
@@ -1806,8 +1809,8 @@ public class ChannelSftp extends ChannelSession{
     header=header(buf, header);
     int length=header.length;
     int type=header.type;
-    buf.rewind();
-    fill(buf.buffer, 0, length);
+
+    fill(buf, length);
 
     if(type!=SSH_FXP_STATUS && type!=SSH_FXP_NAME){
       throw new SftpException(SSH_FX_FAILURE, "");
@@ -1856,8 +1859,8 @@ public class ChannelSftp extends ChannelSession{
       header=header(buf, header);
       int length=header.length;
       int type=header.type;
-      buf.rewind();
-      fill(buf.buffer, 0, length);
+
+      fill(buf, length);
 
       if(type!=SSH_FXP_STATUS){
 	throw new SftpException(SSH_FX_FAILURE, "");
@@ -1922,8 +1925,8 @@ public class ChannelSftp extends ChannelSession{
     int type=header.type;
     if(ackid!=null)
       ackid[0]=header.rid;
-    buf.rewind();
-    fill(buf.buffer, 0, length);
+
+    fill(buf, length);
 
     if(type!=SSH_FXP_STATUS){ 
       throw new SftpException(SSH_FX_FAILURE, "");
@@ -2100,7 +2103,9 @@ public class ChannelSftp extends ChannelSession{
     boolean pattern_has_wildcard=isPattern(_pattern, _pattern_utf8);
 
     if(!pattern_has_wildcard){
-      v.addElement(dir+"/"+Util.unquote(_pattern));
+      if(dir.length()!=1) // not equal to "/"
+        dir+="/";
+      v.addElement(dir+Util.unquote(_pattern));
       return v;
     }
 
@@ -2112,8 +2117,8 @@ public class ChannelSftp extends ChannelSession{
     header=header(buf, header);
     int length=header.length;
     int type=header.type;
-    buf.rewind();
-    fill(buf.buffer, 0, length);
+
+    fill(buf, length);
 
     if(type!=SSH_FXP_STATUS && type!=SSH_FXP_HANDLE){
       throw new SftpException(SSH_FX_FAILURE, "");
@@ -2136,8 +2141,7 @@ public class ChannelSftp extends ChannelSession{
 	throw new SftpException(SSH_FX_FAILURE, "");
       }
       if(type==SSH_FXP_STATUS){ 
-        buf.rewind();
-        fill(buf.buffer, 0, length);
+        fill(buf, length);
 	break;
       }
 
@@ -2277,7 +2281,8 @@ public class ChannelSftp extends ChannelSession{
   }
 
   private void throwStatusError(Buffer buf, int i) throws SftpException{
-    if(server_version>=3){
+    if(server_version>=3 &&   // WindRiver's sftp will send invalid 
+       buf.getLength()>=4){   // SSH_FXP_STATUS packet.
       byte[] str=buf.getString();
       //byte[] tag=buf.getString();
       throw new SftpException(i, Util.byte2str(str, UTF8));
@@ -2304,6 +2309,12 @@ public class ChannelSftp extends ChannelSession{
 
   private boolean isPattern(String path){
     return isPattern(path, null);
+  }
+
+  private void fill(Buffer buf, int len)  throws IOException{
+    buf.reset();
+    fill(buf.buffer, 0, len);
+    buf.skip(len);
   }
 
   private int fill(byte[] buf, int s, int len) throws IOException{

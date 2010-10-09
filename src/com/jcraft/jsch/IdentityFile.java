@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2008 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -303,7 +303,7 @@ class IdentityFile implements Identity{
 	}
 	publickeyblob=Util.fromBase64(buf, start, i-start);
 
-	if(type==UNKNOWN){
+	if(type==UNKNOWN && publickeyblob.length>8){
 	  if(publickeyblob[8]=='d'){
 	    type=DSS;
 	  }
@@ -320,6 +320,13 @@ class IdentityFile implements Identity{
 	start=i;
 	while(i<len){ if(buf[i]==' ' || buf[i]=='\n')break; i++;}
 	publickeyblob=Util.fromBase64(buf, start, i-start);
+        if(publickeyblob.length<4+7){  // It must start with "ssh-XXX".
+          if(JSch.getLogger().isEnabled(Logger.WARN)){
+            JSch.getLogger().log(Logger.WARN, 
+                                 "failed to parse the public key");
+          }
+          publickeyblob=null;
+        }
       }
     }
     catch(Exception e){

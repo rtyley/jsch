@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2008 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -33,7 +33,7 @@ import java.io.*;
 import java.net.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.36";
+  static private final String version="JSCH-0.1.37";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -1200,6 +1200,11 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	  if(channel==null){
 	    break;
 	  }
+
+          if(length[0]==0){
+	    break;
+          }
+
 try{
 	  channel.write(foo, start[0], length[0]);
 }
@@ -1231,7 +1236,11 @@ break;
 	  if(channel==null){
 	    break;
 	  }
-	  //channel.write(foo, start[0], length[0]);
+
+          if(length[0]==0){
+	    break;
+          }
+
 	  channel.write_ext(foo, start[0], length[0]);
 
 	  len=length[0];
@@ -1425,6 +1434,10 @@ break;
       }
     }
     catch(Exception e){
+      if(JSch.getLogger().isEnabled(Logger.INFO)){
+        JSch.getLogger().log(Logger.INFO,
+                             "Caught an exception, leaving main loop due to " + e.getMessage());
+      }
       //System.err.println("# Session.run");
       //e.printStackTrace();
     }
@@ -1446,6 +1459,10 @@ break;
     if(!isConnected) return;
     //System.err.println(this+": disconnect");
     //Thread.dumpStack();
+    if(JSch.getLogger().isEnabled(Logger.INFO)){
+      JSch.getLogger().log(Logger.INFO,
+                           "Disconnecting from "+host+" port "+port);
+    }
     /*
     for(int i=0; i<Channel.pool.size(); i++){
       try{
