@@ -2,6 +2,11 @@ ChangeLog of JSch
 ====================================================================
 Last modified: Fri Jun 13 02:12:52 UTC 2008
 
+Changes since version 0.1.39:			
+- bugfix: ProxySOCKS4 had not been functional.                  FIXED.
+- bugfix: NPE at closing the session when it is not opened.     FIXED.
+- change: JSch#getConfing has become public.
+
 	
 Changes since version 0.1.38:			
 - bugfix: session will be dropped at rekeying.                  FIXED.

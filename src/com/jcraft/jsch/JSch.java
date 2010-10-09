@@ -263,8 +263,10 @@ public class JSch{
     }
   }
 
-  String getConfig(String key){ 
-    return (String)(config.get(key)); 
+  public static String getConfig(String key){ 
+    synchronized(config){
+      return (String)(config.get(key));
+    } 
   }
 
   public static void setConfig(java.util.Hashtable newconf){

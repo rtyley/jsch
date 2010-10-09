@@ -105,6 +105,7 @@ public class Session implements Runnable{
   private boolean isAuthed=false;
 
   private Thread connectThread=null;
+  private Object lock=new Object();
 
   boolean x11_forwarding=false;
   boolean agent_forwarding=false;
@@ -456,12 +457,21 @@ public class Session implements Runnable{
       }
 
       isAuthed=true;
-      connectThread=new Thread(this);
-      connectThread.setName("Connect thread "+host+" session");
-      if(daemon_thread){
-        connectThread.setDaemon(daemon_thread);
+
+      synchronized(lock){
+        if(isConnected){
+          connectThread=new Thread(this);
+          connectThread.setName("Connect thread "+host+" session");
+          if(daemon_thread){
+            connectThread.setDaemon(daemon_thread);
+          }
+          connectThread.start();
+        }
+        else{
+          // The session has been already down and
+          // we don't have to start new thread.
+        }
       }
-      connectThread.start();
     }
     catch(Exception e) {
       in_kex=false;
@@ -1135,12 +1145,15 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
     }
     _write(packet);
   }
-  private synchronized void _write(Packet packet) throws Exception{
-     encode(packet);
-     if(io!=null){
-       io.put(packet);
-       seqo++;
-     }
+
+  private void _write(Packet packet) throws Exception{
+    synchronized(lock){
+      encode(packet);
+      if(io!=null){
+        io.put(packet);
+        seqo++;
+      }
+    }
   }
 
   Runnable thread;
@@ -1487,10 +1500,12 @@ break;
     PortWatcher.delPort(this);
     ChannelForwardedTCPIP.delPort(this);
 
-    synchronized(connectThread){
-      Thread.yield();
-      connectThread.interrupt();
-      connectThread=null;
+    synchronized(lock){
+      if(connectThread!=null){
+        Thread.yield();
+        connectThread.interrupt();
+        connectThread=null;
+      }
     }
     thread=null;
     try{
@@ -1717,20 +1732,24 @@ break;
     setConfig((java.util.Hashtable)newconf);
   }
  
-  public synchronized void setConfig(java.util.Hashtable newconf){
-    if(config==null) 
-      config=new java.util.Hashtable();
-    for(java.util.Enumeration e=newconf.keys() ; e.hasMoreElements() ;) {
-      String key=(String)(e.nextElement());
-      config.put(key, (String)(newconf.get(key)));
+  public void setConfig(java.util.Hashtable newconf){
+    synchronized(lock){
+      if(config==null) 
+        config=new java.util.Hashtable();
+      for(java.util.Enumeration e=newconf.keys() ; e.hasMoreElements() ;) {
+        String key=(String)(e.nextElement());
+        config.put(key, (String)(newconf.get(key)));
+      }
     }
   }
 
-  public synchronized void setConfig(String key, String value){
-    if(config==null){
-      config=new java.util.Hashtable();
+  public void setConfig(String key, String value){
+    synchronized(lock){ 
+      if(config==null){
+        config=new java.util.Hashtable();
+      }
+      config.put(key, value);
     }
-    config.put(key, value);
   }
 
   public String getConfig(String key){

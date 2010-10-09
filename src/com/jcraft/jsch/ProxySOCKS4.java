@@ -161,7 +161,7 @@ public class ProxySOCKS4 implements Proxy{
    The remaining fields are ignored.
 */
 
-      int len=6;
+      int len=8;
       int s=0;
       while(s<len){
         int i=in.read(buf, s, len-s);
