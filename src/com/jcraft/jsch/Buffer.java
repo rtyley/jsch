@@ -94,6 +94,11 @@ public class Buffer{
   public int getLength(){
     return index-s;
   }
+  public long getLong(){
+    long foo = getInt()&0xffffffffL;
+    foo = ((foo<<32)) | (getInt()&0xffffffffL);
+    return foo;
+  }
   public int getInt(){
     int foo = getShort();
     foo = ((foo<<16)&0xffff0000) | (getShort()&0xffff);

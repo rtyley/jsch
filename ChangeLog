@@ -1,6 +1,18 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Mon Jan  6 11:47:36 UTC 2003
+Last modified: Thu Jan  9 14:03:03 UTC 2003
+
+	
+Changes since version 0.0.9:	
+- Diffie-Hellman key exchange 'diffie-hellman-group1-sha1' is supported.
+  Refer to 'src/com/jcraft/jsch/jce/DHG1.java'.
+  Thanks to Mitsugu Kitano, whose feedback was very helpful.
+- By the default, 'diffie-hellman-group1-sha1' will be used in the
+  key exchange step.
+- The file attribute on 'SSH File Transfer Protocol' is supported.
+  Now, we can say JSch supports 'SSH File Transfer Protocol'.
+- 'examples/Sftp.java' is updated.
+  'chgrp','chown','chmod' commands are supported.
 
 	
 Changes since version 0.0.9:	

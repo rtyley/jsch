@@ -6,7 +6,8 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Mon Jan  6 14:20:12 UTC 2003
+Last modified: Thu Jan  9 14:11:59 UTC 2003
+
 
 Description
 ===========
@@ -45,9 +46,7 @@ Features
   JSch is in pure Java, but it depends on JavaTM Cryptography
   Extension (JCE), which is included in J2SE 1.4.0 or later.
 * SSH2 protocol support.
-* Key exchange: diffie-hellman-group-exchange-sha1
-  From the implementation of Diffie-Hellman key exchange by JCE,
-  the bit-size of prime number p is 1024.
+* Key exchange: diffie-hellman-group-exchange-sha1, diffie-hellman-group1-sha1
 * Cipher: blowfish-cbc,3des-cbc
 * MAC: hmac-md5,hmac-md5-96,hmac-sha1,hmac-sha1-96
 * Host key type: ssh-dss, ssh-rsa
@@ -60,7 +59,7 @@ Features
 * port forwarding.
 * stream forwarding.
 * remote exec.
-* SSH File Transfer Protocol(partially)
+* SSH File Transfer Protocol
 * packet compression.
   JZlib(http://www.jcraft.com/jzlib/) has been used.
 * JSch is licensed under GNU LGPL.
@@ -104,7 +103,6 @@ Please refer to a sample program 'examples/Compression.java'.
 
 TODO
 ====
-* SSH File Transfer Protocol
 * re-implementation with java.nio.
 * replacing cipher, hash by JCE with pure Java code.
   It seems BeeCrypt(http://www.virtualunlimited.com/products/beecrypt/),

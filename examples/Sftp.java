@@ -81,6 +81,36 @@ public class Sftp{
 	  else c.rmdir(path);
 	  continue;
 	}
+	if(cmd.equals("chgrp") || cmd.equals("chown") || cmd.equals("chmod")){
+          if(cmds.size()!=3) continue;
+	  String path=(String)cmds.elementAt(2);
+	  int foo=0;
+	  if(cmd.equals("chmod")){
+            byte[] bar=((String)cmds.elementAt(1)).getBytes();
+            int k;
+            for(int j=0; j<bar.length; j++){
+              k=bar[j];
+	      if(k<'0'||k>'7'){foo=-1; break;}
+  	      foo<<=3;
+	      foo|=(k-'0');
+	    }
+	    if(foo==-1)continue;
+	  }
+	  else{
+  	    try{foo=Integer.parseInt((String)cmds.elementAt(1));}
+	    catch(Exception e){continue;}
+	  }
+	  if(cmd.equals("chgrp")){
+            c.chgrp(foo, path);
+	  }
+	  else if(cmd.equals("chown")){
+            c.chown(foo, path);
+	  }
+	  else if(cmd.equals("chmod")){
+            c.chmod(foo, path);
+	  }
+	  continue;
+	}
 	if(cmd.equals("pwd") || cmd.equals("lpwd")){
            str=(cmd.equals("pwd")?"Remote":"Local");
 	   str+=" working directory: ";
@@ -185,9 +215,9 @@ public class Sftp{
 "      * means unimplemented command.\n"+
 "cd path                       Change remote directory to 'path'\n"+
 "lcd path                      Change local directory to 'path'\n"+
-"*chgrp grp path               Change group of file 'path' to 'grp'\n"+
-"*chmod mode path              Change permissions of file 'path' to 'mode'\n"+
-"*chown own path               Change owner of file 'path' to 'own'\n"+
+"chgrp grp path                Change group of file 'path' to 'grp'\n"+
+"chmod mode path               Change permissions of file 'path' to 'mode'\n"+
+"chown own path                Change owner of file 'path' to 'own'\n"+
 "help                          Display this help text\n"+
 "get remote-path [local-path]  Download file\n"+
 "*lls [ls-options [path]]      Display local directory listing\n"+
