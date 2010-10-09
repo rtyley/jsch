@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -132,6 +132,7 @@ class Util{
     int i=pattern_index;
     int j=name_index;
     while(i<patternlen && j<namelen){
+//System.out.println("i="+i+", j="+j);
       if(pattern[i]=='\\'){
 	if(i+1==patternlen)
 	  return false;
@@ -165,6 +166,16 @@ class Util{
       }
       if(pattern[i]!=name[j]) return false;
       i++; j++;
+      if(!(j<namelen)){
+        if(!(i<patternlen)){
+	  return true;
+	}
+	if(pattern[i]=='*' 
+           //&& !((i+1)<patternlen)
+	   ){
+	  return true;
+	}
+      }
       continue;
     }
     if(i==patternlen && j==namelen) return true;

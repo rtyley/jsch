@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.20";
+  static private final String version="JSCH-0.1.21";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -133,7 +133,6 @@ public class Session implements Runnable{
     this.jsch=jsch;
     buf=new Buffer();
     packet=new Packet(buf);
-    io=new IO();
   }
 
   public void connect() throws JSchException{
@@ -141,12 +140,18 @@ public class Session implements Runnable{
   }
 
   public void connect(int connectTimeout) throws JSchException{
+    if(isConnected){
+      throw new JSchException("session is already connected");
+    }
+    io=new IO();
     if(random==null){
       try{
 	Class c=Class.forName(getConfig("random"));
         random=(Random)(c.newInstance());
       }
-      catch(Exception e){ System.err.println("connect: random "+e); }
+      catch(Exception e){ 
+	//System.err.println("connect: random "+e); 
+      }
     }
     Packet.setRandom(random);
 
@@ -201,6 +206,7 @@ public class Session implements Runnable{
 		  }
 		}
 	      });
+	    tmp.setName("Opening Socket "+host);
 	    tmp.start();
 	    try{ 
 	      Thread.sleep(connectTimeout); 
@@ -209,7 +215,7 @@ public class Session implements Runnable{
 	    catch(java.lang.InterruptedException eee){
 	      tmp.interrupt();
 	      tmp=null;
-	      System.gc();
+	      //System.gc();
 	    }
 	    done[0]=true;
 	    if(sockp[0]!=null){
@@ -249,10 +255,15 @@ public class Session implements Runnable{
       isConnected=true;
 
       i=0;
+      j=0;
       while(i<buf.buffer.length){
         j=io.getByte();
+	if(j<0)break;
         buf.buffer[i]=(byte)j; i++; 
         if(j==10)break;
+      }
+      if(j<0){
+	throw new JSchException("connection is closed by foreign host");
       }
 
       if(buf.buffer[i-1]==10){    // 0x0a
@@ -392,6 +403,7 @@ send_newkeys();
 
       if(auth){
 	connectThread=new Thread(this);
+	connectThread.setName("Connect thread "+host+" session");
 	connectThread.start();
 	return;
       }
@@ -562,7 +574,7 @@ System.out.println(e);
       if(userinfo!=null){
 	userinfo.showMessage(message);
       }
-      throw new JSchException("HostKey has been changed");
+      throw new JSchException("HostKey has been changed: "+host);
     }
 
     boolean insert=false;
@@ -570,7 +582,7 @@ System.out.println(e);
     if((shkc.equals("ask") || shkc.equals("yes")) &&
        i!=HostKeyRepository.OK){
       if(shkc.equals("yes")){
-	throw new JSchException("reject HostKey");
+	throw new JSchException("reject HostKey: "+host);
       }
       //System.out.println("finger-print: "+key_fprint);
       if(userinfo!=null){
@@ -580,14 +592,14 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 "Are you sure you want to continue connecting?"
 					 );
 	if(!foo){
-	  throw new JSchException("reject HostKey");
+	  throw new JSchException("reject HostKey: "+host);
 	}
 	insert=true;
       }
       else{
 	if(i==HostKeyRepository.NOT_INCLUDED) 
-	  throw new JSchException("UnknownHostKey");
-	else throw new JSchException("HostKey has been changed.");
+	  throw new JSchException("UnknownHostKey: "+host);
+	else throw new JSchException("HostKey has been changed: "+host);
       }
     }
 
@@ -632,14 +644,17 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
       packet.buffer.index=deflater.compress(packet.buffer.buffer, 
 					    5, packet.buffer.index);
     }
-    packet.padding();
-    byte[] mac=null;
     if(c2scipher!=null){
+      packet.padding(c2scipher.getIVSize());
       int pad=packet.buffer.buffer[4];
       synchronized(random){
 	random.fill(packet.buffer.buffer, packet.buffer.index-pad, pad);
       }
     }
+    else{
+      packet.padding(8);
+    }
+    byte[] mac=null;
     if(c2smac!=null){
       c2smac.update(seqo);
       c2smac.update(packet.buffer.buffer, 0, packet.buffer.index);
@@ -656,10 +671,27 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 
   int[] uncompress_len=new int[1];
 
+  private int cipher_size=8;
   public Buffer read(Buffer buf) throws Exception{
     int j=0;
     while(true){
       buf.reset();
+      io.getByte(buf.buffer, buf.index, cipher_size); buf.index+=cipher_size;
+      if(s2ccipher!=null){
+        s2ccipher.update(buf.buffer, 0, cipher_size, buf.buffer, 0);
+      }
+      j=((buf.buffer[0]<<24)&0xff000000)|
+        ((buf.buffer[1]<<16)&0x00ff0000)|
+        ((buf.buffer[2]<< 8)&0x0000ff00)|
+        ((buf.buffer[3]    )&0x000000ff);
+      j=j-4-cipher_size+8;
+      if(j>0){
+	io.getByte(buf.buffer, buf.index, j); buf.index+=(j);
+	if(s2ccipher!=null){
+	  s2ccipher.update(buf.buffer, cipher_size, j, buf.buffer, cipher_size);
+	}
+      }
+      /*
       io.getByte(buf.buffer, buf.index, 8); buf.index+=8;
       if(s2ccipher!=null){
         s2ccipher.update(buf.buffer, 0, 8, buf.buffer, 0);
@@ -672,6 +704,8 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
       if(s2ccipher!=null){
         s2ccipher.update(buf.buffer, 8, j-4, buf.buffer, 8);
       }
+      */
+
       if(s2cmac!=null){
 	s2cmac.update(seqi);
 	s2cmac.update(buf.buffer, 0, buf.index);
@@ -829,6 +863,7 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
 	Es2c=bar;
       }
       s2ccipher.init(Cipher.DECRYPT_MODE, Es2c, IVs2c);
+      cipher_size=s2ccipher.getIVSize();
       c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_MAC_ALGS_STOC]));
       s2cmac=(MAC)(c.newInstance());
       s2cmac.init(MACs2c);
@@ -894,25 +929,38 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
     catch(Exception e){ System.err.println("updatekeys: "+e); }
   }
 
-  public /*synchronized*/ void write(Packet packet, Channel c, int length) throws Exception{
+  /*public*/ /*synchronized*/ void write(Packet packet, Channel c, int length) throws Exception{
     while(true){
-      if(c.rwsize>=length){
-        c.rwsize-=length;
-        break;
+      synchronized(c){
+        if(c.rwsize>=length){
+          c.rwsize-=length;
+          break;
+        }
       }
-      if(c.close || !isConnected()){
+      if(c.close || !c.isConnected()){
 	throw new IOException("channel is broken");
       }
-      if(c.rwsize>0){
-	int len=c.rwsize;
-	int s=packet.shift(len, (c2smac!=null ? c2smac.getBlockSize() : 0));
-	byte command=packet.buffer.buffer[5];
-	int recipient=c.getRecipient();
-	length-=len;
-	c.rwsize=0;
+
+      boolean sendit=false;
+      int s=0;
+      byte command=0;
+      int recipient=-1;
+      synchronized(c){
+	if(c.rwsize>0){
+	  int len=c.rwsize;
+	  s=packet.shift(len, (c2smac!=null ? c2smac.getBlockSize() : 0));
+	  command=packet.buffer.buffer[5];
+	  recipient=c.getRecipient();
+	  length-=len;
+	  c.rwsize-=len;
+	  sendit=true;
+	}
+      }
+      if(sendit){
 	write(packet);
 	packet.unshift(command, recipient, s, length);
       }
+
       try{Thread.sleep(10);}
       catch(java.lang.InterruptedException e){};
     }
@@ -1041,8 +1089,9 @@ break;
           i=buf.getInt(); 
 	  channel=Channel.getChannel(i, this);
 	  if(channel!=null){
-	    channel.eof_remote=true;
-	    channel.eof();
+	    //channel.eof_remote=true;
+	    //channel.eof();
+	    channel.eof_remote();
 	  }
 	  /*
 	  packet.reset();
@@ -1144,7 +1193,9 @@ break;
 	    buf.putInt(channel.lwsize);
 	    buf.putInt(channel.lmpsize);
 	    write(packet);
-	    (new Thread(channel)).start();
+	    Thread tmp=new Thread(channel);
+	    tmp.setName("Channel "+ctyp+" "+host);
+	    tmp.start();
 	    break;
 	  }
 	case SSH_MSG_CHANNEL_SUCCESS:
@@ -1226,20 +1277,22 @@ break;
     } 
     */
 
-    Channel.eof(this);
+    Channel.disconnect(this);
 
     PortWatcher.delPort(this);
     ChannelForwardedTCPIP.delPort(this);
 
-    connectThread.interrupt();
-    connectThread.yield();
-    connectThread=null;
-
+    synchronized(connectThread){
+      connectThread.yield();
+      connectThread.interrupt();
+      connectThread=null;
+    }
     thread=null;
     try{
       if(io!=null){
 	if(io.in!=null) io.in.close();
 	if(io.out!=null) io.out.close();
+	if(io.out_ext!=null) io.out_ext.close();
       }
       if(proxy==null){
         if(socket!=null)
@@ -1260,7 +1313,7 @@ break;
     synchronized(jsch.pool){
       jsch.pool.removeElement(this);
     }
-    System.gc();
+    //System.gc();
   }
 
   public void setPortForwardingL(int lport, String host, int rport) throws JSchException{
@@ -1268,10 +1321,15 @@ break;
   }
   public void setPortForwardingL(String boundaddress, int lport, String host, int rport) throws JSchException{
     PortWatcher pw=PortWatcher.addPort(this, boundaddress, lport, host, rport);
-    (new Thread(pw)).start();
+    Thread tmp=new Thread(pw);
+    tmp.setName("PortWatcher Thread for "+host);
+    tmp.start();
   }
   public void delPortForwardingL(int lport) throws JSchException{
-    PortWatcher.delPort(this, lport);
+    delPortForwardingL("127.0.0.1", lport);
+  }
+  public void delPortForwardingL(String boundaddress, int lport) throws JSchException{
+    PortWatcher.delPort(this, boundaddress, lport);
   }
   public String[] getPortForwardingL() throws JSchException{
     return PortWatcher.getPortForwarding(this);
@@ -1279,7 +1337,18 @@ break;
 
   public void setPortForwardingR(int rport, String host, int lport) throws JSchException{
     ChannelForwardedTCPIP.addPort(this, rport, host, lport);
+    setPortForwarding(rport);
+  }
 
+  public void setPortForwardingR(int rport, String daemon) throws JSchException{
+    setPortForwardingR(rport, daemon, null);
+  }
+  public void setPortForwardingR(int rport, String daemon, Object[] arg) throws JSchException{
+    ChannelForwardedTCPIP.addPort(this, rport, daemon, arg);
+    setPortForwarding(rport);
+  }
+
+  private void setPortForwarding(int rport) throws JSchException{
     Buffer buf=new Buffer(100); // ??
     Packet packet=new Packet(buf);
 
@@ -1381,4 +1450,6 @@ setConfig((java.util.Hashtable)foo);
   
   private HostKey hostkey=null;
   public HostKey getHostKey(){ return hostkey; }
+  public String getHost(){return host;}
+  public int getPort(){return port;}
 }

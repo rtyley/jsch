@@ -4,27 +4,34 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class Compression{
+import java.io.*;
+
+public class AES{
   public static void main(String[] arg){
 
     try{
       JSch jsch=new JSch();
 
+      //jsch.setKnownHosts("/home/foo/.ssh/known_hosts");
+
       String host=JOptionPane.showInputDialog("Enter username@hostname",
-					      System.getProperty("user.name")+
-					      "@localhost"); 
+                                              System.getProperty("user.name")+
+                                              "@localhost"); 
       String user=host.substring(0, host.indexOf('@'));
       host=host.substring(host.indexOf('@')+1);
 
       Session session=jsch.getSession(user, host, 22);
-
+      //session.setPassword("your password");
+ 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
+
       java.util.Hashtable config=new java.util.Hashtable();
-      config.put("compression.s2c", "zlib,none");
-      //config.put("compression.c2s", "zlib,none");
+      config.put("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc");
+      config.put("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc");
       session.setConfig(config);
+
       session.connect();
 
       Channel channel=session.openChannel("shell");
@@ -60,13 +67,15 @@ public class Compression{
     public boolean promptPassword(String message){
       Object[] ob={passwordField}; 
       int result=
-	  JOptionPane.showConfirmDialog(null, ob, message,
-					JOptionPane.OK_CANCEL_OPTION);
+        JOptionPane.showConfirmDialog(null, ob, message,
+                                      JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
-	passwd=passwordField.getText();
-	return true;
+        passwd=passwordField.getText();
+        return true;
       }
-      else{ return false; }
+      else{ 
+        return false; 
+      }
     }
     public void showMessage(String message){
       JOptionPane.showMessageDialog(null, message);

@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -77,11 +77,11 @@ class IdentityFile implements Identity{
     this.jsch=jsch;
     try{
       Class c;
-      c=Class.forName(jsch.getConfig("3des-cbc"));
+      c=Class.forName((String)jsch.getConfig("3des-cbc"));
       cipher=(Cipher)(c.newInstance());
       key=new byte[cipher.getBlockSize()];   // 24
       iv=new byte[cipher.getIVSize()];       // 8
-      c=Class.forName(jsch.getConfig("md5"));
+      c=Class.forName((String)jsch.getConfig("md5"));
       hash=(HASH)(c.newInstance());
       hash.init();
       File file=new File(identity);
@@ -366,7 +366,7 @@ class IdentityFile implements Identity{
 
   byte[] getSignature_rsa(Session session, byte[] data){
     try{      
-      Class c=Class.forName(jsch.getConfig("signature.rsa"));
+      Class c=Class.forName((String)jsch.getConfig("signature.rsa"));
       SignatureRSA rsa=(SignatureRSA)(c.newInstance());
 
       rsa.init();
@@ -419,7 +419,7 @@ class IdentityFile implements Identity{
 */
 
     try{      
-      Class c=Class.forName(jsch.getConfig("signature.dss"));
+      Class c=Class.forName((String)jsch.getConfig("signature.dss"));
       SignatureDSA dsa=(SignatureDSA)(c.newInstance());
       dsa.init();
       dsa.setPrvKey(prv_array, P_array, Q_array, G_array);
@@ -433,6 +433,7 @@ class IdentityFile implements Identity{
       dsa.update(goo);
       dsa.update(session.getSessionId());
       */
+
       dsa.update(data);
       byte[] sig = dsa.sign();
       Buffer buf=new Buffer("ssh-dss".length()+4+
@@ -442,7 +443,7 @@ class IdentityFile implements Identity{
       return buf.buffer;
     }
     catch(Exception e){
-      System.out.println("e "+e);
+      //System.out.println("e "+e);
     }
     return null;
   }
@@ -704,7 +705,6 @@ System.out.println("");
 
       int index=0;
       int length=0;
-
       if(plain[index]!=0x30)return false;
       index++; // SEQUENCE
       length=plain[index++]&0xff;
@@ -712,7 +712,6 @@ System.out.println("");
         int foo=length&0x7f; length=0;
         while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
       }
-
       if(plain[index]!=0x02)return false;
       index++; // INTEGER
       length=plain[index++]&0xff;

@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -69,6 +69,8 @@ public class JSch{
     config.put("random",        "com.jcraft.jsch.jce.Random");
 
     config.put("aes128-cbc",    "com.jcraft.jsch.jce.AES128CBC");
+    config.put("aes192-cbc",    "com.jcraft.jsch.jce.AES192CBC");
+    config.put("aes256-cbc",    "com.jcraft.jsch.jce.AES256CBC");
 //  config.put("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc");
 //  config.put("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc");
 
@@ -92,7 +94,16 @@ public class JSch{
     s.setHost(host);
     s.setPort(port);
     pool.addElement(s);
+    synchronized(pool){
+      pool.addElement(s);
+    }
     return s;
+  }
+
+  protected boolean removeSession(Session session){
+    synchronized(pool){
+      return pool.remove(session);
+    }
   }
   public void setHostKeyRepository(HostKeyRepository foo){
     known_hosts=foo;
@@ -141,8 +152,14 @@ public class JSch{
   }
   public void addIdentity(String foo, String bar) throws JSchException{
     Identity identity=new IdentityFile(foo, this);
-    if(bar!=null) identity.setPassphrase(bar);
-    identities.addElement(identity);
+    if(bar!=null){
+      identity.setPassphrase(bar);
+    }
+    synchronized(identities){
+      if(!identities.contains(identity)){
+	identities.addElement(identity);
+      }
+    }
   }
   String getConfig(String foo){ return (String)(config.get(foo)); }
 

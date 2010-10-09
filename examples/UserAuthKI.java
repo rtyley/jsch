@@ -1,4 +1,4 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 import com.jcraft.jsch.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -11,8 +11,8 @@ public class UserAuthKI{
       JSch jsch=new JSch();
 
       String host=JOptionPane.showInputDialog("Enter username@hostname",
-					      System.getProperty("user.name")+
-					      "@localhost"); 
+                                              System.getProperty("user.name")+
+                                              "@localhost"); 
       String user=host.substring(0, host.indexOf('@'));
       host=host.substring(host.indexOf('@')+1);
 
@@ -35,7 +35,6 @@ public class UserAuthKI{
     }
   }
 
-
   public static class MyUserInfo implements UserInfo, UIKeyboardInteractive{
     public String getPassword(){ return passwd; }
     public boolean promptYesNo(String str){
@@ -57,29 +56,31 @@ public class UserAuthKI{
     public boolean promptPassword(String message){
       Object[] ob={passwordField}; 
       int result=
-	  JOptionPane.showConfirmDialog(null, ob, message,
-					JOptionPane.OK_CANCEL_OPTION);
+        JOptionPane.showConfirmDialog(null, ob, message,
+                                      JOptionPane.OK_CANCEL_OPTION);
       if(result==JOptionPane.OK_OPTION){
-	passwd=passwordField.getText();
-	return true;
+        passwd=passwordField.getText();
+        return true;
       }
-      else{ return false; }
+      else{ 
+        return false; 
+      }
     }
     public void showMessage(String message){
       JOptionPane.showMessageDialog(null, message);
     }
 
     final GridBagConstraints gbc = 
-	new GridBagConstraints(0,0,1,1,1,1,
-			       GridBagConstraints.NORTHWEST,
-			       GridBagConstraints.NONE,
-			       new Insets(0,0,0,0),0,0);
+      new GridBagConstraints(0,0,1,1,1,1,
+                             GridBagConstraints.NORTHWEST,
+                             GridBagConstraints.NONE,
+                             new Insets(0,0,0,0),0,0);
     private Container panel;
     public String[] promptKeyboardInteractive(String destination,
-					      String name,
-					      String instruction,
-					      String[] prompt,
-					      boolean[] echo){
+                                              String name,
+                                              String instruction,
+                                              String[] prompt,
+                                              boolean[] echo){
       panel = new JPanel();
       panel.setLayout(new GridBagLayout());
 
@@ -93,37 +94,37 @@ public class UserAuthKI{
 
       JTextField[] texts=new JTextField[prompt.length];
       for(int i=0; i<prompt.length; i++){
-	gbc.fill = GridBagConstraints.NONE;
-	gbc.gridx = 0;
-	gbc.weightx = 1;
-	panel.add(new JLabel(prompt[i]),gbc);
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.gridx = 0;
+        gbc.weightx = 1;
+        panel.add(new JLabel(prompt[i]),gbc);
 
-	gbc.gridx = 1;
-	gbc.fill = GridBagConstraints.HORIZONTAL;
-	gbc.weighty = 1;
-	if(echo[i]){
-	  texts[i]=new JTextField(20);
-	}
-	else{
-	  texts[i]=new JPasswordField(20);
-	}
-	panel.add(texts[i], gbc);
-	gbc.gridy++;
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weighty = 1;
+        if(echo[i]){
+          texts[i]=new JTextField(20);
+        }
+        else{
+          texts[i]=new JPasswordField(20);
+        }
+        panel.add(texts[i], gbc);
+        gbc.gridy++;
       }
 
       if(JOptionPane.showConfirmDialog(null, panel, 
-				       destination+": "+name,
-				       JOptionPane.OK_CANCEL_OPTION,
-				       JOptionPane.QUESTION_MESSAGE)
-	 ==JOptionPane.OK_OPTION){
-	String[] response=new String[prompt.length];
-	for(int i=0; i<prompt.length; i++){
-	  response[i]=texts[i].getText();
-	}
+                                       destination+": "+name,
+                                       JOptionPane.OK_CANCEL_OPTION,
+                                       JOptionPane.QUESTION_MESSAGE)
+         ==JOptionPane.OK_OPTION){
+        String[] response=new String[prompt.length];
+        for(int i=0; i<prompt.length; i++){
+          response[i]=texts[i].getText();
+        }
 	return response;
       }
       else{
-	return null;  // cancel
+        return null;  // cancel
       }
     }
   }

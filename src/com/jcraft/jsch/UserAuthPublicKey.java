@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -45,7 +45,7 @@ class UserAuthPublicKey extends UserAuth{
     Vector identities=session.jsch.identities;
 
     Packet packet=session.packet;
-    Buffer buf=session.buf;
+    Buffer buf=packet.buffer;
 
     String passphrase=null;
     final String username=session.username;
@@ -86,7 +86,7 @@ class UserAuthPublicKey extends UserAuth{
 	  // byte      SSH_MSG_USERAUTH_PK_OK(52)
 	  // string    service name
 	  buf=session.read(buf);
-	  //System.out.println("read: 60 ? "+    buf.buffer[5]);
+//System.out.println("read: 60 ? "+    buf.buffer[5]);
 	  if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_PK_OK){
 	    break;
 	  }
@@ -183,13 +183,11 @@ class UserAuthPublicKey extends UserAuth{
       tmp[3]=(byte)(sidlen);
       System.arraycopy(sid, 0, tmp, 4, sidlen);
       System.arraycopy(buf.buffer, 5, tmp, 4+sidlen, buf.index-5);
-
       byte[] signature=identity.getSignature(session, tmp);
       if(signature==null){  // for example, too long key length.
 	break;
       }
       buf.putString(signature);
-
       session.write(packet);
 
       loop2:

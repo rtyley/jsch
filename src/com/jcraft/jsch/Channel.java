@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -96,6 +96,7 @@ public abstract class Channel implements Runnable{
   boolean eof_remote=false;
 
   boolean close=false;
+  boolean connected=false;
 
   int exitstatus=-1;
 
@@ -120,7 +121,7 @@ public abstract class Channel implements Runnable{
   }
 
   public void connect() throws JSchException{
-    if(!isConnected()){
+    if(!session.isConnected()){
       throw new JSchException("session is down");
     }
     try{
@@ -154,6 +155,7 @@ public abstract class Channel implements Runnable{
         throw new JSchException("channel is not opened.");
       }
       start();
+      connected=true;
     }
     catch(Exception e){
       if(e instanceof JSchException) throw (JSchException)e;
@@ -183,26 +185,43 @@ public abstract class Channel implements Runnable{
     io.setExtOutputStream(out);
   }
   public InputStream getInputStream() throws IOException {
-    PipedInputStream in=new PipedInputStream();
+    PipedInputStream in=
+      new MyPipedInputStream(
+                             32*1024  // this value should be customizable.
+                             );
     io.setOutputStream(new PassiveOutputStream(in));
     return in;
   }
   public InputStream getExtInputStream() throws IOException {
-    PipedInputStream in=new PipedInputStream();
+    PipedInputStream in=
+      new MyPipedInputStream(
+                             32*1024  // this value should be customizable.
+                             );
     io.setExtOutputStream(new PassiveOutputStream(in));
     return in;
   }
   public OutputStream getOutputStream() throws IOException {
     PipedOutputStream out=new PipedOutputStream();
-    io.setInputStream(new PassiveInputStream(out));
+    io.setInputStream(new PassiveInputStream(out, 32*1024));
+//    io.setInputStream(new PassiveInputStream(out));
     return out;
   }
-
+  class MyPipedInputStream extends PipedInputStream{
+    MyPipedInputStream(int size) throws IOException{
+      super();
+      buffer=new byte[size];
+    }
+    MyPipedInputStream(PipedOutputStream out) throws IOException{ super(out); }
+    MyPipedInputStream(PipedOutputStream out, int size) throws IOException{
+      super(out);
+      buffer=new byte[size];
+    }
+  }
   void setLocalWindowSizeMax(int foo){ this.lwsize_max=foo; }
   void setLocalWindowSize(int foo){ this.lwsize=foo; }
   void setLocalPacketSize(int foo){ this.lmpsize=foo; }
-  void setRemoteWindowSize(int foo){ this.rwsize=foo; }
-  void addRemoteWindowSize(int foo){ this.rwsize+=foo; }
+  synchronized void setRemoteWindowSize(int foo){ this.rwsize=foo; }
+  synchronized void addRemoteWindowSize(int foo){ this.rwsize+=foo; }
   void setRemotePacketSize(int foo){ this.rmpsize=foo; }
 
   public void run(){
@@ -212,19 +231,26 @@ public abstract class Channel implements Runnable{
     write(foo, 0, foo.length);
   }
   void write(byte[] foo, int s, int l) throws IOException {
-    //if(eof_remote)return;
     if(io.out!=null)
       io.put(foo, s, l);
   }
   void write_ext(byte[] foo, int s, int l) throws IOException {
-    //if(eof_remote)return;
     if(io.out_ext!=null)
       io.put_ext(foo, s, l);
+  }
+
+  void eof_remote() throws IOException {
+    eof_remote=true;
+    if(io.out!=null){
+      io.out.close();
+      io.out=null;
+    }
   }
 
   void eof(){
 //System.out.println("EOF!!!! "+this);
 //Thread.dumpStack();
+    if(close)return;
     if(eof_local)return;
     eof_local=true;
     //close=eof;
@@ -240,10 +266,46 @@ public abstract class Channel implements Runnable{
       //System.out.println("Channel.eof");
       //e.printStackTrace();
     }
-    if(!isConnected()){
-      disconnect();
-    }
+    /*
+    if(!isConnected()){ disconnect(); }
+    */
   }
+
+  /*
+  http://www1.ietf.org/internet-drafts/draft-ietf-secsh-connect-24.txt
+
+5.3  Closing a Channel
+  When a party will no longer send more data to a channel, it SHOULD
+   send SSH_MSG_CHANNEL_EOF.
+
+            byte      SSH_MSG_CHANNEL_EOF
+            uint32    recipient_channel
+
+  No explicit response is sent to this message.  However, the
+   application may send EOF to whatever is at the other end of the
+  channel.  Note that the channel remains open after this message, and
+   more data may still be sent in the other direction.  This message
+   does not consume window space and can be sent even if no window space
+   is available.
+
+     When either party wishes to terminate the channel, it sends
+     SSH_MSG_CHANNEL_CLOSE.  Upon receiving this message, a party MUST
+   send back a SSH_MSG_CHANNEL_CLOSE unless it has already sent this
+   message for the channel.  The channel is considered closed for a
+     party when it has both sent and received SSH_MSG_CHANNEL_CLOSE, and
+   the party may then reuse the channel number.  A party MAY send
+   SSH_MSG_CHANNEL_CLOSE without having sent or received
+   SSH_MSG_CHANNEL_EOF.
+
+            byte      SSH_MSG_CHANNEL_CLOSE
+            uint32    recipient_channel
+
+   This message does not consume window space and can be sent even if no
+   window space is available.
+
+   It is recommended that any data sent before this message is delivered
+     to the actual destination, if possible.
+  */
 
   void close(){
     //System.out.println("close!!!!");
@@ -261,7 +323,10 @@ public abstract class Channel implements Runnable{
       //e.printStackTrace();
     }
   }
-  static void eof(Session session){
+  public boolean isClosed(){
+    return close;
+  }
+  static void disconnect(Session session){
     Channel[] channels=null;
     int count=0;
     synchronized(pool){
@@ -278,7 +343,7 @@ public abstract class Channel implements Runnable{
       } 
     }
     for(int i=0; i<count; i++){
-      channels[i].eof();
+      channels[i].disconnect();
     }
   }
 
@@ -291,9 +356,15 @@ public abstract class Channel implements Runnable{
   public void disconnect(){
 //System.out.println(this+":disconnect "+((ChannelExec)this).command+" "+io.in);
 //System.out.println(this+":disconnect "+io+" "+io.in);
+    if(!connected){
+      return;
+    }
+    connected=false;
+
+    //eof();
     close();
-//System.out.println("$1");
     thread=null;
+
     try{
       if(io!=null){
 	try{
@@ -312,19 +383,26 @@ public abstract class Channel implements Runnable{
 	    io.out.close();
 	}
 	catch(Exception ee){}
+	try{
+	  //System.out.println(" io.out_ext="+out_ext);
+	  if(io.out_ext!=null &&
+	     (io.out_ext instanceof PassiveOutputStream)
+	     )
+	    io.out_ext.close();
+	}
+	catch(Exception ee){}
       }
     }
     catch(Exception e){
       //e.printStackTrace();
     }
-//System.out.println("$2");
     io=null;
     Channel.del(this);
   }
 
   public boolean isConnected(){
     if(this.session!=null){
-      return session.isConnected();
+      return session.isConnected() && connected;
     }
     return false;
   }
@@ -347,8 +425,12 @@ public abstract class Channel implements Runnable{
   }
 */
 
-  class PassiveInputStream extends PipedInputStream{
+  class PassiveInputStream extends MyPipedInputStream{
     PipedOutputStream out;
+    PassiveInputStream(PipedOutputStream out, int size) throws IOException{
+      super(out, size);
+      this.out=out;
+    }
     PassiveInputStream(PipedOutputStream out) throws IOException{
       super(out);
       this.out=out;
@@ -372,4 +454,7 @@ public abstract class Channel implements Runnable{
   void setSession(Session session){
     this.session=session;
   }
+  public Session getSession(){ return session; }
+  public int getId(){ return id; }
+  //public int getRecipientId(){ return getRecipient(); }
 }

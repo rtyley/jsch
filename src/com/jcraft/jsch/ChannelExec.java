@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -33,6 +33,7 @@ import java.net.*;
 
 public class ChannelExec extends ChannelSession{
   boolean xforwading=false;
+  boolean pty=false;
   String command="";
   /*
   ChannelExec(){
@@ -41,23 +42,29 @@ public class ChannelExec extends ChannelSession{
     io=new IO();
   }
   */
-  public void setXForwarding(boolean foo){
-    xforwading=true;
-  }
+  public void setXForwarding(boolean foo){ xforwading=foo; }
+  public void setPty(boolean foo){ pty=foo; }
   public void start(){
     try{
       Request request;
+
       if(xforwading){
         request=new RequestX11();
         request.request(session, this);
       }
+
+      if(pty){
+	request=new RequestPtyReq();
+	request.request(session, this);
+      }
+
       request=new RequestExec(command);
-      //((RequestExec)request).setCommand(command);
       request.request(session, this);
     }
     catch(Exception e){
     }
-    thread=new Thread(this);
+    Thread thread=new Thread(this);
+    thread.setName("Exec thread "+session.getHost());
     thread.start();
   }
   public void setCommand(String foo){ command=foo;}
@@ -65,48 +72,7 @@ public class ChannelExec extends ChannelSession{
     io.setInputStream(session.in);
     io.setOutputStream(session.out);
   }
-  public void finalize() throws java.lang.Throwable{
-    if(thread!=null){
-      ((Thread)thread).interrupt();
-      thread=null;
-    }
-    super.finalize();
-  }
-  public void run(){
-//System.out.println(this+":run >");
-//    thread=Thread.currentThread();
-    Buffer buf=new Buffer();
-//    Buffer buf=new Buffer(lmpsize);
-    Packet packet=new Packet(buf);
-    int i=0;
-    try{
-      while(isConnected() &&
-	    thread!=null && 
-	    io!=null && 
-	    io.in!=null){
-        i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
-	if(i==0)continue;
-	if(i==-1){
-	  eof();
-	  break;
-	}
-	if(close)break;
-        packet.reset();
-        buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
-        buf.putInt(recipient);
-        buf.putInt(i);
-        buf.skip(i);
-	session.write(packet, this, i);
-      }
-    }
-    catch(Exception e){
-      //System.out.println("# ChannelExec.run");
-      //e.printStackTrace();
-    }
-    thread=null;
-//System.out.println(this+":run <");
-  }
-
+  //public void finalize() throws java.lang.Throwable{ super.finalize(); }
   public void setErrStream(java.io.OutputStream out){
     setExtOutputStream(out);
   }

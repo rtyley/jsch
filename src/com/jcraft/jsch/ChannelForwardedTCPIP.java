@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -32,14 +32,14 @@ package com.jcraft.jsch;
 import java.net.*;
 import java.io.*;
 
-class ChannelForwardedTCPIP extends Channel{
+public class ChannelForwardedTCPIP extends Channel{
 
   static java.util.Vector pool=new java.util.Vector();
 
   static private final int LOCAL_WINDOW_SIZE_MAX=0x20000;
   static private final int LOCAL_MAXIMUM_PACKET_SIZE=0x4000;
 
-  String host;
+  String target;
   int lport;
   int rport;
 
@@ -52,11 +52,22 @@ class ChannelForwardedTCPIP extends Channel{
 
   void init (){
     try{ 
-      Socket socket = new Socket(host, lport);
-      socket.setTcpNoDelay(true);
       io=new IO();
-      io.setInputStream(socket.getInputStream());
-      io.setOutputStream(socket.getOutputStream());
+      if(lport==-1){
+        Class c=Class.forName(target);
+        ForwardedTCPIPDaemon daemon=(ForwardedTCPIPDaemon)c.newInstance();
+        daemon.setChannel(this);
+        Object[] foo=getPort(session, rport);
+        daemon.setArg((Object[])foo[3]);
+        new Thread(daemon).start();
+        return;
+      }
+      else{
+        Socket socket=new Socket(target, lport);
+        socket.setTcpNoDelay(true);
+        io.setInputStream(socket.getInputStream());
+        io.setOutputStream(socket.getOutputStream());
+      }
     }
     catch(Exception e){
       System.out.println(e);
@@ -71,21 +82,21 @@ class ChannelForwardedTCPIP extends Channel{
     try{
       while(thread!=null && io!=null && io.in!=null){
         i=io.in.read(buf.buffer, 
-		     14, 
-		     buf.buffer.length-14
-		     -16 -20 // padding and mac
-		     );
-	if(i<=0){
-	  eof();
+                     14, 
+                     buf.buffer.length-14
+                     -16 -20 // padding and mac
+                     );
+        if(i<=0){
+          eof();
           break;
-	}
+        }
         packet.reset();
-	if(close)break;
+        if(close)break;
         buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-	session.write(packet, this, i);
+        session.write(packet, this, i);
       }
     }
     catch(Exception e){
@@ -94,21 +105,6 @@ class ChannelForwardedTCPIP extends Channel{
     //thread=null;
     //eof();
     disconnect();
-  }
-  public void disconnect(){
-    close();
-    thread=null;
-    try{
-      if(io!=null){
-      if(io.in!=null)io.in.close();
-      if(io.out!=null)io.out.close();
-      }
-    }
-    catch(Exception e){
-      //e.printStackTrace();
-    }
-    io=null;
-    Channel.del(this);
   }
   void getData(Buffer buf){
     setRecipient(buf.getInt());
@@ -132,24 +128,24 @@ class ChannelForwardedTCPIP extends Channel{
         if(foo[0]!=session) continue;
         if(((Integer)foo[1]).intValue()!=port) continue;
         this.rport=port;
-        this.host=(String)foo[2];
-        this.lport=((Integer)foo[3]).intValue();
+        this.target=(String)foo[2];
+        if(foo[3]==null || (foo[3] instanceof Object[])){ this.lport=-1; }
+        else{ this.lport=((Integer)foo[3]).intValue(); }
         break;
       }
-      if(host==null){
-	System.out.println("??");
+      if(target==null){
+        System.out.println("??");
       }
     }
   }
 
   static Object[] getPort(Session session, int rport){
     synchronized(pool){
-      Object[] foo=null;
       for(int i=0; i<pool.size(); i++){
         Object[] bar=(Object[])(pool.elementAt(i));
         if(bar[0]!=session) continue;
         if(((Integer)bar[1]).intValue()!=rport) continue;
-	return bar;
+        return bar;
       }
       return null;
     }
@@ -161,7 +157,8 @@ class ChannelForwardedTCPIP extends Channel{
       for(int i=0; i<pool.size(); i++){
         Object[] bar=(Object[])(pool.elementAt(i));
         if(bar[0]!=session) continue;
-	foo.addElement(bar[1]+":"+bar[2]+":"+bar[3]);
+        if(bar[3]==null){ foo.addElement(bar[1]+":"+bar[2]+":"); }
+        else{ foo.addElement(bar[1]+":"+bar[2]+":"+bar[3]); }
       }
     }
     String[] bar=new String[foo.size()];
@@ -171,14 +168,25 @@ class ChannelForwardedTCPIP extends Channel{
     return bar;
   }
 
-  static void addPort(Session session, int port, String host, int lport) throws JSchException{
+  static void addPort(Session session, int port, String target, int lport) throws JSchException{
     synchronized(pool){
       if(getPort(session, port)!=null){
         throw new JSchException("PortForwardingR: remote port "+port+" is already registered.");
       }
       Object[] foo=new Object[4];
       foo[0]=session; foo[1]=new Integer(port);
-      foo[2]=host; foo[3]=new Integer(lport);
+      foo[2]=target; foo[3]=new Integer(lport);
+      pool.addElement(foo);
+    }
+  }
+  static void addPort(Session session, int port, String daemon, Object[] arg) throws JSchException{
+    synchronized(pool){
+      if(getPort(session, port)!=null){
+        throw new JSchException("PortForwardingR: remote port "+port+" is already registered.");
+      }
+      Object[] foo=new Object[4];
+      foo[0]=session; foo[1]=new Integer(port);
+      foo[2]=daemon; foo[3]=arg;
       pool.addElement(foo);
     }
   }
@@ -226,14 +234,15 @@ class ChannelForwardedTCPIP extends Channel{
     synchronized(pool){
       rport=new int[pool.size()];
       for(int i=0; i<pool.size(); i++){
-	Object[] bar=(Object[])(pool.elementAt(i));
-	if(bar[0]==session) {
-	  rport[count++]=((Integer)bar[1]).intValue();
-	}
+        Object[] bar=(Object[])(pool.elementAt(i));
+        if(bar[0]==session) {
+          rport[count++]=((Integer)bar[1]).intValue();
+        }
       }
     }
     for(int i=0; i<count; i++){
       delPort(session, rport[i]);
     }
   }
+  public int getRemotePort(){return rport;}
 }

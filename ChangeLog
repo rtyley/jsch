@@ -1,10 +1,36 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Jan 25 14:42:09 UTC 2005
+Last modified: Fri Jul 15 15:22:58 UTC 2005
 
-
+	
+Changes since version 0.1.20:		
+- known issue: there are problems in 'InputStream ChannelSftp.get(String)' 
+   	       and 'OutputStream put(String)'.  They will be re-implemented
+  	       in the next release.
+- bugfix: EOF packets should not be sent twice. This bug had crashed 
+	  the session on every channel close. FIXED.
+- bugfix: at the fail on opening connection to remote sshd,
+          a misleading exception "invalid server's version string"
+          had been thrown. FIXED.
+- bugfix: fixed a bug in hadling the size of remote channel window.
+- bugfix: channels should not be closed even if EOF is received. FIXED.
+- bugfix: fixed bugs in file name globing on sftp.
+- change: to transfer packets efficiently, the size of internal buffer
+          for each channel has been increased.
+- change: ChannelSftp.ls will return a vector of 
+	  com.jcraft.jsch.ChannelSftp.LsEntry.  Sorry for inconveniences.
+- feature: added ForwardedTCPIPDaemon.  Refer to 'examples/Daemon.java', 
+           which demonstrates to provide network services like inetd.
+- feature: ChannelExec.setPty() method to request for assigning pseudo tty.
+- feature: added ciphers "aes128-cbc", "aes192-cbc" and "aes256-cbc".
+	   Refer to 'examples/AES.java'.
+- feature: local port-forwarding settings can be dynamically deleted 
+           by the bound address.
+- feature: added 'Channel.isClosed()'. Channel.getExitStatus() should be
+	   invoked after Channel.isClosed()==true.
+	
 Changes since version 0.1.19:		
-- ClassCastException while calling Channel.finalize() method. FIXED.
+- ClassCastException while calling ChannelExec.finalize() method. FIXED.
   Thanks to wswiatek at ais dot pl.
 
 	

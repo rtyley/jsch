@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -143,7 +143,8 @@ System.out.println("");
     catch(Exception e){
       //System.out.println(e);
     }
-    thread=null;
+//    thread.notifyAll();
+//    thread=null;
   }
 
   void write(byte[] foo, int s, int l) throws java.io.IOException {
@@ -163,7 +164,11 @@ System.out.println("");
       }
       byte[] bar=new byte[dlen];
       System.arraycopy(foo, s+12+plen+((-plen)&3), bar, 0, dlen);
-      byte[] faked_cookie=(byte[])faked_cookie_pool.get(session);
+      byte[] faked_cookie=null;
+
+      synchronized(faked_cookie_pool){
+	faked_cookie=(byte[])faked_cookie_pool.get(session);
+      }
 
       if(equals(bar, faked_cookie)){
         if(cookie!=null)
@@ -176,36 +181,6 @@ System.out.println("");
     }
     io.put(foo, s, l);
   }
-
-  public void disconnect(){
-    close();
-    thread=null;
-    try{
-      if(io!=null){
-	try{
-	  if(io.in!=null)
-	    io.in.close();
-	}
-	catch(Exception ee){}
-	try{
-	  if(io.out!=null)
-	    io.out.close();
-	}
-	catch(Exception ee){}
-      }
-      try{
-	if(socket!=null)
-	  socket.close();
-      }
-      catch(Exception ee){}
-    }
-    catch(Exception e){
-      e.printStackTrace();
-    }
-    io=null;
-    Channel.del(this);
-  }
-
   private static boolean equals(byte[] foo, byte[] bar){
     if(foo.length!=bar.length)return false;
     for(int i=0; i<foo.length; i++){

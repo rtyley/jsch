@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -177,6 +177,8 @@ loop:
     HostKey hk;
     int result=NOT_INCLUDED;
     int type=getType(key);
+
+    synchronized(pool){
     for(int i=0; i<pool.size(); i++){
       hk=(HostKey)(pool.elementAt(i));
       if(isIncluded(hk.host, host) && hk.type==type){
@@ -189,67 +191,69 @@ loop:
 	}
       }
     }
+    }
     //System.out.println("fail!!");
     return result;
   }
   public void add(String host, byte[] key, UserInfo userinfo){
     HostKey hk;
     int type=getType(key);
-    for(int i=0; i<pool.size(); i++){
-      hk=(HostKey)(pool.elementAt(i));
-      if(isIncluded(hk.host, host) && hk.type==type){
+
+    synchronized(pool){
+      for(int i=0; i<pool.size(); i++){
+        hk=(HostKey)(pool.elementAt(i));
+        if(isIncluded(hk.host, host) && hk.type==type){
 /*
-        if(Util.array_equals(hk.key, key)){ return; }
-        if(hk.host.equals(host)){
-          hk.key=key;
-          return;
-	}
-	else{
-          hk.host=deleteSubString(hk.host, host);
-	  break;
-	}
+	  if(Util.array_equals(hk.key, key)){ return; }
+	  if(hk.host.equals(host)){
+	    hk.key=key;
+	    return;
+	  }
+	  else{
+	    hk.host=deleteSubString(hk.host, host);
+	    break;
+	  }
 */
+        }
       }
     }
+
     hk=new HostKey(host, type, key);
     pool.addElement(hk);
 
     String bar=getKnownHostsRepositoryID();
-    if(userinfo!=null && 
-       bar!=null){
+    if(bar!=null){
       boolean foo=true;
       File goo=new File(bar);
       if(!goo.exists()){
-	foo=false;
-	if(userinfo!=null){
-	  foo=userinfo.promptYesNo(
-bar+" does not exist.\n"+
-"Are you sure you want to create it?"
-                                    );
-	  goo=goo.getParentFile();
-	  if(foo && goo!=null && !goo.exists()){
-	    foo=userinfo.promptYesNo(
-"The parent directory "+goo+" does not exist.\n"+
-"Are you sure you want to create it?"
-);
-	    if(foo){
-	      if(!goo.mkdirs()){
-		userinfo.showMessage(goo+" has not been created.");
-		foo=false;
-	      }
-	      else{
-		userinfo.showMessage(goo+" has been succesfully created.\nPlease check its access permission.");
-	      }
-	    }
-	  }
-	  if(goo==null)foo=false;
-	}
+        foo=false;
+        if(userinfo!=null){
+          foo=userinfo.promptYesNo(bar+" does not exist.\n"+
+                                   "Are you sure you want to create it?"
+                                   );
+          goo=goo.getParentFile();
+          if(foo && goo!=null && !goo.exists()){
+            foo=userinfo.promptYesNo("The parent directory "+goo+" does not exist.\n"+
+                                     "Are you sure you want to create it?"
+                                     );
+            if(foo){
+              if(!goo.mkdirs()){
+                userinfo.showMessage(goo+" has not been created.");
+                foo=false;
+              }
+              else{
+                userinfo.showMessage(goo+" has been succesfully created.\nPlease check its access permission.");
+              }
+            }
+          }
+          if(goo==null)foo=false;
+        }
       }
       if(foo){
-	try{ 
-	  sync(bar); 
-	}
-	catch(Exception e){ System.out.println("sync known_hosts: "+e); }
+        try{ 
+          sync(bar); 
+        }
+        catch(Exception e){ System.out.println("sync known_hosts: "+e); }
       }
     }
   }
@@ -289,6 +293,7 @@ bar+" does not exist.\n"+
   }
   public void remove(String host, String type, byte[] key){
     boolean sync=false;
+    synchronized(pool){
     for(int i=0; i<pool.size(); i++){
       HostKey hk=(HostKey)(pool.elementAt(i));
       if(host==null ||
@@ -298,6 +303,7 @@ bar+" does not exist.\n"+
 	pool.removeElement(hk);
 	sync=true;
       }
+    }
     }
     if(sync){
       try{sync();}catch(Exception e){};
@@ -320,6 +326,7 @@ bar+" does not exist.\n"+
   void dump(OutputStream out) throws IOException {
     try{
       HostKey hk;
+      synchronized(pool){
       for(int i=0; i<pool.size(); i++){
         hk=(HostKey)(pool.elementAt(i));
         //hk.dump(out);
@@ -336,6 +343,7 @@ bar+" does not exist.\n"+
 	out.write(space);
 	out.write(hk.getKey().getBytes());
 	out.write(cr);
+      }
       }
     }
     catch(Exception e){

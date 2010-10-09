@@ -147,3 +147,10 @@ or
   encrypted.  After successfully loading the content of the
   private-key, the new passphrase will be prompted and the given
   private-key will be re-encrypted with that new passphrase.
+
+- AES.java
+  This program will demonstrate how to use "aes128-cbc".
+
+- Daemon.java
+  This program will demonstrate how to provide a network service like
+  inetd by using remote port-forwarding functionality.

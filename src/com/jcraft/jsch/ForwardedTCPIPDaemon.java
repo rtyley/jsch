@@ -28,12 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 package com.jcraft.jsch;
-
-public interface KeyPairGenDSA{
-  void init(int key_size) throws Exception;
-  byte[] getX();
-  byte[] getY();
-  byte[] getP();
-  byte[] getQ();
-  byte[] getG();
+public interface ForwardedTCPIPDaemon extends Runnable{
+  void setChannel(ChannelForwardedTCPIP channel);
+  void setArg(Object[] arg);
 }

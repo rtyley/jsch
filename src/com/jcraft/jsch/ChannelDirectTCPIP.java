@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -66,7 +66,7 @@ public class ChannelDirectTCPIP extends Channel{
       // send
       // byte   SSH_MSG_CHANNEL_OPEN(90)
       // string channel type         //
-     // uint32 sender channel       // 0
+      // uint32 sender channel       // 0
       // uint32 initial window size  // 0x100000(65536)
       // uint32 maxmum packet size   // 0x4000(16384)
 
@@ -91,8 +91,8 @@ public class ChannelDirectTCPIP extends Channel{
       }
 
       if(this.eof_remote){      // failed to open
-	disconnect();
-	return;
+        disconnect();
+        return;
       }
 
       thread=new Thread(this);
@@ -112,21 +112,21 @@ public class ChannelDirectTCPIP extends Channel{
     try{
       while(thread!=null && io!=null && io.in!=null){
         i=io.in.read(buf.buffer, 
-		     14, 
-		     buf.buffer.length-14
-		     -16 -20 // padding and mac
-		     );
-	if(i<=0){
-	  eof();
+                     14, 
+                     buf.buffer.length-14
+                     -16 -20 // padding and mac
+                     );
+        if(i<=0){
+          eof();
           break;
-	}
-	if(close)break;
+        }
+        if(close)break;
         packet.reset();
         buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-	session.write(packet, this, i);
+        session.write(packet, this, i);
       }
     }
     catch(Exception e){
@@ -147,27 +147,6 @@ public class ChannelDirectTCPIP extends Channel{
 //    close();
   }
 
-
-//  void close(){
-//    System.out.println("close");
-//    disconnect();
-//  }
-
-  public void disconnect(){
-    close();
-    thread=null;
-    try{
-      if(io!=null){
-      if(io.in!=null)io.in.close();
-      if(io.out!=null)io.out.close();
-      }
-    }
-    catch(Exception e){
-      //e.printStackTrace();
-    }
-    io=null;
-    Channel.del(this);
-  }
   public void setInputStream(InputStream in){
     io.setInputStream(in);
   }

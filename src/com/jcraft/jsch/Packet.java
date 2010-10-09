@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -42,11 +42,11 @@ public class Packet{
   public void reset(){
     buffer.index=5;
   }
-  void padding(){
+  void padding(int bsize){
     int len=buffer.index;
-    int pad=(-len)&7;
-    if(pad<8){
-      pad+=8;
+    int pad=(-len)&(bsize-1);
+    if(pad<bsize){
+      pad+=bsize;
     }
     len=len+pad-4;
     tmp[0]=(byte)(len>>>24);
@@ -62,7 +62,7 @@ public class Packet{
     //buffer.putPad(pad);
 /*
 for(int i=0; i<buffer.index; i++){
-  System.out.print(Integer.toHexString(buffer.buffer[i]&0xff)+":");
+System.out.print(Integer.toHexString(buffer.buffer[i]&0xff)+":");
 }
 System.out.println("");
 */
@@ -75,9 +75,18 @@ System.out.println("");
     s+=pad;
     s+=mac;
 
+    /**/
+    if(buffer.buffer.length<s+buffer.index-5-9-len){
+      byte[] foo=new byte[s+buffer.index-5-9-len];
+      System.arraycopy(buffer.buffer, 0, foo, 0, buffer.buffer.length);
+      buffer.buffer=foo;
+    }
+    /**/
+
     System.arraycopy(buffer.buffer, 
 		     len+5+9, 
 		     buffer.buffer, s, buffer.index-5-9-len);
+
     buffer.index=10;
     buffer.putInt(len);
     buffer.index=len+5+9;
@@ -93,5 +102,4 @@ System.out.println("");
     buffer.putInt(len);
     buffer.index=len+5+9;
   }
-
 }

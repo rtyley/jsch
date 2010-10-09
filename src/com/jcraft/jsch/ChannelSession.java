@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -37,36 +37,33 @@ class ChannelSession extends Channel{
     type=_session;
     io=new IO();
   }
-
-  /*
-  public void init(){
-    io.setInputStream(session.in);
-    io.setOutputStream(session.out);
-  }
-  */
-
-//  public void finalize() throws Throwable{
-//    super.finalize();
-//  }
-
+  
   public void run(){
+//System.out.println(this+":run >");
+    if(thread!=null){ return; }
     thread=Thread.currentThread();
     Buffer buf=new Buffer();
+//  Buffer buf=new Buffer(lmpsize);
     Packet packet=new Packet(buf);
-    int i=0;
+    int i=-1;
     try{
       while(isConnected() &&
 	    thread!=null && 
-	    io!=null && 
-	    io.in!=null){
-        i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
+            io!=null && 
+            io.in!=null){
+        i=io.in.read(buf.buffer, 
+                     14,    
+                     buf.buffer.length-14
+                     -16 -20 // padding and mac
+		     );
 	if(i==0)continue;
 	if(i==-1){
 	  eof();
 	  break;
 	}
+	if(close)break;
         packet.reset();
-        buf.putByte((byte) Session.SSH_MSG_CHANNEL_DATA);
+        buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
@@ -74,12 +71,13 @@ class ChannelSession extends Channel{
       }
     }
     catch(Exception e){
-      //System.out.println("ChannelSession.run: "+e);
+      //System.out.println("# ChannelExec.run");
+      //e.printStackTrace();
+    }
+    if(thread!=null){
+      synchronized(thread){ thread.notifyAll(); }
     }
     thread=null;
+    //System.out.println(this+":run <");
   }
-
-//  public String toString(){
-//      return "Channel: type="+new String(type)+",id="+id+",recipient="+recipient+",window_size="+window_size+",packet_size="+packet_size;
-//  }
 }

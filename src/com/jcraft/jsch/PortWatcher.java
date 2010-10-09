@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -39,7 +39,7 @@ class PortWatcher implements Runnable{
   int lport;
   int rport;
   String host;
-  String boundaddress;
+  InetAddress boundaddress;
   ServerSocket ss;
   Runnable thread;
 
@@ -59,27 +59,38 @@ class PortWatcher implements Runnable{
     }
     return bar;
   }
-  static PortWatcher getPort(Session session, int lport){
+  static PortWatcher getPort(Session session, String address, int lport) throws JSchException{
+    InetAddress addr;
+    try{
+      addr=InetAddress.getByName(address);
+    }
+    catch(UnknownHostException uhe){
+      throw new JSchException("PortForwardingL: invalid address "+address+" specified.");
+    }
     synchronized(pool){
       for(int i=0; i<pool.size(); i++){
 	PortWatcher p=(PortWatcher)(pool.elementAt(i));
-	if(p.session==session && p.lport==lport) return p;
+	if(p.session==session && p.lport==lport){
+	  if(p.boundaddress.isAnyLocalAddress() ||
+	     p.boundaddress.equals(addr))
+	  return p;
+	}
       }
       return null;
     }
   }
   static PortWatcher addPort(Session session, String address, int lport, String host, int rport) throws JSchException{
-    if(getPort(session, lport)!=null){
-      throw new JSchException("PortForwardingL: local port "+lport+" is already registered.");
+    if(getPort(session, address, lport)!=null){
+      throw new JSchException("PortForwardingL: local port "+ address+":"+lport+" is already registered.");
     }
     PortWatcher pw=new PortWatcher(session, address, lport, host, rport);
     pool.addElement(pw);
     return pw;
   }
-  static void delPort(Session session, int lport) throws JSchException{
-    PortWatcher pw=getPort(session, lport);
+  static void delPort(Session session, String address, int lport) throws JSchException{
+    PortWatcher pw=getPort(session, address, lport);
     if(pw==null){
-      throw new JSchException("PortForwardingL: local port "+lport+" is not registered.");
+      throw new JSchException("PortForwardingL: local port "+address+":"+lport+" is not registered.");
     }
     pw.delete();
     pool.removeElement(pw);
@@ -102,21 +113,19 @@ class PortWatcher implements Runnable{
     }
   }
   PortWatcher(Session session, 
-	      String boundaddress, int lport, 
+	      String address, int lport, 
 	      String host, int rport) throws JSchException{
     this.session=session;
-    this.boundaddress=boundaddress;
     this.lport=lport;
     this.host=host;
     this.rport=rport;
     try{
-//    ss=new ServerSocket(port);
-      ss=new ServerSocket(lport, 0, 
-			  InetAddress.getByName(this.boundaddress));
+      boundaddress=InetAddress.getByName(address);
+      ss=new ServerSocket(lport, 0, boundaddress);
     }
     catch(Exception e){ 
       System.out.println(e);
-      throw new JSchException("PortForwardingL: local port "+lport+" cannot be bound.");
+      throw new JSchException("PortForwardingL: local port "+address+":"+lport+" cannot be bound.");
     }
   }
 

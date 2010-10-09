@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -134,8 +134,6 @@ public class ChannelSftp extends ChannelSession{
   private Buffer buf;
   private Packet packet=new Packet(buf);
 
-  private Thread currentThread=null;
-
   private String version="3";
   private int server_version=3;
 /*
@@ -175,13 +173,14 @@ public class ChannelSftp extends ChannelSession{
 
       PipedOutputStream pos=new PipedOutputStream();
       io.setOutputStream(pos);
-      PipedInputStream pis=new PipedInputStream(pos);
+//      PipedInputStream pis=new PipedInputStream(pos);
+      PipedInputStream pis=new MyPipedInputStream(pos, 32*1024);
       io.setInputStream(pis);
 
       Request request=new RequestSftp();
       request.request(session, this);
 
-//      thread=Thread.currentThread();
+//    thread=Thread.currentThread();
 
       buf=new Buffer();
       packet=new Packet(buf);
@@ -220,6 +219,10 @@ public class ChannelSftp extends ChannelSession{
 
       //lcwd=new File(".").getAbsolutePath();
       lcwd=new File(".").getCanonicalPath();
+
+      //thread=new Thread(this);
+      //thread.setName("Sftp for "+session.host);
+      //thread.start();
     }
     catch(Exception e){
       //System.out.println(e);
@@ -341,9 +344,7 @@ public class ChannelSftp extends ChannelSession{
 	  if(i==-1) _dst+=_src;
 	  else _dst+=_src.substring(i+1);
 	}
-
 //System.out.println("_dst "+_dst);
-
 	long size_of_dst=0;
 	if(mode==RESUME){
 	  try{
@@ -450,14 +451,15 @@ public class ChannelSftp extends ChannelSession{
       }
       buf.getInt();
       byte[] handle=buf.getString();         // filename
-      byte[] data=new byte[1024];
+//    byte[] data=new byte[1024];
+      byte[] data=new byte[buf.buffer.length-1024];
 
       long offset=0;
       if(mode==RESUME || mode==APPEND){
 	offset+=skip;
       }
       while(true){
-        i=src.read(data, 0, 1024);
+        i=src.read(data, 0, data.length);
         if(i<=0)break;
         sendWRITE(handle, offset, data, 0, i);
         offset+=i;
@@ -525,16 +527,26 @@ public class ChannelSftp extends ChannelSession{
       final java.io.PipedInputStream pis=new java.io.PipedInputStream(pos);
       final ChannelSftp channel=this;
       final String _dst=dst;
-      currentThread=new Thread(new Runnable(){
+      final Exception[] closed=new Exception[1];
+      closed[0]=null;
+      Thread currentThread=new Thread(new Runnable(){
 	  public void run(){
 	    try{ channel.put(pis, _dst, monitor, mode); }
 	    catch(Exception ee){
-	      System.out.println("!!"+ee);
+	      //System.out.println(ee);
+	      closed[0]=ee;
 	    }
 	    try{ pis.close(); }catch(Exception ee){}
 	  }
 	});
+      currentThread.setName("Sftp channel put "+session.host);
+      //currentThread.setDaemon(true);
+      addRunningThread(currentThread);
       currentThread.start();
+      while(!currentThread.isAlive()){
+	try{Thread.sleep(100);}catch(InterruptedException ie){}
+	if(closed[0]!=null){ throw closed[0]; }
+      }
       return pos;
     }
     catch(Exception e){
@@ -557,6 +569,9 @@ public class ChannelSftp extends ChannelSession{
     if(!isLocalAbsolutePath(dst)){ dst=lcwd+file_separator+dst; } 
     try{
       Vector v=glob_remote(src);
+      if(v.size()==0){
+        throw new SftpException(SSH_FX_NO_SUCH_FILE, "No such file");
+      }
       for(int j=0; j<v.size(); j++){
 	String _dst=dst;
 	String _src=(String)(v.elementAt(j));
@@ -610,7 +625,7 @@ public class ChannelSftp extends ChannelSession{
 		  SftpProgressMonitor monitor) throws SftpException{
     get(src, dst, monitor, OVERWRITE, 0);
   }
-  private void get(String src, OutputStream dst,
+  public void get(String src, OutputStream dst,
 		   SftpProgressMonitor monitor, int mode, long skip) throws SftpException{
 //System.out.println("get: "+src+", "+dst);
     try{
@@ -637,43 +652,75 @@ public class ChannelSftp extends ChannelSession{
       buf.getInt();
       byte[] handle=buf.getString();         // filename
 
-      byte[] data=null;
-      int[] data_start=new int[1];
-      int[] data_len=new int[1];
-
       long offset=0;
       if(mode==RESUME){
 	offset+=skip;
       }
+
+      int request_len=0;
+      loop:
       while(true){
-        sendREAD(handle, offset, 1000);
+//      sendREAD(handle, offset, 1000);
+        request_len=buf.buffer.length-13;
+        if(server_version==0){ request_len=1024; }
+        sendREAD(handle, offset, request_len);
+	
         buf.rewind();
-	i=io.in.read(buf.buffer, 0, buf.buffer.length);
-	length=buf.getInt();
-	type=buf.getByte();
-        buf.getInt();
-	if(type!=SSH_FXP_STATUS && type!=SSH_FXP_DATA){ break;}
-	if(type==SSH_FXP_STATUS){
- 	  i=buf.getInt();
-	  if(i==SSH_FX_EOF){
- 	    break;
- 	  }
- 	  throwStatusError(buf, i);
-	}
-	data=buf.getString(data_start, data_len);
-        dst.write(data, data_start[0], data_len[0]);
-	dst.flush();
-	if(monitor!=null){
-	  if(!monitor.count(data_len[0])){
-	    break;
+        i=io.in.read(buf.buffer, 0, 13);  // 4 + 1 + 4 + 4
+        if(i!=13){
+          break loop;
+        }
+        length=buf.getInt();
+        type=buf.getByte();  
+        length--;
+        buf.getInt();        
+        length-=4;
+        if(type!=SSH_FXP_STATUS && type!=SSH_FXP_DATA){ 
+	  break loop;
+        }
+        if(type==SSH_FXP_STATUS){
+	  i=buf.getInt();    
+          length-=4;
+          io.in.read(buf.buffer, 13, length);
+          if(i==SSH_FX_EOF){
+            break loop;
+          }
+          throwStatusError(buf, i);
+        }
+
+        i=buf.getInt();    
+        length-=4;
+        int foo=i;
+        while(foo>0){
+          int bar=length;
+          if(bar>buf.buffer.length){
+            bar=buf.buffer.length;
+          }
+          i=io.in.read(buf.buffer, 0, bar);
+          if(i<0){
+            break loop;
 	  }
-	}
-        offset+=data_len[0];
+          int data_len=i;
+          length-=data_len;
+          dst.write(buf.buffer, 0, data_len);
+	  
+          if(monitor!=null){
+            if(!monitor.count(data_len)){
+              break loop;
+            }
+          }
+
+          offset+=data_len;
+          foo-=data_len;
+        }
+	//System.out.println("length: "+length);  // length should be 0
       }
+      dst.flush();
+
       sendCLOSE(handle);
 
       if(monitor!=null){
-	monitor.end();
+        monitor.end();
       }
 
       buf.rewind();
@@ -726,7 +773,7 @@ public class ChannelSftp extends ChannelSession{
 
       final Exception[] closed=new Exception[1];
       closed[0]=null;
-      new Thread(new Runnable(){
+      Thread tmp=new Thread(new Runnable(){
 	  public void run(){
 	    try{ channel.get(_src, pos, monitor, mode, (long)0); }
 	    catch(Exception ee){
@@ -738,15 +785,25 @@ public class ChannelSftp extends ChannelSession{
 	    try{ pos.close(); }catch(Exception ee){}
 //System.out.println("pos.close end");
 	  }
-	}).start();
+	});
+      tmp.setName("Sftp channel getter"+session.host);
+      //tmp.setDaemon(true);
+      addRunningThread(tmp);
+      tmp.start();
+      while(!tmp.isAlive()){
+	try{Thread.sleep(1000);}catch(InterruptedException ie){}
+	if(closed[0]!=null){ throw closed[0]; }
+      }
+
+      /*
       while(true){
 	if(pis.available()!=0)break;
-	if(closed[0]!=null){
-	  throw closed[0];
-	}
+	if(closed[0]!=null){ throw closed[0]; }
 //	System.out.println("pis wait");
 	Thread.sleep(1000);
       }
+      */
+
       return pis;
     }
     catch(Exception e){
@@ -832,8 +889,9 @@ public class ChannelSftp extends ChannelSession{
 
 	  SftpATTRS attrs=SftpATTRS.getATTR(buf);
 	  if(pattern==null || Util.glob(pattern, filename)){
-  	    v.addElement(longname);
-//	    v.addElement(new Ssh_exp_name(new String(filename), longname, attrs));
+//System.out.println(new String(filename)+" |"+longname+"|");
+//  	    v.addElement(longname);
+	    v.addElement(new LsEntry(new String(filename), longname, attrs));
 	  }
 
 	  count--; 
@@ -1461,7 +1519,7 @@ public class ChannelSftp extends ChannelSession{
     }
     byte[] pattern=new byte[path.length-i-1];
     System.arraycopy(path, i+1, pattern, 0, pattern.length);
-//System.out.println("dir: "+dir+" pattern: "+pattern);
+//System.out.println("dir: "+new String(dir)+" pattern: "+new String(pattern));
     try{
       String[] children=(new File(new String(dir))).list();
       for(int j=0; j<children.length; j++){
@@ -1492,38 +1550,65 @@ public class ChannelSftp extends ChannelSession{
   }
 
   public void finalize() throws Throwable{
-    if(currentThread!=null &&
-       currentThread.isAlive()){
-      currentThread.interrupt();
-      currentThread=null;
-    }
     super.finalize();
   }
 
+  public void disconnect(){
+    //waitForRunningThreadFinish(10000);
+    clearRunningThreads();
+    super.disconnect();
+  }
+  private java.util.Vector threadList=null;
+  protected synchronized void addRunningThread(Thread thread){
+    if(threadList==null)threadList=new java.util.Vector();
+    threadList.add(thread);
+  }
+  protected synchronized void clearRunningThreads(){
+    if(threadList==null)return;
+    for(int t=0;t<threadList.size();t++){
+      Thread thread=(Thread)threadList.get(t);
+      if(thread!=null)
+	if(thread.isAlive())
+	  thread.interrupt();
+    }
+    threadList.clear();
+  }
   /*
-   * Class: Ssh_exp_name
-   *
-   * Represents the result of a query about filenames (e.g. FXP_OPENDIR+ FXP_READDIR )
-   */
-  public static class Ssh_exp_name {
+  protected void waitForRunningThreadFinish(int timeout){
+    if(threadList==null)return;
+    long start=System.currentTimeMillis();
+    boolean someoneIsStillRunning;
+    do{
+      someoneIsStillRunning=false;
+      for(int t=0;t<threadList.size();t++){
+	Thread thread=(Thread)threadList.get(t);
+	if(thread!=null)
+	  if (thread.isAlive())
+	    someoneIsStillRunning=true;
+      }
+      try{Thread.sleep(50);}catch(InterruptedException ie){}
+      if ((System.currentTimeMillis()-start)>timeout)
+	break; //timeout!
+    }
+    while(someoneIsStillRunning);
+  }
+  */
+
+  public class LsEntry {
     private  String filename;
     private  String longname;
     private  SftpATTRS attrs;
-    Ssh_exp_name(String filename,
-		 String longname,
-		 SftpATTRS attrs){
+    LsEntry(String filename, String longname, SftpATTRS attrs){
       setFilename(filename);
       setLongname(longname);
       setAttrs(attrs);
     }
     public String getFilename(){return filename;};
-    public void setFilename(String filename){this.filename = filename;};
+    void setFilename(String filename){this.filename = filename;};
     public String getLongname(){return longname;};
-    public void setLongname(String longname){this.longname = longname;};
+    void setLongname(String longname){this.longname = longname;};
     public SftpATTRS getAttrs(){return attrs;};
-    public void setAttrs(SftpATTRS attrs) {this.attrs = attrs;};
-    public String toString(){
-      return (attrs.toString()+" "+filename);
-    }
+    void setAttrs(SftpATTRS attrs) {this.attrs = attrs;};
+    public String toString(){ return longname; }
   }
 }

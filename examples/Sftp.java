@@ -1,4 +1,4 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 import com.jcraft.jsch.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -161,16 +161,13 @@ public class Sftp{
 	    java.util.Vector vv=c.ls(path);
 	    if(vv!=null){
 	      for(int ii=0; ii<vv.size(); ii++){
-		/*
-		Object obj=vv.elementAt(ii);
-		if(obj instanceof com.jcraft.jsch.ChannelSftp.Ssh_exp_name )
-		  out.println(((com.jcraft.jsch.ChannelSftp.Ssh_exp_name)obj).getLongname());
-		else if(obj instanceof java.lang.String)
-		  out.println(obj);
-		else
-		  throw new Exception("opps, got an odd type back");
-		*/
-		out.println(vv.elementAt(ii));
+		out.println(vv.elementAt(ii).toString());
+                /*
+                Object obj=vv.elementAt(ii);
+                if(obj instanceof com.jcraft.jsch.ChannelSftp.LsEntry){
+                  out.println(((com.jcraft.jsch.ChannelSftp.LsEntry)obj).getLongname());
+                }
+                */
 	      }
 	    }
 	  }
@@ -398,17 +395,23 @@ public class Sftp{
     public void init(int op, String src, String dest, long max){
       this.max=max;
       monitor=new ProgressMonitor(null, 
-				  ((op==SftpProgressMonitor.PUT)? 
-				   "put" : "get")+": "+src, 
-				  "",  0, (int)max);
+                                  ((op==SftpProgressMonitor.PUT)? 
+                                   "put" : "get")+": "+src, 
+                                  "",  0, (int)max);
       count=0;
       monitor.setProgress((int)this.count);
       monitor.setMillisToDecideToPopup(1000);
     }
+    private long percent=-1;
     public boolean count(long count){
       this.count+=count;
+
+      if(percent>=this.count*100/max){ return true; }
+      percent=this.count*100/max;
+
+      monitor.setNote("Completed "+this.count+"("+percent+"%) out of "+max+".");     
       monitor.setProgress((int)this.count);
-      monitor.setNote("Completed "+this.count+" out of "+max+".");
+
       return !(monitor.isCanceled());
     }
     public void end(){

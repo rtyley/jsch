@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Fri Jan 23 00:08:41 JST 2004
+Last modified: Fri Jul 15 15:23:24 UTC 2005
 
 
 Description
@@ -51,7 +51,7 @@ Features
     can be obtained at http://www.bouncycastle.org/
 * SSH2 protocol support.
 * Key exchange: diffie-hellman-group-exchange-sha1, diffie-hellman-group1-sha1
-* Cipher: blowfish-cbc,3des-cbc
+* Cipher: blowfish-cbc,3des-cbc,aes128-cbc,aes192-cbc,aes256-cbc
 * MAC: hmac-md5,hmac-md5-96,hmac-sha1,hmac-sha1-96
 * Host key type: ssh-dss, ssh-rsa
 * Userauth: password
@@ -83,6 +83,21 @@ the source code by your self.
   $ javac com/jcraft/jsch/*java com/jcraft/jsch/jce/*java com/jcraft/jzlib/*.java
 '/examples/' directory has included some samples to demonstrate what 
 JSch can do.  Please refer to '/examples/README' file.
+
+
+AES cipher
+==========
+Since version 0.1.21, jsch can support aes128-cbc,aes192-cbc,aes256-cbc,
+but you require AES support in your J2SE to choose some of them.  
+If you are using Sun's J2SE, J2SE 1.4.2 or later is required.  
+And then, J2SE 1.4.2(or later) does not support aes256 by the default, 
+because of 'import control restrictions of some countries'.
+We have confirmed that by applying
+  "Java Cryptography Extension (JCE)
+  Unlimited Strength Jurisdiction Policy Files 1.4.2"
+on
+  http://java.sun.com/j2se/1.4.2/download.html#docs
+we can enjoy 'aes256-cbc'.
 
 
 Stream Forwarding
@@ -168,14 +183,14 @@ Read the LICENSE.txt file for the complete license.
 
 Credits and Acknowledgments
 ============================
-JSch has been developed by ymnk@jcaft.com and it can not be hacked
+JSch has been developed by ymnk@jcraft.com and it can not be hacked
 without several help.
-* First of all, we want to thank JCE team</a> at Sun Microsystems.
+* First of all, we want to thank JCE team at Sun Microsystems.
   For long time, we had planed to implement SSH2 in pure Java,
   but we had hesitated to do because tons of work must be done for
   implementing ciphers, hashes, etc., from the scratch.
   Thanks to newly added functionalities to J2SE 1.4.0, we could
-  release the first working version within just 1.5 weeks from the scratch.
+  start this project.
 * We appreciate the OpenSSH project.
   The options '-ddd' of sshd, '---vvv' of ssh and the compile options 
   '-DPACKET_DEBUG', '-DDEBUG_KEXDH' and  '-DDEBUG_KEX' were very

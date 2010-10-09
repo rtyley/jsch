@@ -1,6 +1,6 @@
-/* -*-mode:java; c-basic-offset:2; -*- */
+/* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004,2005 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -33,13 +33,6 @@ import java.net.*;
 
 public class ChannelShell extends ChannelSession{
   boolean xforwading=false;
-  /*
-  ChannelShell(){
-    super();
-    type="session".getBytes();
-    io=new IO();
-  }
-  */
   public void setXForwarding(boolean foo){
     xforwading=true;
   }
@@ -57,51 +50,15 @@ public class ChannelShell extends ChannelSession{
     }
     catch(Exception e){
     }
-    thread=new Thread(this);
+    Thread thread=new Thread(this);
+    thread.setName("Shell for "+session.host);
     thread.start();
   }
-  public void finalize() throws Throwable{
-    if(thread!=null){
-      thread.interrupt();
-      thread=null;
-    }
-    super.finalize();
-  }
+  //public void finalize() throws Throwable{ super.finalize(); }
   public void init(){
     io.setInputStream(session.in);
     io.setOutputStream(session.out);
   }
-  public void run(){
-//    thread=Thread.currentThread();
-    Buffer buf=new Buffer();
-    Packet packet=new Packet(buf);
-    int i=0;
-    try{
-      while(isConnected() &&
-	    thread!=null && 
-	    io!=null && 
-	    io.in!=null){
-        i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
-	if(i==0)continue;
-	if(i==-1){
-	  eof();
-	  break;
-	}
-	if(close)break;
-        packet.reset();
-        buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
-        buf.putInt(recipient);
-        buf.putInt(i);
-        buf.skip(i);
-	session.write(packet, this, i);
-      }
-    }
-    catch(Exception e){
-      //System.out.println("ChannelShell.run: "+e);
-    }
-    thread=null;
-  }
-
   public void setPtySize(int row, int col, int wp, int hp){
     //if(thread==null) return;
     try{
