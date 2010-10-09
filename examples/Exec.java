@@ -110,5 +110,6 @@ public class Exec{
       okButton.addActionListener(al);
       passwordField.addActionListener(al);
     }
+    public String getPassphrase(String message){ return null; }
   }
 }

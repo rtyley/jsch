@@ -32,6 +32,8 @@ public class BlowfishCBC implements Cipher{
   public int getIVSize(){return ivsize;} 
   public int getBlockSize(){return bsize;}
   public void init(int mode, byte[] key, byte[] iv) throws Exception{
+    String pad="NoPadding";      
+//  if(padding) pad="PKCS5Padding";
     byte[] tmp;
     if(iv.length>ivsize){
       tmp=new byte[ivsize];
@@ -45,7 +47,7 @@ public class BlowfishCBC implements Cipher{
     }
     try{
       SecretKeySpec skeySpec = new SecretKeySpec(key, "Blowfish");
-      cipher=javax.crypto.Cipher.getInstance("Blowfish/CBC/NoPadding");
+      cipher=javax.crypto.Cipher.getInstance("Blowfish/CBC/"+pad);
       cipher.init((mode==ENCRYPT_MODE?
 		   javax.crypto.Cipher.ENCRYPT_MODE:
 		   javax.crypto.Cipher.DECRYPT_MODE),

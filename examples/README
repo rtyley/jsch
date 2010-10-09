@@ -68,3 +68,10 @@ This directory contains some examples, which demonstrate how to use JSch
   You will be asked hostname, host:hostport, username and passwd. 
   If everything works fine, System.in and System.out streams will be
   forwared to remote port and you can send messages from command line.
+
+- UserAuthPubKey.java
+  This program will demonstrate the user authentification by public key.
+  $ CLASSPATH=.:../src javac UserAuthPubKey.java
+  $ CLASSPATH=.:../src UserAuthPubKey
+  You will be asked hostname, privatekey(id_dsa), username and passphrase. 
+  If everything works fine, you will get the shell prompt

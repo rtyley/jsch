@@ -1,6 +1,6 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Thu Oct 24 16:01:30 UTC 2002
+Last modified: Tue Oct 29 15:19:45 UTC 2002
 
 Changes since version 0.0.1:
 - the tunneling via HTTP proxy is supported.
@@ -28,3 +28,8 @@ Changes since version 0.0.4:
 - hmac-sha1 is supported.
 - hmac-md5-96 is supported.
 - hmac-sha1-96 is supported.	
+
+Changes since version 0.0.5:	
+- DSA public key authentication is supported.
+- examples/UserAuthPubKey.java is added.
+- examples/ScpTo.java is added.

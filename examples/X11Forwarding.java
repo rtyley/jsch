@@ -106,6 +106,7 @@ public class X11Forwarding{
       okButton.addActionListener(al);
       passwordField.addActionListener(al);
     }
+    public String getPassphrase(String message){ return null; }
   }
 }
 

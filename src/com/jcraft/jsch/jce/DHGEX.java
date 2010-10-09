@@ -63,7 +63,7 @@ public class DHGEX extends KeyExchange{
       System.err.println(e);
     }
 
-    int j;
+    int i,j;
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
@@ -162,7 +162,33 @@ public class DHGEX extends KeyExchange{
 
     Signature sig=new SignatureDSA();
     sig.init();
-    sig.setPubKey(K_S);
+
+    byte[] q=null;
+    {
+      byte[] tmp;
+      i=0;
+      j=0;
+      j=((K_S[i++]<<24)&0xff000000)|((K_S[i++]<<16)&0x00ff0000)|
+	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
+      i+=j;
+      j=((K_S[i++]<<24)&0xff000000)|((K_S[i++]<<16)&0x00ff0000)|
+	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
+      tmp=new byte[j]; System.arraycopy(K_S, i, tmp, 0, j); i+=j;
+      p=tmp;
+      j=((K_S[i++]<<24)&0xff000000)|((K_S[i++]<<16)&0x00ff0000)|
+	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
+      tmp=new byte[j]; System.arraycopy(K_S, i, tmp, 0, j); i+=j;
+      q=tmp;
+      j=((K_S[i++]<<24)&0xff000000)|((K_S[i++]<<16)&0x00ff0000)|
+	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
+      tmp=new byte[j]; System.arraycopy(K_S, i, tmp, 0, j); i+=j;
+      g=tmp;
+      j=((K_S[i++]<<24)&0xff000000)|((K_S[i++]<<16)&0x00ff0000)|
+	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
+      tmp=new byte[j]; System.arraycopy(K_S, i, tmp, 0, j); i+=j;
+      f=tmp;
+    }
+    sig.setPubKey(f, p, q, g);   
     sig.update(H);
 
     return sig.verify(sig_of_H);

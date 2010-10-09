@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Tue Oct 22 14:47:11 UTC 2002
+Last modified: Tue Oct 29 15:19:22 UTC 2002
 
 Description
 ===========
@@ -47,10 +47,11 @@ Features
 * Key exchange: diffie-hellman-group-exchange-sha1
   From the implementation of Diffie-Hellman key exchange by JCE,
   the bit-size of prime number p is 1024.
-* Cipher: blowfish-cbc, 3des-cbc
-* MAC: hmac-md5, hmac-sha1, hmac-sha1-96, hmac-md5-96
+* Cipher: blowfish-cbc
+* MAC: hmac-md5
 * Key type: ssh-dss
 * Userauth: password
+* Userauth: publickey(DSA)
 * X11 forwarding.
 * xauth spoofing.
 * connection through HTTP proxy.
@@ -83,10 +84,20 @@ A sample program, /example/StreamForwarding.java , demonstrates
 this functionality.
 
 
+Public Key Authentication
+===========================
+Current implementation has supported only DSA public key authentication.
+A sample program 'examples/UserAuthPubKey.java' will demonstrate this 
+functionality.
+
+
 TODO
 ====
+* Cipher: 3des-cbc
+* MAC: hmac-sha1, hmac-sha1-96,
+* hmac-md5-96
 * Key type: ssh-rsa
-* Userauth: publickey
+* Userauth: publickey(RSA)
 * file transfer.
 * packet compression.
   JZlib(http://www.jcraft.com/jzlib/) will be used.

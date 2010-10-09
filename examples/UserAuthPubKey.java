@@ -3,12 +3,8 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class PortForwardingR{
+public class UserAuthPubKey{
   public static void main(String[] arg){
-
-    int rport;
-    String lhost;
-    int lport;
 
     try{
       JSch jsch=new JSch();
@@ -16,25 +12,23 @@ public class PortForwardingR{
 					      "localhost"); 
       Session session=jsch.getSession(host, 22);
 
-      String foo=JOptionPane.showInputDialog("Please enter -R", 
-					     "port:host:hostport");
-      rport=Integer.parseInt(foo.substring(0, foo.indexOf(':')));
-      foo=foo.substring(foo.indexOf(':')+1);
-      lhost=foo.substring(0, foo.indexOf(':'));
-      lport=Integer.parseInt(foo.substring(foo.indexOf(':')+1));
+      JFileChooser chooser = new JFileChooser();
+      chooser.setDialogTitle("Choose your DSA privatekey(ex. ~/.ssh/id_dsa)");
+      chooser.setFileHidingEnabled(false);
+      int returnVal = chooser.showOpenDialog(null);
+      if(returnVal == JFileChooser.APPROVE_OPTION) {
+        System.out.println("You chose "+
+			   chooser.getSelectedFile().getAbsolutePath()+".");
+        session.setIdentity(chooser.getSelectedFile().getAbsolutePath());
+      }
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
-
       session.connect();
 
-      // Channel channel=session.openChannel("shell");
-      // channel.connect();
-
-      session.setPortForwardingR(rport, lhost, lport);
-
-      System.out.println(host+":"+rport+" -> "+lhost+":"+lport);
+      Channel channel=session.openChannel("shell");
+      channel.connect();
     }
     catch(Exception e){
       System.out.println(e);
@@ -42,14 +36,27 @@ public class PortForwardingR{
   }
   public static class MyUserInfo implements UserInfo{
     public String getName(){
+      if(username==null){
+        passwordDialog.show();
+        passwd=new String(passwordField.getPassword());
+        username=usernameField.getText();
+        passwordField.setText("");
+        if(passwd.length()==0)passwd=null;
+      }
+      return username;
+    }
+    public String getPassphrase(String message){ 
+      mainLabel.setText("Please enter your user name and passphrase for "+message+":");
+      passwordLabel.setText("Passphrase: ");
       passwordDialog.show();
       passwd=new String(passwordField.getPassword());
       username=usernameField.getText();
       passwordField.setText("");
-      if(passwd.length()==0)passwd=null;
-      return username;
+      return passwd;
     }
     public String getPassword(){ 
+      mainLabel.setText("Please enter your user name and password: ");
+      passwordLabel.setText("Password: ");
       if(passwd==null){
         passwordDialog.show();
         passwd=new String(passwordField.getPassword());
@@ -109,6 +116,7 @@ public class PortForwardingR{
       okButton.addActionListener(al);
       passwordField.addActionListener(al);
     }
-    public String getPassphrase(String message){ return null; }
   }
 }
+
+

@@ -54,6 +54,8 @@ public class Session implements Runnable{
 
   private IO io;
 
+  private String identity;
+
   InputStream in=System.in;
   OutputStream out=System.out;
 
@@ -200,8 +202,14 @@ public class Session implements Runnable{
 
       updateKeys(hash, K, H, session_id);
 
-      UserAuth us=new UserAuthPassword(userinfo);
-      us.start(this);
+      if(getIdentity()!=null){
+        UserAuth us=new UserAuthPublicKey(userinfo);
+        us.start(this);
+      }
+      else{
+        UserAuth us=new UserAuthPassword(userinfo);
+        us.start(this);
+      }
 
       (new Thread(this)).start();
     }
@@ -318,6 +326,10 @@ public class Session implements Runnable{
     }
     buf.rewind();
     return buf;
+  }
+
+  byte[] getSessionId(){
+    return session_id;
   }
 
   private void updateKeys(HASH hash,
@@ -597,4 +609,6 @@ public class Session implements Runnable{
   public void setX11Host(String host){ ChannelX11.setHost(host); }
   public void setX11Port(int port){ ChannelX11.setPort(port); }
   public void setX11Cookie(String cookie){ ChannelX11.setCookie(cookie); }
+  public void setIdentity(String foo){ this.identity=foo; }
+  String getIdentity(){ return identity; }
 }
