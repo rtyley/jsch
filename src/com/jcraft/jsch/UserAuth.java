@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -39,35 +39,15 @@ public abstract class UserAuth{
   protected static final int SSH_MSG_USERAUTH_PK_OK=                 60;
 
   protected UserInfo userinfo;
-  public boolean start(Session session, UserInfo userinfo) throws Exception{
-    this.userinfo=userinfo;
-    Packet packet=session.packet;
-    Buffer buf=session.buf;
-    // send
-    // byte      SSH_MSG_SERVICE_REQUEST(5)
-    // string    service name "ssh-userauth"
-    packet.reset();
-    buf.putByte((byte)Session.SSH_MSG_SERVICE_REQUEST);
-    buf.putString("ssh-userauth".getBytes());
-    session.write(packet);
+  protected Packet packet;
+  protected Buffer buf;
+  protected String username;
 
-    if(JSch.getLogger().isEnabled(Logger.INFO)){
-      JSch.getLogger().log(Logger.INFO, 
-                           "SSH_MSG_SERVICE_REQUEST sent");
-    }
-
-    // receive
-    // byte      SSH_MSG_SERVICE_ACCEPT(6)
-    // string    service name
-    buf=session.read(buf);
-    //System.err.println("read: 6 ? "+buf.buffer[5]);
-    boolean result=(buf.buffer[5]==6);
-
-    if(JSch.getLogger().isEnabled(Logger.INFO)){
-      JSch.getLogger().log(Logger.INFO, 
-                           "SSH_MSG_SERVICE_ACCEPT received");
-    }
-
-    return result;
+  public boolean start(Session session) throws Exception{
+    this.userinfo=session.getUserInfo();
+    this.packet=session.packet;
+    this.buf=packet.getBuffer();
+    this.username=session.getUserName();
+    return true;
   }
 }

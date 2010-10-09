@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -33,56 +33,16 @@ import java.util.*;
 
 public class ChannelShell extends ChannelSession{
 
-  private boolean pty=true;
-
-  private String ttype="vt100";
-  private int tcol=80;
-  private int trow=24;
-  private int twp=640;
-  private int thp=480;
-  private byte[] terminal_mode=null;
-
-  public void setPty(boolean enable){ 
-    pty=enable; 
+  ChannelShell(){
+    super();
+    pty=true;
   }
-  public void setTerminalMode(byte[] terminal_mode){
-    this.terminal_mode=terminal_mode;
-  }
+
   public void start() throws JSchException{
     try{
-      Request request;
+      sendRequests();
 
-      if(agent_forwarding){
-        request=new RequestAgentForwarding();
-        request.request(session, this);
-      }
-
-      if(xforwading){
-        request=new RequestX11();
-        request.request(session, this);
-      }
-
-      if(pty){
-        request=new RequestPtyReq();
-        ((RequestPtyReq)request).setTType(ttype);
-        ((RequestPtyReq)request).setTSize(tcol, trow, twp, thp);
-        if(terminal_mode!=null){
-          ((RequestPtyReq)request).setTerminalMode(terminal_mode);
-        }
-        request.request(session, this);
-      }
-
-      if(env!=null){
-        for(Enumeration _env=env.keys() ; _env.hasMoreElements() ;) {
-          String name=(String)(_env.nextElement());
-          String value=(String)(env.get(name));
-          request=new RequestEnv();
-          ((RequestEnv)request).setEnv(name, value);
-          request.request(session, this);
-        }
-      }
-
-      request=new RequestShell();
+      Request request=new RequestShell();
       request.request(session, this);
     }
     catch(Exception e){
@@ -101,30 +61,9 @@ public class ChannelShell extends ChannelSession{
       thread.start();
     }
   }
-  //public void finalize() throws Throwable{ super.finalize(); }
+
   public void init(){
     io.setInputStream(session.in);
     io.setOutputStream(session.out);
-  }
-  public void setPtySize(int col, int row, int wp, int hp){
-    //if(thread==null) return;
-    try{
-      RequestWindowChange request=new RequestWindowChange();
-      request.setSize(col, row, wp, hp);
-      request.request(session, this);
-    }
-    catch(Exception e){
-      //System.err.println("ChannelShell.setPtySize: "+e);
-    }
-  }
-  public void setPtyType(String ttype){
-    setPtyType(ttype, 80, 24, 640, 480);
-  }
-  public void setPtyType(String ttype, int col, int row, int wp, int hp){
-    this.ttype=ttype;
-    this.tcol=col;
-    this.trow=row;
-    this.twp=wp;
-    this.thp=hp;
   }
 }

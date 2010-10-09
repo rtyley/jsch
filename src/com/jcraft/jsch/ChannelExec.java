@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -32,40 +32,13 @@ package com.jcraft.jsch;
 import java.util.*;
 
 public class ChannelExec extends ChannelSession{
-  boolean pty=false;
+
   String command="";
 
-  public void setPty(boolean foo){ pty=foo; }
   public void start() throws JSchException{
     try{
-      Request request;
-
-      if(agent_forwarding){
-        request=new RequestAgentForwarding();
-        request.request(session, this);
-      }
-
-      if(xforwading){
-        request=new RequestX11();
-        request.request(session, this);
-      }
-
-      if(pty){
-	request=new RequestPtyReq();
-	request.request(session, this);
-      }
-
-      if(env!=null){
-        for(Enumeration _env=env.keys() ; _env.hasMoreElements() ;) {
-          String name=(String)(_env.nextElement());
-          String value=(String)(env.get(name));
-          request=new RequestEnv();
-          ((RequestEnv)request).setEnv(name, value);
-          request.request(session, this);
-        }
-      }
-
-      request=new RequestExec(command);
+      sendRequests();
+      Request request=new RequestExec(command);
       request.request(session, this);
     }
     catch(Exception e){

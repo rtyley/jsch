@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -186,6 +186,10 @@ public class Buffer{
   }
   void rewind(){
     s=0;
+  }
+
+  byte getCommand(){
+    return buffer[5];
   }
 
 /*

@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -120,6 +120,8 @@ public abstract class Channel implements Runnable{
   int connectTimeout=0;
 
   Session session;
+
+  int notifyme=0; 
 
   Channel(){
     synchronized(pool){
@@ -347,7 +349,11 @@ public abstract class Channel implements Runnable{
   void setLocalWindowSize(int foo){ this.lwsize=foo; }
   void setLocalPacketSize(int foo){ this.lmpsize=foo; }
   synchronized void setRemoteWindowSize(int foo){ this.rwsize=foo; }
-  synchronized void addRemoteWindowSize(int foo){ this.rwsize+=foo; }
+  synchronized void addRemoteWindowSize(int foo){ 
+    this.rwsize+=foo; 
+    if(notifyme>0)
+      notifyAll();
+  }
   void setRemotePacketSize(int foo){ this.rmpsize=foo; }
 
   public void run(){

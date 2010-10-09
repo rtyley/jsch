@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,6 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 import java.net.*;
+import java.io.*;
 
 public class ChannelForwardedTCPIP extends Channel{
 
@@ -58,14 +59,20 @@ public class ChannelForwardedTCPIP extends Channel{
   }
 
   public void run(){
-
     try{ 
       if(lport==-1){
         Class c=Class.forName(target);
         daemon=(ForwardedTCPIPDaemon)c.newInstance();
-        daemon.setChannel(this);
+
+        PipedOutputStream out=new PipedOutputStream();
+        io.setInputStream(new PassiveInputStream(out
+                                                 , 32*1024
+                                                 ), false);
+
+        daemon.setChannel(this, getInputStream(), out);
         Object[] foo=getPort(session, rport);
         daemon.setArg((Object[])foo[3]);
+
         new Thread(daemon).start();
       }
       else{
@@ -98,7 +105,6 @@ public class ChannelForwardedTCPIP extends Channel{
                      buf.buffer.length-14
                      -32 -20 // padding and mac
                      );
-
         if(i<=0){
           eof();
           break;
@@ -261,6 +267,7 @@ public class ChannelForwardedTCPIP extends Channel{
       delPort(session, rport[i]);
     }
   }
+
   public int getRemotePort(){return rport;}
   void setSocketFactory(SocketFactory factory){
     this.factory=factory;

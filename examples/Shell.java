@@ -24,9 +24,7 @@ public class Shell{
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
 
-      //java.util.Hashtable config=new java.util.Hashtable();
-      //config.put("StrictHostKeyChecking", "no");
-      //session.setConfig(config);
+      // session.setConfig("StrictHostKeyChecking", "no");
 
       //session.connect();
       session.connect(30000);   // making a connection with timeout.

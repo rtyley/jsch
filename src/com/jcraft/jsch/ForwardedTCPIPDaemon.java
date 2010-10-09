@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -28,7 +28,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 package com.jcraft.jsch;
+import java.io.*;
+
 public interface ForwardedTCPIPDaemon extends Runnable{
-  void setChannel(ChannelForwardedTCPIP channel);
+  void setChannel(ChannelForwardedTCPIP channel, InputStream in, OutputStream out);
   void setArg(Object[] arg);
 }

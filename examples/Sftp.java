@@ -77,16 +77,14 @@ public class Sftp{
 	  }
 	  try{
 	    level=Integer.parseInt((String)cmds.elementAt(1));
-	    java.util.Hashtable config=new java.util.Hashtable();
 	    if(level==0){
-	      config.put("compression.s2c", "none");
-	      config.put("compression.c2s", "none");
+	      session.setConfig("compression.s2c", "none");
+	      session.setConfig("compression.c2s", "none");
 	    }
 	    else{
-              config.put("compression.s2c", "zlib@openssh.com,zlib,none");
-              config.put("compression.c2s", "zlib@openssh.com,zlib,none");
+              session.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
+              session.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
 	    }
-	    session.setConfig(config);
 	  }
 	  catch(Exception e){}
           session.rekey();

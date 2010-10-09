@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,14 +30,40 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 class UserAuthNone extends UserAuth{
+  private static final int SSH_MSG_SERVICE_ACCEPT=                  6;
   private String methods=null;
 
-  public boolean start(Session session, UserInfo userinfo) throws Exception{
-    super.start(session, userinfo);
-//System.err.println("UserAuthNone: start");
-    Packet packet=session.packet;
-    Buffer buf=session.buf;
-    final String username=session.username;
+  public boolean start(Session session) throws Exception{
+    super.start(session);
+
+
+    // send
+    // byte      SSH_MSG_SERVICE_REQUEST(5)
+    // string    service name "ssh-userauth"
+    packet.reset();
+    buf.putByte((byte)Session.SSH_MSG_SERVICE_REQUEST);
+    buf.putString("ssh-userauth".getBytes());
+    session.write(packet);
+
+    if(JSch.getLogger().isEnabled(Logger.INFO)){
+      JSch.getLogger().log(Logger.INFO, 
+                           "SSH_MSG_SERVICE_REQUEST sent");
+    }
+
+    // receive
+    // byte      SSH_MSG_SERVICE_ACCEPT(6)
+    // string    service name
+    buf=session.read(buf);
+    int command=buf.getCommand();
+
+    boolean result=(command==SSH_MSG_SERVICE_ACCEPT);
+
+    if(JSch.getLogger().isEnabled(Logger.INFO)){
+      JSch.getLogger().log(Logger.INFO, 
+                           "SSH_MSG_SERVICE_ACCEPT received");
+    }
+    if(!result)
+      return false;
 
     byte[] _username=null;
     _username=Util.str2byte(username);
@@ -56,15 +82,13 @@ class UserAuthNone extends UserAuth{
 
     loop:
     while(true){
-      // receive
-      // byte      SSH_MSG_USERAUTH_SUCCESS(52)
-      // string    service name
       buf=session.read(buf);
-      // System.err.println("UserAuthNone: read: 52 ? "+    buf.buffer[5]);
-      if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
+      command=buf.getCommand()&0xff;
+
+      if(command==SSH_MSG_USERAUTH_SUCCESS){
 	return true;
       }
-      if(buf.buffer[5]==SSH_MSG_USERAUTH_BANNER){
+      if(command==SSH_MSG_USERAUTH_BANNER){
 	buf.getInt(); buf.getByte(); buf.getByte();
 	byte[] _message=buf.getString();
 	byte[] lang=buf.getString();
@@ -84,7 +108,7 @@ class UserAuthNone extends UserAuth{
 	}
 	continue loop;
       }
-      if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
+      if(command==SSH_MSG_USERAUTH_FAILURE){
 	buf.getInt(); buf.getByte(); buf.getByte(); 
 	byte[] foo=buf.getString();
 	int partial_success=buf.getByte();
@@ -98,8 +122,8 @@ class UserAuthNone extends UserAuth{
         break;
       }
       else{
-//      System.err.println("USERAUTH fail ("+buf.buffer[5]+")");
-	throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
+//      System.err.println("USERAUTH fail ("+command+")");
+	throw new JSchException("USERAUTH fail ("+command+")");
       }
     }
    //throw new JSchException("USERAUTH fail");

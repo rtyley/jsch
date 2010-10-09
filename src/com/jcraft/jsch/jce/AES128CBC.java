@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2005-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -61,8 +61,8 @@ public class AES128CBC implements Cipher{
                   keyspec, new IvParameterSpec(iv));
     }
     catch(Exception e){
-      //System.err.println(e);
       cipher=null;
+      throw e;
     }
   }
   public void update(byte[] foo, int s1, int len, byte[] bar, int s2) throws Exception{

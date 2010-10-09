@@ -1,7 +1,29 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Fri May 11 07:12:24 UTC 2007
+Last modified: Wed Aug 29 06:34:29 UTC 2007
 
+	
+Changes since version 0.1.33:			
+- bugfix: there had a possibility that the session may be broken 
+	  if ciphers for upward/downward streams are different.    FIXED.
+- bugfix: the authentication method "keyboard-interactive" had 
+	  not been tried without UserInfo.                         FIXED.
+- bugfix: ChannelShell#setTerminalMode(byte[] terminal_mode) had 
+	  not been functional.                                     FIXED.
+- bugfix: the remote port-forwarding to the daemon had been broken 
+	  since 0.1.30.                                            FIXED. 
+- feature: ChannelExec can control the size of pty;
+	   ChannelExec#setPtySize(int col, int row, int wp, int hp) is
+           added.
+- feature: the property "CheckCiphers" has been added.
+	   Refer to 'examples/AES.java'.
+- feature: Session#setConfig(String key, String value),
+	   JSch#setConfig(String key, String value) have been added.
+- change: the cipher "aes128-cbc" will be used if AES is available.
+- change: the interface 'com.jcraft.jsch.ForwardedTCPIPDaemon' has been changed.
+- change: the data transfer rate will be improved on some environment.
+
+	
 Changes since version 0.1.32:			
 - bugfix: freeze in 'diffie-hellman-group-exchange-sha1'.          FIXED.
           By the default, 'diffie-hellman-group1-sha1' will be used

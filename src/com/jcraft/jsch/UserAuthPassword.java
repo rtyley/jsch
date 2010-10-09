@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -32,13 +32,9 @@ package com.jcraft.jsch;
 class UserAuthPassword extends UserAuth{
   private final int SSH_MSG_USERAUTH_PASSWD_CHANGEREQ=60;
 
-  public boolean start(Session session, UserInfo userinfo) throws Exception{
-    this.userinfo=userinfo;
-//    super.start(session);
-//System.err.println("UserAuthPassword: start");
-    Packet packet=session.packet;
-    Buffer buf=session.buf;
-    final String username=session.username;
+  public boolean start(Session session) throws Exception{
+    super.start(session);
+
     byte[] password=session.password;
     String dest=username+"@"+session.host;
     if(session.port!=22){
@@ -87,15 +83,13 @@ class UserAuthPassword extends UserAuth{
 
       loop:
       while(true){
-	// receive
-	// byte      SSH_MSG_USERAUTH_SUCCESS(52)
-	// string    service name
 	buf=session.read(buf);
-        //System.err.println("read: 52 ? "+    buf.buffer[5]);
-	if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
+        int command=buf.getCommand()&0xff;
+
+	if(command==SSH_MSG_USERAUTH_SUCCESS){
 	  return true;
 	}
-	if(buf.buffer[5]==SSH_MSG_USERAUTH_BANNER){
+	if(command==SSH_MSG_USERAUTH_BANNER){
 	  buf.getInt(); buf.getByte(); buf.getByte();
 	  byte[] _message=buf.getString();
 	  byte[] lang=buf.getString();
@@ -105,7 +99,7 @@ class UserAuthPassword extends UserAuth{
 	  }
 	  continue loop;
 	}
-	if(buf.buffer[5]==SSH_MSG_USERAUTH_PASSWD_CHANGEREQ){
+	if(command==SSH_MSG_USERAUTH_PASSWD_CHANGEREQ){
 	  buf.getInt(); buf.getByte(); buf.getByte(); 
 	  byte[] instruction=buf.getString();
 	  byte[] tag=buf.getString();
@@ -154,7 +148,7 @@ class UserAuthPassword extends UserAuth{
           session.write(packet);
 	  continue loop;
         }
-	if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
+	if(command==SSH_MSG_USERAUTH_FAILURE){
 	  buf.getInt(); buf.getByte(); buf.getByte(); 
 	  byte[] foo=buf.getString();
 	  int partial_success=buf.getByte();
@@ -166,8 +160,8 @@ class UserAuthPassword extends UserAuth{
 	  break;
 	}
 	else{
-          //System.err.println("USERAUTH fail ("+buf.buffer[5]+")");
-//	  throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
+          //System.err.println("USERAUTH fail ("+buf.getCommand()+")");
+//	  throw new JSchException("USERAUTH fail ("+buf.getCommand()+")");
 	  return false;
 	}
       }

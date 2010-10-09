@@ -28,10 +28,9 @@ public class ScpToNoneCipher{
       session.setUserInfo(ui);
       session.connect();
 
-      java.util.Hashtable config=new java.util.Hashtable();
-      config.put("cipher.s2c", "none,3des-cbc,blowfish-cbc");
-      config.put("cipher.c2s", "none,3des-cbc,blowfish-cbc");
-      session.setConfig(config);
+      session.setConfig("cipher.s2c", "none,aes128-cbc,3des-cbc,blowfish-cbc");
+      session.setConfig("cipher.c2s", "none,aes128-cbc,3des-cbc,blowfish-cbc");
+
       session.rekey();
 
       // exec 'scp -t rfile' remotely

@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,15 +30,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 class UserAuthKeyboardInteractive extends UserAuth{
-  public boolean start(Session session, UserInfo userinfo) throws Exception{
-    this.userinfo=userinfo;
-    if(!(userinfo instanceof UIKeyboardInteractive)){
+  public boolean start(Session session) throws Exception{
+    super.start(session);
+
+    if(userinfo!=null && !(userinfo instanceof UIKeyboardInteractive)){
       return false;
     }
 
-    Packet packet=session.packet;
-    Buffer buf=session.buf;
-    final String username=session.username;
     String dest=username+"@"+session.host;
     if(session.port!=22){
       dest+=(":"+session.port);
@@ -71,22 +69,13 @@ class UserAuthKeyboardInteractive extends UserAuth{
       boolean firsttime=true;
       loop:
       while(true){
-//	try{  buf=session.read(buf); }
-//	catch(JSchException e){
-//	  return false;
-//	}
-//	catch(java.io.IOException e){
-//	  return false;
-//	}
-
         buf=session.read(buf);
+        int command=buf.getCommand()&0xff;
 
-        //System.err.println("read: 52 ? "+    buf.buffer[5]);
-
-	if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
+	if(command==SSH_MSG_USERAUTH_SUCCESS){
 	  return true;
 	}
-	if(buf.buffer[5]==SSH_MSG_USERAUTH_BANNER){
+	if(command==SSH_MSG_USERAUTH_BANNER){
 	  buf.getInt(); buf.getByte(); buf.getByte();
 	  byte[] _message=buf.getString();
 	  byte[] lang=buf.getString();
@@ -100,7 +89,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  }
 	  continue loop;
 	}
-	if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
+	if(command==SSH_MSG_USERAUTH_FAILURE){
 	  buf.getInt(); buf.getByte(); buf.getByte(); 
 	  byte[] foo=buf.getString();
 	  int partial_success=buf.getByte();
@@ -118,31 +107,26 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  }
 	  break;
 	}
-	if(buf.buffer[5]==SSH_MSG_USERAUTH_INFO_REQUEST){
+	if(command==SSH_MSG_USERAUTH_INFO_REQUEST){
 	  firsttime=false;
 	  buf.getInt(); buf.getByte(); buf.getByte();
 	  String name=new String(buf.getString());
 	  String instruction=new String(buf.getString());
 	  String languate_tag=new String(buf.getString());
 	  int num=buf.getInt();
-//System.err.println("name: "+name);
-//System.err.println("instruction: "+instruction);
-//System.err.println("lang: "+languate_tag);
-//System.err.println("num: "+num);
 	  String[] prompt=new String[num];
 	  boolean[] echo=new boolean[num];
 	  for(int i=0; i<num; i++){
 	    prompt[i]=new String(buf.getString());
 	    echo[i]=(buf.getByte()!=0);
-//System.err.println("  "+prompt[i]+","+echo[i]);
 	  }
 
 	  byte[][] response=null;
 	  if(num>0
 	     ||(name.length()>0 || instruction.length()>0)
 	     ){
-	    UIKeyboardInteractive kbi=(UIKeyboardInteractive)userinfo;
 	    if(userinfo!=null){
+              UIKeyboardInteractive kbi=(UIKeyboardInteractive)userinfo;
               String[] _response=kbi.promptKeyboardInteractive(dest,
                                                                name,
                                                                instruction,
@@ -208,7 +192,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
           */
 	  continue loop;
 	}
-	//throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
+	//throw new JSchException("USERAUTH fail ("+command+")");
 	return false;
       }
       if(cancel){

@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -40,8 +40,10 @@ public class JSch{
     config.put("server_host_key", "ssh-rsa,ssh-dss");
 //    config.put("server_host_key", "ssh-dss,ssh-rsa");
 
-    config.put("cipher.s2c", "3des-cbc,blowfish-cbc");
-    config.put("cipher.c2s", "3des-cbc,blowfish-cbc");
+    config.put("cipher.s2c", 
+               "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc");
+    config.put("cipher.c2s",
+               "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc");
 
     config.put("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
     config.put("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
@@ -97,6 +99,8 @@ public class JSch{
     config.put("HashKnownHosts",  "no");
     //config.put("HashKnownHosts",  "yes");
     config.put("PreferredAuthentications", "gssapi-with-mic,publickey,keyboard-interactive,password");
+
+    config.put("CheckCiphers", "aes256-cbc,aes192-cbc,aes128-cbc");
   }
   java.util.Vector pool=new java.util.Vector();
   java.util.Vector identities=new java.util.Vector();
@@ -263,39 +267,6 @@ public class JSch{
     return (String)(config.get(key)); 
   }
 
-  private java.util.Vector proxies;
-  void setProxy(String hosts, Proxy proxy){
-    java.lang.String[] patterns=Util.split(hosts, ",");
-    if(proxies==null){proxies=new java.util.Vector();}
-    synchronized(proxies){
-      for(int i=0; i<patterns.length; i++){
-	if(proxy==null){
-	  proxies.insertElementAt(null, 0);
-	  proxies.insertElementAt(patterns[i].getBytes(), 0);
-	}
-	else{
-	  proxies.addElement(patterns[i].getBytes());
-	  proxies.addElement(proxy);
-	}
-      }
-    }
-  }
-  Proxy getProxy(String host){
-    if(proxies==null)return null;
-    byte[] _host=host.getBytes();
-    synchronized(proxies){
-      for(int i=0; i<proxies.size(); i+=2){
-	if(Util.glob(((byte[])proxies.elementAt(i)), _host)){
-	  return (Proxy)(proxies.elementAt(i+1));
-	}
-      }
-    }
-    return null;
-  }
-  void removeProxy(){
-    proxies=null;
-  }
-
   public static void setConfig(java.util.Hashtable newconf){
     synchronized(config){
       for(java.util.Enumeration e=newconf.keys() ; e.hasMoreElements() ;) {
@@ -303,6 +274,10 @@ public class JSch{
 	config.put(key, (String)(newconf.get(key)));
       }
     }
+  }
+
+  public static void setConfig(String key, String value){
+    config.put(key, value);
   }
 
   public static void setLogger(Logger logger){

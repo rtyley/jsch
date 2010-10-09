@@ -24,10 +24,9 @@ public class AES{
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
 
-      java.util.Hashtable config=new java.util.Hashtable();
-      config.put("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc");
-      config.put("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc");
-      session.setConfig(config);
+      session.setConfig("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc");
+      session.setConfig("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc");
+      session.setConfig("CheckCiphers", "aes128-cbc");
 
       session.connect();
 

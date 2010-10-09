@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -345,5 +345,21 @@ class Util{
       return;
     for(int i=0; i<foo.length; i++)
       foo[i]=0;
+  }
+
+  static String diffString(String str, String[] not_available){
+    String[] stra=Util.split(str, ",");
+    String result=null;
+    loop:
+    for(int i=0; i<stra.length; i++){
+      for(int j=0; j<not_available.length; j++){
+        if(stra[i].equals(not_available[j])){
+          continue loop;
+        }
+      }
+      if(result==null){ result=stra[i]; }
+      else{ result=result+","+stra[i]; }
+    }
+    return result;
   }
 }

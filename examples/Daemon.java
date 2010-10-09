@@ -42,19 +42,25 @@ public class Daemon{
   public static class Parrot implements ForwardedTCPIPDaemon{
     ChannelForwardedTCPIP channel;
     Object[] arg;
-    public void setChannel(ChannelForwardedTCPIP c){this.channel=c;}
+    InputStream in;
+    OutputStream out;
+
+    public void setChannel(ChannelForwardedTCPIP c, InputStream in, OutputStream out){
+      this.channel=c;
+      this.in=in;
+      this.out=out;
+    }
     public void setArg(Object[] arg){this.arg=arg;}
     public void run(){
       System.out.println("remote port: "+channel.getRemotePort());
       System.out.println("remote host: "+channel.getSession().getHost());
       try{
-        InputStream in=channel.getInputStream();
-        OutputStream out=channel.getOutputStream();
         byte[] buf=new byte[1024];
         while(true){
           int i=in.read(buf, 0, buf.length);
           if(i<=0)break;
           out.write(buf, 0, i);
+          out.flush();
           if(buf[0]=='.')break;
         }
       }

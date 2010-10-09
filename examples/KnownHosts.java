@@ -46,9 +46,7 @@ public class KnownHosts{
 
       /*
       // In adding to known_hosts file, host names will be hashed. 
-      java.util.Hashtable config=new java.util.Hashtable();
-      config.put("HashKnownHosts",  "yes");
-      session.setConfig(config);
+      session.setConfig("HashKnownHosts",  "yes");
       */
 
       session.connect();

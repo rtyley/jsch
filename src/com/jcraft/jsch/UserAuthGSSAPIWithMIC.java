@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright(c)2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright(c) 2006-2007 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -48,11 +48,8 @@ public class UserAuthGSSAPIWithMIC extends UserAuth {
     "gssapi-with-mic.krb5"
   };
 
-  public boolean start(Session session, UserInfo userinfo)throws Exception{
-    this.userinfo=userinfo;
-    Packet  packet=session.packet;
-    Buffer  buf=session.buf;
-    final String username=session.username;
+  public boolean start(Session session)throws Exception{
+    super.start(session);
 
     byte[] _username=Util.str2byte(username);
 
@@ -75,14 +72,16 @@ public class UserAuthGSSAPIWithMIC extends UserAuth {
     session.write(packet);
 
     String method=null;
+    int command;
     while(true){
       buf=session.read(buf);
+      command=buf.getCommand()&0xff;
 
-      if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
+      if(command==SSH_MSG_USERAUTH_FAILURE){
         return false;
       }
-
-      if(buf.buffer[5]==SSH_MSG_USERAUTH_GSSAPI_RESPONSE){
+      
+      if(command==SSH_MSG_USERAUTH_GSSAPI_RESPONSE){
         buf.getInt(); buf.getByte(); buf.getByte();
         byte[] message=buf.getString();
 
@@ -100,7 +99,7 @@ public class UserAuthGSSAPIWithMIC extends UserAuth {
         break; // success
       }
 
-      if(buf.buffer[5]==SSH_MSG_USERAUTH_BANNER){
+      if(command==SSH_MSG_USERAUTH_BANNER){
         buf.getInt(); buf.getByte(); buf.getByte();
         byte[] _message=buf.getString();
         byte[] lang=buf.getString();
@@ -152,24 +151,26 @@ public class UserAuthGSSAPIWithMIC extends UserAuth {
 
       if(!context.isEstablished()){
         buf=session.read(buf);
-
-        if(buf.buffer[5]==SSH_MSG_USERAUTH_GSSAPI_ERROR){
+        command=buf.getCommand()&0xff;
+        if(command==SSH_MSG_USERAUTH_GSSAPI_ERROR){
           // uint32    major_status
           // uint32    minor_status
           // string    message
           // string    language tag
 
           buf=session.read(buf);
+          command=buf.getCommand()&0xff;
           //return false;
         }
-        else if(buf.buffer[5]==SSH_MSG_USERAUTH_GSSAPI_ERRTOK){
+        else if(command==SSH_MSG_USERAUTH_GSSAPI_ERRTOK){
           // string error token
 
           buf=session.read(buf);
+          command=buf.getCommand()&0xff;
           //return false;
         }
 
-        if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
+        if(command==SSH_MSG_USERAUTH_FAILURE){
           return false;
         }
 
@@ -204,10 +205,12 @@ public class UserAuthGSSAPIWithMIC extends UserAuth {
     context.dispose();
 
     buf=session.read(buf);
-    if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
+    command=buf.getCommand()&0xff;
+
+    if(command==SSH_MSG_USERAUTH_SUCCESS){
       return true;
     }
-    if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
+    else if(command==SSH_MSG_USERAUTH_FAILURE){
       buf.getInt(); buf.getByte(); buf.getByte(); 
       byte[] foo=buf.getString();
       int partial_success=buf.getByte();

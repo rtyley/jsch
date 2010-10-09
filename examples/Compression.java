@@ -21,11 +21,9 @@ public class Compression{
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
 
-      java.util.Hashtable config=new java.util.Hashtable();
-      config.put("compression.s2c", "zlib@openssh.com,zlib,none");
-      config.put("compression.c2s", "zlib@openssh.com,zlib,none");
-      config.put("compression_level", "9");
-      session.setConfig(config);
+      session.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
+      session.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
+      session.setConfig("compression_level", "9");
 
       session.connect();
 
