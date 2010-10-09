@@ -47,9 +47,10 @@ public class JSch{
     config.put("lang.c2s", "");
 
     config.put("diffie-hellman-group-exchange-sha1", 
-                                "com.jcraft.jsch.jce.DHGEX");
+                                "com.jcraft.jsch.DHGEX");
     config.put("diffie-hellman-group1-sha1", 
-	                        "com.jcraft.jsch.jce.DHG1");
+	                        "com.jcraft.jsch.DHG1");
+
     config.put("dh",            "com.jcraft.jsch.jce.DH");
     config.put("3des-cbc",      "com.jcraft.jsch.jce.TripleDESCBC");
     config.put("blowfish-cbc",  "com.jcraft.jsch.jce.BlowfishCBC");
@@ -74,7 +75,7 @@ public class JSch{
   private KnownHosts known_hosts=null;
 
   public JSch(){
-    known_hosts=new KnownHosts();
+    known_hosts=new KnownHosts(this);
   }
 
   public Session getSession(String username, String host) throws JSchException { return getSession(username, host, 22); }
@@ -86,24 +87,25 @@ public class JSch{
     pool.addElement(s);
     return s;
   }
-  /*
   public void setKnownHosts(String foo) throws JSchException{
     known_hosts.setKnownHosts(foo); 
-  }
-  */
-  public void setKnownHosts(String foo){
-    try{known_hosts.setKnownHosts(foo);}
-    catch(Exception e){}
   }
   public void setKnownHosts(InputStream foo) throws JSchException{ 
     known_hosts.setKnownHosts(foo); 
   }
-  public KnownHosts getKnownHosts(){ return known_hosts; }
+  KnownHosts getKnownHosts(){ return known_hosts; }
+
+  public KnownHosts.HostKey[] getHostKeys(){
+    return known_hosts.getHostKeys(); 
+  }
+  public void removeHostKey(String foo, String type){
+    known_hosts.removeHostKey(foo, type); 
+  }
   public void addIdentity(String foo) throws JSchException{
     addIdentity(foo, null);
   }
   public void addIdentity(String foo, String bar) throws JSchException{
-    Identity identity=new Identity(foo, this);
+    Identity identity=new IdentityFile(foo, this);
     if(bar!=null) identity.setPassphrase(bar);
     identities.addElement(identity);
   }

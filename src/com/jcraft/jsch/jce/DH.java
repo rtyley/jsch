@@ -37,7 +37,7 @@ import javax.crypto.*;
 import javax.crypto.spec.*;
 import javax.crypto.interfaces.*;
 
-class DH implements com.jcraft.jsch.DH{
+public class DH implements com.jcraft.jsch.DH{
   BigInteger p;
   BigInteger g;
   BigInteger e;  // my public key

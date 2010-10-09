@@ -31,6 +31,7 @@ package com.jcraft.jsch;
 
 import java.io.*;
 
+public
 class KnownHosts{
   private static final String _known_hosts="known_hosts";
 
@@ -40,9 +41,16 @@ class KnownHosts{
 
   static final int SSHDSS=0;
   static final int SSHRSA=1;
-  private String known_hosts=null;
 
-  private java.util.Vector pool=new java.util.Vector();
+  private JSch jsch=null;
+  private String known_hosts=null;
+  private java.util.Vector pool=null;
+
+  KnownHosts(JSch jsch){
+    super();
+    this.jsch=jsch;
+    pool=new java.util.Vector();
+  }
 
   void setKnownHosts(String foo) throws JSchException{
     try{
@@ -54,6 +62,7 @@ class KnownHosts{
     } 
   }
   void setKnownHosts(InputStream foo) throws JSchException{
+    pool.removeAllElements();
     StringBuffer sb=new StringBuffer();
     int i;
     boolean error=false;
@@ -171,6 +180,25 @@ loop:
     hk=new HostKey(host, type, key);
     pool.addElement(hk);
   }
+  HostKey[] getHostKeys(){
+    HostKey[] foo=new HostKey[pool.size()];
+    for(int i=0; i<foo.length; i++){
+      foo[i]=(HostKey)pool.elementAt(i);
+    }
+    return foo;
+  }
+  void removeHostKey(String host, String type){
+    for(int i=0; i<pool.size(); i++){
+      HostKey hk=(HostKey)(pool.elementAt(i));
+      if(hk.getHost().equals(host) && 
+	 hk.getType().equals(type)){
+	pool.removeElement(hk);
+	try{sync();}catch(Exception e){};
+	return;
+      }
+    }
+  }
+
   void sync() throws IOException { 
     if(known_hosts!=null)
       sync(known_hosts); 
@@ -225,10 +253,12 @@ loop:
       j=hosts.indexOf(',', i);
       if(j==-1){
        if(hostlen!=hostslen-i) return false;
-        return hosts.regionMatches(true, i, host, 0, hostlen);
+       return hosts.regionMatches(true, i, host, 0, hostlen);
+       //return hosts.substring(i).equals(host);
       }
       if(hostlen==(j-i)){
-        if(hosts.regionMatches(true, i, host, 0, hostlen)) return true;
+	if(hosts.regionMatches(true, i, host, 0, hostlen)) return true;
+        //if(hosts.substring(i, i+hostlen).equals(host)) return true;
       }
       i=j+1;
     }
@@ -243,26 +273,44 @@ loop:
     return true;
   }
 
-  static final byte[] space={(byte)0x20};
-  static final byte[] sshdss="ssh-dss".getBytes();
-  static final byte[] sshrsa="ssh-rsa".getBytes();
-  static final byte[] cr="\n".getBytes();
+  private static final byte[] space={(byte)0x20};
+  private static final byte[] sshdss="ssh-dss".getBytes();
+  private static final byte[] sshrsa="ssh-rsa".getBytes();
+  private static final byte[] cr="\n".getBytes();
 
-  class HostKey{
+  public class HostKey{
     String host;
     int type;
     byte[] key;
     HostKey(String host, int type, byte[] key){
       this.host=host; this.type=type; this.key=key;
     }
-   void dump(OutputStream out) throws IOException{
+    void dump(OutputStream out) throws IOException{
       out.write(host.getBytes());
       out.write(space);
       if(type==SSHDSS) out.write(sshdss);
-      else  out.write(sshrsa);
+      else out.write(sshrsa);
       out.write(space);
       out.write(Util.toBase64(key, 0, key.length));
       out.write(cr);
+    }
+
+    public String getHost(){ return host; }
+    public String getType(){
+      if(type==SSHDSS) return new String(sshdss);
+      else  return new String(sshrsa);
+    }
+    public String getKey(){
+      return new String(Util.toBase64(key, 0, key.length));
+    }
+    public String getFingerPrint(){
+      HASH hash=null;
+      try{
+	Class c=Class.forName(jsch.getConfig("md5"));
+	hash=(HASH)(c.newInstance());
+      }
+      catch(Exception e){ System.err.println("getFingerPrint: "+e); }
+      return Util.getFingerPrint(hash, key);
     }
   }
 }

@@ -1,10 +1,20 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Jul  7 17:11:17 UTC 2004
+Last modified: Thu Sep  2 18:55:54 UTC 2004
+
+	
+Changes since version 0.1.16:		
+- 'com.jcraft.jsch.jce.DHG1' and 'com.jcraft.jsch.jce.DHGEX' are moved to
+  'com.jcraft.jsch' package.	 
+- added APIs to handle hostkeys included in 'known_hosts',
+     JSch.getHostKeys(),
+     JSch.removeHostKey()
+- allowing to set timeout value in oping sockets,
+     Session.connect(int timeout)
 
 	
 Changes since version 0.1.15:		
-- adding support of setting mime for remote files on sftp channel.
+- adding support of setting mtime for remote files on sftp channel.
 - setKnownHosts method of JSch class will accept InputStream.
 - implementation of Basic password authentication for HTTP proxy.
 - fixed a bug in checking which ssh protocol version remote sshd supports

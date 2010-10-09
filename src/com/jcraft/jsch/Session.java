@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.16";
+  static private final String version="JSCH-0.1.17";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -134,8 +134,11 @@ public class Session implements Runnable{
     io=new IO();
   }
 
-  public void connect() throws JSchException{    
+  public void connect() throws JSchException{
+    connect(timeout);
+  }
 
+  public void connect(int connectTimeout) throws JSchException{
     if(random==null){
       try{
 	Class c=Class.forName(getConfig("random"));
@@ -158,7 +161,7 @@ public class Session implements Runnable{
         InputStream in;
         OutputStream out;
 	if(socket_factory==null){
-	  if(timeout==0){
+	  if(connectTimeout==0){
 	    socket=new Socket(host, port);
 	  }
 	  else{
@@ -174,13 +177,18 @@ public class Session implements Runnable{
 		    if(done[0]) sockp[0].close();
 		    else thread.interrupt();
 		  }
-		  catch(Exception e){ee[0]=e;}
+		  catch(Exception e){
+		    ee[0]=e;
+		    thread.interrupt();
+		  }
 		}
 	      }).start();
-	    try{ Thread.sleep(timeout); }
+	    try{ Thread.sleep(connectTimeout); }
 	    catch(java.lang.InterruptedException eee){}
 	    done[0]=true;
-	    if(sockp[0]!=null) socket=sockp[0];
+	    if(sockp[0]!=null){
+	      socket=sockp[0];
+	    }
 	    else{
               String message="socket is not established";
 	      if(ee[0]!=null){

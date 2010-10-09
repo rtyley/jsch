@@ -125,7 +125,7 @@ class UserAuthPublicKey extends UserAuth{
 	if((identity.isEncrypted() && passphrase==null)){
 	  if(userinfo==null) throw new JSchException("USERAUTH fail");
 	  if(identity.isEncrypted() &&
-	     !userinfo.promptPassphrase("Passphrase for "+identity.identity)){
+	     !userinfo.promptPassphrase("Passphrase for "+identity.getName())){
 	    throw new JSchAuthCancelException("publickey");
 	    //throw new JSchException("USERAUTH cancel");
 	    //break;
@@ -167,9 +167,21 @@ class UserAuthPublicKey extends UserAuth{
       buf.putString(identity.getAlgName().getBytes());
       buf.putString(pubkeyblob);
 
-      byte[] tmp=new byte[buf.index-5];
-      System.arraycopy(buf.buffer, 5, tmp, 0, tmp.length);
+//      byte[] tmp=new byte[buf.index-5];
+//      System.arraycopy(buf.buffer, 5, tmp, 0, tmp.length);
+//      buf.putString(identity.getSignature(session, tmp));
+
+      byte[] sid=session.getSessionId();
+      int sidlen=sid.length;
+      byte[] tmp=new byte[4+sidlen+buf.index-5];
+      tmp[0]=(byte)(sidlen>>>24);
+      tmp[1]=(byte)(sidlen>>>16);
+      tmp[2]=(byte)(sidlen>>>8);
+      tmp[3]=(byte)(sidlen);
+      System.arraycopy(sid, 0, tmp, 4, sidlen);
+      System.arraycopy(buf.buffer, 5, tmp, 4+sidlen, buf.index-5);
       buf.putString(identity.getSignature(session, tmp));
+
       session.write(packet);
 
       loop2:
