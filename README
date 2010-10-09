@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Tue Feb 11 14:11:51 UTC 2003
+Last modified: Tue Apr  1 10:56:47 UTC 2003
 
 
 Description
@@ -42,9 +42,13 @@ adding other functionality - port forward, file transfer, terminal emulation, et
 
 Features
 ========
-* JSch requires J2SE 1.4.
-  JSch is in pure Java, but it depends on JavaTM Cryptography
-  Extension (JCE), which is included in J2SE 1.4.0 or later.
+* JSch is in pure Java, but it depends on JavaTM Cryptography
+  Extension (JCE).  Jsch is know to work with:
+  o J2SE 1.4.0 or later (no additional libraries required).
+  o J2SE 1.3 and Sun's JCE reference implementation that can be
+    obtained at http://java.sun.com/products/jce/
+  o J2SE 1.2.2 and later and Bouncycastle's JCE implementation that
+    can be obtained at http://www.bouncycastle.org/
 * SSH2 protocol support.
 * Key exchange: diffie-hellman-group-exchange-sha1, diffie-hellman-group1-sha1
 * Cipher: blowfish-cbc,3des-cbc
@@ -104,10 +108,44 @@ the compression for this direction, you may be able to save some CPU time.
 Please refer to a sample program 'examples/Compression.java'.
 
 
+Property
+========
+By setting properties, you can control the behavior of jsch.
+Here is an example of enabling the packet compression,
+
+      Session session=jsch.getSession(user, host, 22);
+      java.util.Properties config=new java.util.Properties();
+      config.put("compression.s2c", "zlib,none");
+      config.put("compression.c2s", "zlib,none");
+      session.setConfig(config);
+      session.connect();
+
+Current release has supported following properties,
+* compression.s2c: zlib, none
+  default: none
+  Specifies whether to use compression for the data stream
+  from sshd to jsch.  If "zlib,none" is given and the remote sshd does
+  not allow the packet compression, compression will not be done.
+* compression.c2s: zlib, none
+  default: none
+  Specifies whether to use compression for the data stream
+  from jsch to sshd.
+* StrictHostKeyChecking: ask | yes | no
+  default: ask
+  If this property is set to ``yes'', jsch will never automatically add
+  host keys to the $HOME/.ssh/known_hosts file, and refuses to connect
+  to hosts whose host key has changed.  This property forces the user
+  to manually add all new hosts.  If this property is set to ``no'', 
+  jsch will automatically add new host keys to the user known hosts
+  files.  If this property is set to ``ask'', new  host keys will be
+  added to the user known host files only after the user has confirmed 
+  that is what they really want to do, and jsch will refuse to connect 
+  to hosts whose host key has changed.
+
+
 TODO
 ====
 * generating RSA, DSA key pairs.
-* filename globbing on sftp session.
 * re-implementation with java.nio.
 * replacing cipher, hash by JCE with pure Java code.
 * error handling.
@@ -142,6 +180,7 @@ without several help.
   in our native language.
 * We also appreciate SourceForge.net's awesome service to the 
   Open Source Community.
+
 
 If you have any comments, suggestions and questions, write us 
 at jsch@jcraft.com

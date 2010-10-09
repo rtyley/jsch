@@ -27,6 +27,10 @@ public class Shell{
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
 
+      //java.util.Properties config=new java.util.Properties();
+      //config.put("StrictHostKeyChecking", "no");
+      //session.setConfig(config);
+
       session.connect();
 
       Channel channel=session.openChannel("shell");

@@ -1,6 +1,20 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Thu Mar  6 15:00:13 UTC 2003
+Last modified: Tue Apr  1 10:51:20 UTC 2003
+
+
+Changes since version 0.1.2:	
+- modified 'build.xml' to allow Ant users to compile jsch with debug
+  support (i.e. line-number tables) by overriding the property
+  javac.debug on the command line.
+- added a property 'StrictHostKeyChecking'.
+- added 'UserAuthNone' class to request a list of authentication methods on
+  remote sshd.	 
+- channels will be managed in each sessions.
+- added 'ChannelSubsystem', which allows users to use their own
+  implementations for subsystems.
+- added 'isEOF()' method to 'Channel' class.
+- supported key pair files in DOS file format.
 
 	
 Changes since version 0.1.1:	

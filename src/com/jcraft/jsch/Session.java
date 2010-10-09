@@ -32,9 +32,10 @@ package com.jcraft.jsch;
 import java.io.*;
 import java.net.*;
 import java.lang.*;
+//import java.util.Vector;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.0.13";
+  static private final String version="JSCH-0.1.3";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -115,7 +116,6 @@ public class Session implements Runnable{
 
   private Proxy proxy=null;
   private UserInfo userinfo;
-  private Channel channel;
 
   String host="127.0.0.1";
   int port=22;
@@ -127,9 +127,9 @@ public class Session implements Runnable{
   JSch jsch;
 
 
-  static{
-    Class ccc=Channel.class;
-  }
+//  static{
+//    Class ccc=Channel.class;
+//  }
 
   Session(JSch jsch) throws JSchException{
     super();
@@ -269,27 +269,37 @@ public class Session implements Runnable{
 	throw new JSchException("invalid protocol(newkyes): "+buf.buffer[5]);
       }
 
-      UserAuth us;
       boolean auth=false;
-      if(jsch.identities.size()>0){
+
+      UserAuthNone usn=new UserAuthNone(userinfo);
+      auth=usn.start(this);
+
+      String methods=usn.getMethods();
+      // methods: publickey,password,keyboard-interactive
+
+      if(!auth &&
+	 (methods==null || methods.indexOf("publickey")!=-1) &&
+	 jsch.identities.size()>0){
 	try{
-          us=new UserAuthPublicKey(userinfo);
+	  UserAuth us=new UserAuthPublicKey(userinfo);
           auth=us.start(this);
 	}
 	catch(Exception ee){
 	  //System.out.println("ee: "+ee);
 	}
       }
-      if(auth){
-        (new Thread(this)).start();
-        return; 
+
+      if(!auth &&
+	 (methods==null || methods.indexOf("password")!=-1)){
+	UserAuth us=new UserAuthPassword(userinfo);
+	auth=us.start(this);
       }
-      us=new UserAuthPassword(userinfo);
-      auth=us.start(this);
+
       if(auth){
-        (new Thread(this)).start();
+	(new Thread(this)).start();
 	return;
       }
+
       throw new JSchException("Auth fail");
     }
     catch(Exception e) {
@@ -416,9 +426,14 @@ System.out.println(e);
   }
 
   private void checkHost(String host, KeyExchange kex) throws JSchException {
+    String shkc=getConfig("StrictHostKeyChecking");
+
+    //System.out.println("shkc: "+shkc);
+
     byte[] K_S=kex.getHostKey();
     int i=jsch.getKnownHosts().check(host, K_S);
-    if(i==KnownHosts.CHANGED){
+    if((shkc.equals("ask") || shkc.equals("yes")) &&
+       i==KnownHosts.CHANGED){
       String message=
 "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
 "@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n"+
@@ -434,42 +449,58 @@ System.out.println(e);
 	userinfo.showMessage(message);
       }
       throw new JSchException("HostKey has been changed");
-      }
+    }
 
-    if(i!=KnownHosts.OK){
+    boolean insert=false;
+ 
+    if((shkc.equals("ask") || shkc.equals("yes")) &&
+       i!=KnownHosts.OK){
+      if(shkc.equals("yes")){
+	throw new JSchException("reject HostKey");
+      }
       if(userinfo!=null){
-	boolean foo=userinfo.promptYesNo("The authenticity of host '"+host+"' can't be established.\n"+
-					 kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
-                                         "Are you sure you want to continue connecting (yes/no)?"
+	boolean foo=userinfo.promptYesNo(
+"The authenticity of host '"+host+"' can't be established.\n"+
+kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
+"Are you sure you want to continue connecting (yes/no)?"
 					 );
 	if(!foo){
 	  throw new JSchException("reject HostKey");
 	}
-	jsch.getKnownHosts().insert(host, K_S);
-	String bar=jsch.getKnownHosts().getKnownHostsFile();
-	if(bar!=null){
-          foo=true;
-	  if(!new File(bar).exists()){
-            foo=false;
-	    foo=userinfo.promptYesNo(jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
-				     "Are you sure you want to create it (yes/no)?"
-				     );
-	  }
-	  if(foo){
-	    try{
-	      jsch.getKnownHosts().sync(bar);
-	    }
-	    catch(Exception e){
-	      System.out.println(e);
-	    }
-	  }
-	}
+	insert=true;
       }
       else{
-	if(i==KnownHosts.NOT_INCLUDED) throw new JSchException("UnknownHostKey");
-	else  throw new JSchException("HostKey has been changed.");
+	if(i==KnownHosts.NOT_INCLUDED) 
+	  throw new JSchException("UnknownHostKey");
+	else throw new JSchException("HostKey has been changed.");
       }
     }
+
+    if(shkc.equals("no") && i==KnownHosts.NOT_INCLUDED){
+      insert=true;
+    }
+
+    if(insert){
+      jsch.getKnownHosts().insert(host, K_S);
+      String bar=jsch.getKnownHosts().getKnownHostsFile();
+      if(bar!=null){
+	boolean foo=true;
+	if(!new File(bar).exists()){
+	  foo=false;
+	  if(userinfo!=null){
+	    foo=userinfo.promptYesNo(
+jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
+"Are you sure you want to create it (yes/no)?"
+                                    );
+	  }
+	}
+	if(foo){
+	  try{ jsch.getKnownHosts().sync(bar); }
+	  catch(Exception e){ System.out.println(e); }
+	}
+      }
+    }
+
   }
 
 //public void start(){ (new Thread(this)).start();  }
@@ -595,8 +626,12 @@ System.out.println(e);
       else if(type==SSH_MSG_CHANNEL_WINDOW_ADJUST){
           buf.rewind();
           buf.getInt();buf.getShort();
-	  Channel c=Channel.getChannel(buf.getInt());
-          c.addRemoteWindowSize(buf.getInt()); 
+	  Channel c=Channel.getChannel(buf.getInt(), this);
+	  if(c==null){
+	  }
+	  else{
+	    c.addRemoteWindowSize(buf.getInt()); 
+	  }
       }
       else{
         break;
@@ -814,7 +849,9 @@ System.out.println("NEWKEYS");
           buf.getByte(); 
           buf.getByte(); 
           i=buf.getInt(); 
-	  channel=Channel.getChannel(i);
+	  channel=Channel.getChannel(i, this);
+	  if(channel==null){
+	  }
 	  foo=buf.getString(start, length);
 	  channel.write(foo, start[0], length[0]);
 
@@ -833,7 +870,9 @@ System.out.println("NEWKEYS");
           buf.getInt();
 	  buf.getShort();
 	  i=buf.getInt();
-	  channel=Channel.getChannel(i);
+	  channel=Channel.getChannel(i, this);
+	  if(channel==null){
+	  }
 	  buf.getInt();                   // data_type_code == 1
 	  foo=buf.getString(start, length);
 	  channel.write(foo, start[0], length[0]);
@@ -842,16 +881,18 @@ System.out.println("NEWKEYS");
           buf.getInt(); 
 	  buf.getShort(); 
 	  i=buf.getInt(); 
-	  channel=Channel.getChannel(i);
+	  channel=Channel.getChannel(i, this);
+	  if(channel==null){
+	  }
 	  channel.addRemoteWindowSize(buf.getInt()); 
 	  break;
 	case SSH_MSG_CHANNEL_EOF:
           buf.getInt(); 
           buf.getShort(); 
           i=buf.getInt(); 
-	  channel=Channel.getChannel(i);
+	  channel=Channel.getChannel(i, this);
 	  if(channel!=null){
-	      channel.eof();
+	    channel.eof();
 	  }
 	  /*
 	  packet.reset();
@@ -864,10 +905,11 @@ System.out.println("NEWKEYS");
           buf.getInt(); 
 	  buf.getShort(); 
 	  i=buf.getInt(); 
-	  channel=Channel.getChannel(i);
-	  if(channel!=null)
+	  channel=Channel.getChannel(i, this);
+	  if(channel!=null){
 //	      channel.close();
 	    channel.disconnect();
+	  }
 	  /*
           if(Channel.pool.size()==0){
 	    thread=null;
@@ -878,7 +920,9 @@ System.out.println("NEWKEYS");
           buf.getInt(); 
 	  buf.getShort(); 
 	  i=buf.getInt(); 
-	  channel=Channel.getChannel(i);
+	  channel=Channel.getChannel(i, this);
+	  if(channel==null){
+	  }
 	  channel.setRecipient(buf.getInt());
 	  channel.setRemoteWindowSize(buf.getInt());
 	  channel.setRemotePacketSize(buf.getInt());
@@ -889,7 +933,9 @@ System.out.println("NEWKEYS");
 	  i=buf.getInt(); 
 	  foo=buf.getString(); 
           boolean reply=(buf.getByte()!=0);
-          channel=Channel.getChannel(i);
+	  channel=Channel.getChannel(i, this);
+	  if(channel==null){
+	  }
           byte reply_type=(byte)SSH_MSG_CHANNEL_FAILURE;
           if((new String(foo)).equals("exit-status")){
    	    i=buf.getInt();             // exit-status
@@ -908,21 +954,29 @@ System.out.println("NEWKEYS");
           buf.getInt(); 
 	  buf.getShort(); 
 	  foo=buf.getString(); 
-	  //System.out.println("type="+new String(foo));
- 	  channel=Channel.getChannel(new String(foo));
-	  addChannel(channel);
-	  channel.getData(buf);
-	  channel.init();
+	  String ctyp=new String(foo);
+	  //System.out.println("type="+ctyp);
+          if(!"forwarded-tcpip".equals(ctyp) &&
+	     !"x11".equals(ctyp)){
+            System.out.println("Session.run: CHANNEL OPEN "+ctyp); 
+	    throw new IOException("Session.run: CHANNEL OPEN "+ctyp);
+	  }
+	  else{
+	    channel=Channel.getChannel(ctyp);
+	    addChannel(channel);
+	    channel.getData(buf);
+	    channel.init();
 
-	  packet.reset();
-	  buf.putByte((byte)SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
-	  buf.putInt(channel.getRecipient());
-	  buf.putInt(channel.id);
-	  buf.putInt(channel.lwsize);
-	  buf.putInt(channel.lmpsize);
-	  write(packet);
-	  (new Thread(channel)).start();
-          break;
+	    packet.reset();
+	    buf.putByte((byte)SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+	    buf.putInt(channel.getRecipient());
+	    buf.putInt(channel.id);
+	    buf.putInt(channel.lwsize);
+	    buf.putInt(channel.lmpsize);
+	    write(packet);
+	    (new Thread(channel)).start();
+	    break;
+	  }
 	default:
           System.out.println("Session.run: unsupported type "+msgType); 
 	  throw new IOException("Unknown SSH message type "+msgType);
@@ -937,24 +991,28 @@ System.out.println("NEWKEYS");
       disconnect();
     }
     catch(NullPointerException e){
-      System.out.println("@1");
+      //System.out.println("@1");
       e.printStackTrace();
     }
     catch(Exception e){
-      System.out.println("@2");
+      //System.out.println("@2");
       e.printStackTrace();
     }
     isConnected=false;
   }
 
   public void disconnect(){
+    /*
     for(int i=0; i<Channel.pool.size(); i++){
       try{
-        ((Channel)(Channel.pool.elementAt(i))).eof();
+        Channel c=((Channel)(Channel.pool.elementAt(i)));
+	if(c.session==this) c.eof();
       }
       catch(Exception e){
       }
-    }      
+    } 
+    */
+    Channel.eof(this);
     thread=null;
     try{
       if(io!=null){
@@ -1007,11 +1065,9 @@ System.out.println("NEWKEYS");
       throw new JSchException(e.toString());
     }
   }
-
   void addChannel(Channel channel){
     channel.session=this;
   }
-
   public String getConfig(String name){
     Object foo=null;
     if(config!=null){
@@ -1022,7 +1078,7 @@ System.out.println("NEWKEYS");
     if(foo instanceof String) return (String)foo;
     return null;
   }
-  public Channel getChannel(){ return channel; }
+//  public Channel getChannel(){ return channel; }
   public void setProxy(Proxy proxy){ this.proxy=proxy; }
   public void setHost(String host){ this.host=host; }
   public void setPort(int port){ this.port=port; }

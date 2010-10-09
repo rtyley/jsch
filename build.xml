@@ -5,13 +5,14 @@ sshd server and use port forwarding, X11 forwarding, file transfer, etc., and
 you can integrate its functionality into your own Java programs
     </description>
   <!-- set global properties for this build -->
-  <property name="version" location="0.0.2"/>
+  <property name="version" location="0.1.3"/>
   <property name="src" location="src"/>
   <property name="exasrc" location="examples"/>
   <property name="build" location="build"/>
   <property name="exabuild" location="examples"/>
   <property name="dist"  location="dist"/>
   <property name="javadoc" location="javadoc"/>
+  <property name="javac.debug" value="false"/>
   <path id="project.cp">
     <pathelement location="${build}"/>
   </path>
@@ -27,7 +28,7 @@ you can integrate its functionality into your own Java programs
     <!-- Compile the java code from ${src} into ${build} -->
     <available property="jzlib.available"
                classname="com.jcraft.jzlib.ZStream"/>
-    <javac srcdir="${src}" destdir="${build}">
+    <javac srcdir="${src}" destdir="${build}" debug="${javac.debug}">
       <exclude name="com/jcraft/jsch/jcraft/Compression.java"
                unless="jzlib.available"/>
     </javac>

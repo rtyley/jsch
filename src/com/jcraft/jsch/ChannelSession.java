@@ -31,9 +31,10 @@ package com.jcraft.jsch;
 
 import java.net.*;
 class ChannelSession extends Channel{
+  private static byte[] _session="session".getBytes();
   ChannelSession(){
     super();
-    type="session".getBytes();
+    type=_session;
     io=new IO();
   }
 

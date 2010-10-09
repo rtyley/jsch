@@ -33,11 +33,13 @@ import java.net.*;
 
 public class ChannelShell extends ChannelSession{
   boolean xforwading=false;
+  /*
   ChannelShell(){
     super();
     type="session".getBytes();
     io=new IO();
   }
+  */
   public void setXForwarding(boolean foo){
     xforwading=true;
   }
@@ -55,7 +57,7 @@ public class ChannelShell extends ChannelSession{
     }
     catch(Exception e){
     }
-    (new Thread(this)).start(); 
+    (new Thread(this)).start();
   }
   public void init(){
     io.setInputStream(session.in);

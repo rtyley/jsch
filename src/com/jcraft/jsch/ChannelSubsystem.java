@@ -1,6 +1,7 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
 Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2003 Erwin Bolwidt, Amsterdam, The Netherlands.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -29,66 +30,62 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
-
-public class ChannelExec extends ChannelSession{
-  boolean xforwading=false;
-  String command="";
+public class ChannelSubsystem extends ChannelSession {
+  private String subsystem;
   /*
-  ChannelExec(){
+  ChannelSubsystem(String subsystem){
     super();
-    type="session".getBytes();
-    io=new IO();
+    this.subsystem=subsystem;
   }
   */
-  public void setXForwarding(boolean foo){
-    xforwading=true;
-  }
   public void start(){
     try{
-      Request request;
-      if(xforwading){
-        request=new RequestX11();
-        request.request(session, this);
-      }
-      request=new RequestExec(command);
-      //((RequestExec)request).setCommand(command);
+      RequestSubsystem request=new RequestSubsystem(subsystem);
       request.request(session, this);
     }
-    catch(Exception e){
+    catch (Exception e){
+      e.printStackTrace();
     }
-    //(new Thread(this)).start();
-    thread=new Thread(this);
-    ((Thread)thread).start();
+    (new Thread(this)).start();
   }
-  public void setCommand(String foo){ command=foo;}
   public void init(){
     io.setInputStream(session.in);
     io.setOutputStream(session.out);
   }
   public void run(){
+    //System.err.println("# ChannelSubsystem.run starting");
     thread=this;
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
     int i=0;
     try{
       while(thread!=null && io.in!=null){
-        i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
-	if(i==0)continue;
-	if(i==-1)break;
-	if(close)break;
-        packet.reset();
-        buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
-        buf.putInt(recipient);
-        buf.putInt(i);
-        buf.skip(i);
+	i=io.in.read(buf.buffer, 14, buf.buffer.length - 14);
+	if(i==0)
+	  continue;
+	if(i==-1)
+	  break;
+	if(close)
+	  break;
+	packet.reset();
+	buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
+	buf.putInt(recipient);
+	buf.putInt(i);
+	buf.skip(i);
 	session.write(packet, this, i);
       }
     }
-    catch(Exception e){
-      //System.out.println("# ChannelExec.run");
-      //e.printStackTrace();
+    catch (Exception e){
+      System.out.println("# ChannelSubsystem.run");
+      e.printStackTrace();
     }
+    //System.err.println("# ChannelSubsystem.run stopping");
     thread=null;
+  }
+  public void setSubsystem(String subsystem){
+    this.subsystem=subsystem;
+  }
+  public String getSubsystem(){
+    return subsystem;
   }
 }

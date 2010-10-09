@@ -66,6 +66,8 @@ public class JSch{
 
     config.put("random",        "com.jcraft.jsch.jce.Random");
     config.put("zlib",          "com.jcraft.jsch.jcraft.Compression");
+
+    config.put("StrictHostKeyChecking",  "ask");
   }
   private static java.util.Vector pool=new java.util.Vector();
   static java.util.Vector identities=new java.util.Vector();

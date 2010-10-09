@@ -37,9 +37,9 @@ import java.io.OutputStream;
 import java.io.IOException;
 
 
-public class Channel implements Runnable{
+public abstract class Channel implements Runnable{
   static int index=0; 
-  static java.util.Vector pool=new java.util.Vector();
+  private static java.util.Vector pool=new java.util.Vector();
   static Channel getChannel(String type){
     if(type.equals("session")){
       return new ChannelSession();
@@ -62,16 +62,18 @@ public class Channel implements Runnable{
     if(type.equals("sftp")){
       return new ChannelSftp();
     }
-    return null;
-  }
-  static Channel getChannel(int id){
-    for(int i=0; i<pool.size(); i++){
-      Channel c=(Channel)(pool.elementAt(i));
-      if(c.id==id) return c;
+    if(type.equals("subsystem")){
+      return new ChannelSubsystem();
     }
     return null;
   }
-
+  static Channel getChannel(int id, Session session){
+    for(int i=0; i<pool.size(); i++){
+      Channel c=(Channel)(pool.elementAt(i));
+      if(c.id==id && c.session==session) return c;
+    }
+    return null;
+  }
   static void del(Channel c){
     pool.removeElement(c);
   }
@@ -148,6 +150,8 @@ public class Channel implements Runnable{
 
   void start(){ }
 
+  public boolean isEOF() {return eof;}
+
   void getData(Buffer buf){
     setRecipient(buf.getInt());
     setRemoteWindowSize(buf.getInt());
@@ -194,7 +198,8 @@ public class Channel implements Runnable{
 //System.out.println("EOF!!!!");
 //Thread.dumpStack();
     if(eof)return;
-    close=eof;
+    eof=true;
+    //close=eof;
     try{
       Buffer buf=new Buffer(100);
       Packet packet=new Packet(buf);
@@ -225,7 +230,16 @@ public class Channel implements Runnable{
       e.printStackTrace();
     }
   }
-
+  static void eof(Session session){
+    for(int i=0; i<pool.size(); i++){
+      try{
+        Channel c=((Channel)(pool.elementAt(i)));
+	if(c.session==session) c.eof();
+      }
+      catch(Exception e){
+      }
+    } 
+  }
   public void disconnect(){
     close();
     thread=null;

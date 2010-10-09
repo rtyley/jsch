@@ -31,8 +31,8 @@ package com.jcraft.jsch;
 
 class RequestExec implements Request{
   private String command="";
-  public void setCommand(String foo){
-    command=foo;
+  RequestExec(String foo){
+    this.command=foo;
   }
   public void request(Session session, Channel channel) throws Exception{
     Packet packet=session.packet;

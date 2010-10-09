@@ -82,6 +82,7 @@ loop:
         while(true){
           i=fis.read();
 	  if(i==-1) break loop;
+          if(i==0x0d){ continue; }
           if(i==0x0a){
             key=sb.toString();
             break;

@@ -108,11 +108,21 @@ class Identity{
   	  }
 	  continue;
 	}
-	if(buf[i]==0x0a){
+	if(buf[i]==0x0d &&
+	   i+1<buf.length && buf[i+1]==0x0a){
+	  i++;
+	  continue;
+	}
+	if(buf[i]==0x0a && i+1<buf.length){
 	  if(buf[i+1]==0x0a){ i+=2; break; }
+	  if(buf[i+1]==0x0d &&
+	     i+2<buf.length && buf[i+2]==0x0a){
+	     i+=3; break;
+	  }
 	  boolean inheader=false;
 	  for(int j=i+1; j<buf.length; j++){
 	    if(buf[j]==0x0a) break;
+	    //if(buf[j]==0x0d) break;
 	    if(buf[j]==':'){inheader=true; break;}
 	  }
 	  if(!inheader){
@@ -131,7 +141,13 @@ class Identity{
       int start=i;
       while(i<len){
         if(buf[i]==0x0a){
-          System.arraycopy(buf, i+1, buf, i, len-i-1);
+	  boolean xd=(buf[i-1]==0x0d);
+          System.arraycopy(buf, i+1, 
+			   buf, 
+			   i-(xd ? 1 : 0), 
+			   len-i-1-(xd ? 1 : 0)
+			   );
+	  if(xd)len--;
           len--;
           continue;
         }

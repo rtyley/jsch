@@ -1,6 +1,7 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
 Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2003 Erwin Bolwidt, Amsterdam, The Netherlands.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -29,41 +30,26 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-public class RequestSftp implements Request{
+public class RequestSubsystem implements Request {
+  private String subsystem;
+
+  RequestSubsystem(String subsystem){
+    this.subsystem=subsystem;
+  }
+
   public void request(Session session, Channel channel) throws Exception{
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
     packet.reset();
-    buf.putByte((byte)98);
+    buf.putByte((byte)Session.SSH_MSG_CHANNEL_REQUEST);
     buf.putInt(channel.getRecipient());
     buf.putString("subsystem".getBytes());
-//    buf.putByte((byte)1);
     buf.putByte((byte)0);
-    buf.putString("sftp".getBytes());
+    buf.putString(subsystem.getBytes());
     session.write(packet);
-
-    /*
-    buf=session.read(buf);
-    buf.getInt();
-    buf.getByte();
-    buf.getByte();
-    int foo=buf.getInt();  // recipient_channel
-    */
-
-    /*
-    Channel channel1=Channel.getChannel("sftp");
-    session.addChannel(channel1);
-    channel1.init();
-    channel1.setRecipient(foo);
-    channel1.lwsize=channel.lwsize;
-    channel1.lmpsize=channel.lmpsize;
-    channel1.rwsize=channel.rwsize;
-    channel1.rmpsize=channel.rmpsize;
-    Channel.del(channel);
-    channel1.id=channel.id;
-    session.channel=channel1; 
-    */
-
+  }
+  public String getSubsystem(){
+    return subsystem;
   }
 }
