@@ -120,7 +120,7 @@ public abstract class Channel implements Runnable{
   int reply=0; 
   int connectTimeout=0;
 
-  Session session;
+  private Session session;
 
   int notifyme=0; 
 
@@ -137,7 +137,7 @@ public abstract class Channel implements Runnable{
     return recipient;
   }
 
-  void init(){
+  void init() throws JSchException {
   }
 
   public void connect() throws JSchException{
@@ -145,7 +145,8 @@ public abstract class Channel implements Runnable{
   }
 
   public void connect(int connectTimeout) throws JSchException{
-    if(!session.isConnected()){
+    Session _session=getSession();
+    if(!_session.isConnected()){
       throw new JSchException("session is down");
     }
     this.connectTimeout=connectTimeout;
@@ -164,12 +165,12 @@ public abstract class Channel implements Runnable{
       buf.putInt(this.id);
       buf.putInt(this.lwsize);
       buf.putInt(this.lmpsize);
-      session.write(packet);
+      _session.write(packet);
       int retry=1000;
       long start=System.currentTimeMillis();
       long timeout=connectTimeout;
       while(this.getRecipient()==-1 &&
-	    session.isConnected() &&
+	    _session.isConnected() &&
 	    retry>0){
         if(timeout>0L){
           if((System.currentTimeMillis()-start)>timeout){
@@ -180,7 +181,7 @@ public abstract class Channel implements Runnable{
 	try{Thread.sleep(50);}catch(Exception ee){}
 	retry--;
       }
-      if(!session.isConnected()){
+      if(!_session.isConnected()){
 	throw new JSchException("session is down");
       }
       if(retry==0){
@@ -328,7 +329,7 @@ public abstract class Channel implements Runnable{
           try{
             int foo=dataLen;
             dataLen=0;
-            session.write(packet, channel, foo);
+            getSession().write(packet, channel, foo);
           }
           catch(Exception e){
             close();
@@ -419,7 +420,7 @@ public abstract class Channel implements Runnable{
       packet.reset();
       buf.putByte((byte)Session.SSH_MSG_CHANNEL_EOF);
       buf.putInt(getRecipient());
-      session.write(packet);
+      getSession().write(packet);
     }
     catch(Exception e){
       //System.err.println("Channel.eof");
@@ -479,7 +480,7 @@ public abstract class Channel implements Runnable{
       packet.reset();
       buf.putByte((byte)Session.SSH_MSG_CHANNEL_CLOSE);
       buf.putInt(getRecipient());
-      session.write(packet);
+      getSession().write(packet);
     }
     catch(Exception e){
       //e.printStackTrace();
@@ -539,8 +540,9 @@ public abstract class Channel implements Runnable{
   }
 
   public boolean isConnected(){
-    if(this.session!=null){
-      return session.isConnected() && connected;
+    Session _session=this.session;
+    if(_session!=null){
+      return _session.isConnected() && connected;
     }
     return false;
   }
@@ -548,7 +550,7 @@ public abstract class Channel implements Runnable{
   public void sendSignal(String signal) throws Exception {
     RequestSignal request=new RequestSignal();
     request.setSignal(signal);
-    request.request(session, this);
+    request.request(getSession(), this);
   }
 
 //  public String toString(){
@@ -592,9 +594,15 @@ public abstract class Channel implements Runnable{
   void setSession(Session session){
     this.session=session;
   }
-  public Session getSession(){ return session; }
+
+  public Session getSession() throws JSchException{ 
+    Session _session=session;
+    if(_session==null){
+      throw new JSchException("session is not available");
+    }
+    return _session;
+  }
   public int getId(){ return id; }
-  //public int getRecipientId(){ return getRecipient(); }
 
   protected void sendOpenConfirmation() throws Exception{
     Buffer buf=new Buffer(100);
@@ -605,7 +613,7 @@ public abstract class Channel implements Runnable{
     buf.putInt(id);
     buf.putInt(lwsize);
     buf.putInt(lmpsize);
-    session.write(packet);
+    getSession().write(packet);
   }
 
   protected void sendOpenFailure(int reasoncode){
@@ -618,7 +626,7 @@ public abstract class Channel implements Runnable{
       buf.putInt(reasoncode);
       buf.putString("open failed".getBytes());
       buf.putString("".getBytes());
-      session.write(packet);
+      getSession().write(packet);
     }
     catch(Exception e){
     }

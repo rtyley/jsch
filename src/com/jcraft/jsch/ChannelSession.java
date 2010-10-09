@@ -153,7 +153,7 @@ class ChannelSession extends Channel{
     try{
       RequestWindowChange request=new RequestWindowChange();
       request.setSize(col, row, wp, hp);
-      request.request(session, this);
+      request.request(getSession(), this);
     }
     catch(Exception e){
       //System.err.println("ChannelSessio.setPtySize: "+e);
@@ -190,15 +190,16 @@ class ChannelSession extends Channel{
   }
 
   protected void sendRequests() throws Exception{
+    Session _session=getSession();
     Request request;
     if(agent_forwarding){
       request=new RequestAgentForwarding();
-      request.request(session, this);
+      request.request(_session, this);
     }
 
     if(xforwading){
       request=new RequestX11();
-      request.request(session, this);
+      request.request(_session, this);
     }
 
     if(pty){
@@ -208,7 +209,7 @@ class ChannelSession extends Channel{
       if(terminal_mode!=null){
         ((RequestPtyReq)request).setTerminalMode(terminal_mode);
       }
-      request.request(session, this);
+      request.request(_session, this);
     }
 
     if(env!=null){
@@ -218,7 +219,7 @@ class ChannelSession extends Channel{
         request=new RequestEnv();
         ((RequestEnv)request).setEnv(toByteArray(name), 
                                      toByteArray(value));
-        request.request(session, this);
+        request.request(_session, this);
       }
     }
   }
@@ -258,7 +259,7 @@ class ChannelSession extends Channel{
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-	session.write(packet, this, i);
+	getSession().write(packet, this, i);
       }
     }
     catch(Exception e){

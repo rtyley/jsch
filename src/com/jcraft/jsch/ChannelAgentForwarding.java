@@ -103,8 +103,16 @@ class ChannelAgentForwarding extends Channel{
 
     int typ=rbuf.getByte();
 
-    Vector identities=getSession().jsch.identities;
-    UserInfo userinfo=getSession().getUserInfo();
+    Session _session=null;
+    try{
+      _session=getSession();
+    }
+    catch(JSchException e){
+      throw new java.io.IOException(e.toString());
+    }
+
+    Vector identities=_session.jsch.identities;
+    UserInfo userinfo=_session.getUserInfo();
 
     if(typ==SSH2_AGENTC_REQUEST_IDENTITIES){ 
       mbuf.reset();
@@ -211,7 +219,7 @@ class ChannelAgentForwarding extends Channel{
     wbuf.putString(message);
 
     try{
-      session.write(packet, this, 4+message.length);
+      getSession().write(packet, this, 4+message.length);
     }
     catch(Exception e){
     }

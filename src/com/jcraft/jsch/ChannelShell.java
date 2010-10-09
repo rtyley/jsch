@@ -39,11 +39,12 @@ public class ChannelShell extends ChannelSession{
   }
 
   public void start() throws JSchException{
+    Session _session=getSession();
     try{
       sendRequests();
 
       Request request=new RequestShell();
-      request.request(session, this);
+      request.request(_session, this);
     }
     catch(Exception e){
       if(e instanceof JSchException) throw (JSchException)e;
@@ -54,16 +55,16 @@ public class ChannelShell extends ChannelSession{
 
     if(io.in!=null){
       thread=new Thread(this);
-      thread.setName("Shell for "+session.host);
-      if(session.daemon_thread){
-        thread.setDaemon(session.daemon_thread);
+      thread.setName("Shell for "+_session.host);
+      if(_session.daemon_thread){
+        thread.setDaemon(_session.daemon_thread);
       }
       thread.start();
     }
   }
 
-  public void init(){
-    io.setInputStream(session.in);
-    io.setOutputStream(session.out);
+  void init() throws JSchException {
+    io.setInputStream(getSession().in);
+    io.setOutputStream(getSession().out);
   }
 }

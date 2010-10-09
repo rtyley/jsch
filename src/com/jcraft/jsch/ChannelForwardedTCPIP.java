@@ -70,7 +70,7 @@ public class ChannelForwardedTCPIP extends Channel{
                                                  ), false);
 
         daemon.setChannel(this, getInputStream(), out);
-        Object[] foo=getPort(session, rport);
+        Object[] foo=getPort(getSession(), rport);
         daemon.setArg((Object[])foo[3]);
 
         new Thread(daemon).start();
@@ -115,7 +115,7 @@ public class ChannelForwardedTCPIP extends Channel{
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-        session.write(packet, this, i);
+        getSession().write(packet, this, i);
       }
     }
     catch(Exception e){
@@ -125,6 +125,7 @@ public class ChannelForwardedTCPIP extends Channel{
     //eof();
     disconnect();
   }
+
   void getData(Buffer buf){
     setRecipient(buf.getInt());
     setRemoteWindowSize(buf.getInt());
@@ -141,10 +142,18 @@ public class ChannelForwardedTCPIP extends Channel{
     System.err.println("orgport: "+orgport);
     */
 
+    Session _session=null;
+    try{
+      _session=getSession();
+    }
+    catch(JSchException e){
+      // session has been already down.
+    }
+
     synchronized(pool){
       for(int i=0; i<pool.size(); i++){
         Object[] foo=(Object[])(pool.elementAt(i));
-        if(foo[0]!=session) continue;
+        if(foo[0]!=_session) continue;
         if(((Integer)foo[1]).intValue()!=port) continue;
         this.rport=port;
         this.target=(String)foo[2];
@@ -156,7 +165,7 @@ public class ChannelForwardedTCPIP extends Channel{
         break;
       }
       if(target==null){
-        System.err.println("??");
+        //System.err.println("??");
       }
     }
   }
@@ -214,7 +223,15 @@ public class ChannelForwardedTCPIP extends Channel{
     }
   }
   static void delPort(ChannelForwardedTCPIP c){
-    delPort(c.session, c.rport);
+    Session _session=null;
+    try{
+      _session=c.getSession();
+    }
+    catch(JSchException e){
+      // session has been already down.
+    }
+    if(_session!=null)
+      delPort(_session, c.rport);
   }
   static void delPort(Session session, int rport){
     synchronized(pool){

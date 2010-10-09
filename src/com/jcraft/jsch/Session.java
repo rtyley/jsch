@@ -33,7 +33,7 @@ import java.io.*;
 import java.net.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.38";
+  static private final String version="JSCH-0.1.39";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -499,7 +499,11 @@ public class Session implements Runnable{
     else{
       I_S=new byte[j-1-buf.getByte()];
     }
-    System.arraycopy(buf.buffer, buf.s, I_S, 0, I_S.length);
+   System.arraycopy(buf.buffer, buf.s, I_S, 0, I_S.length);
+
+   if(!in_kex){     // We are in rekeying activated by the remote!
+     send_kexinit();
+   }
 
     guess=KeyExchange.guess(I_S, I_C);
     if(guess==null){
@@ -1684,10 +1688,9 @@ break;
   }
 
   void addChannel(Channel channel){
-    channel.session=this;
+    channel.setSession(this);
   }
 
-//  public Channel getChannel(){ return channel; }
   public void setProxy(Proxy proxy){ this.proxy=proxy; }
   public void setHost(String host){ this.host=host; }
   public void setPort(int port){ this.port=port; }

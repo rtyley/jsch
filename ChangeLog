@@ -1,10 +1,16 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Apr 22 14:35:13 UTC 2008
+Last modified: Fri Jun 13 02:12:52 UTC 2008
 
 	
+Changes since version 0.1.38:			
+- bugfix: session will be dropped at rekeying.                  FIXED.
+- bugfix: NPE should not be thrown at unexpected session drop.  FIXED.
+- change: Channel#getSession() may throw JSchExecption.
+
+		
 Changes since version 0.1.37:			
-- bugfix: NPE should not be thrown at unexpeced session drop.  FIXED.
+- bugfix: NPE should not be thrown at unexpected session drop.  FIXED.
 - bugfix: AIOOBE at Session#connect().                         FIXED.
 - bugfix: Even if 'true' is given for
 	    Channel#setOutputStream(OutputStream out, boolean dontclose)

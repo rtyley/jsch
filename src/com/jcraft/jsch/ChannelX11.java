@@ -163,7 +163,7 @@ System.err.println("");
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-	session.write(packet, this, i);
+	getSession().write(packet, this, i);
       }
     }
     catch(Exception e){
@@ -186,6 +186,14 @@ System.err.println("");
     //if(eof_local)return;
 
     if(init){
+
+      Session _session=null;
+      try{
+        _session=getSession();
+      }
+      catch(JSchException e){
+        throw new java.io.IOException(e.toString());
+      }
 
       foo=addCache(foo, s, l);
       s=0; 
@@ -215,7 +223,7 @@ System.err.println("");
       byte[] faked_cookie=null;
 
       synchronized(faked_cookie_pool){
-	faked_cookie=(byte[])faked_cookie_pool.get(session);
+	faked_cookie=(byte[])faked_cookie_pool.get(_session);
       }
 
       /*

@@ -60,7 +60,8 @@ public class ChannelDirectTCPIP extends Channel{
 
   public void connect() throws JSchException{
     try{
-      if(!session.isConnected()){
+      Session _session=getSession();
+      if(!_session.isConnected()){
         throw new JSchException("session is down");
       }
       Buffer buf=new Buffer(150);
@@ -82,12 +83,12 @@ public class ChannelDirectTCPIP extends Channel{
       buf.putInt(port);
       buf.putString(originator_IP_address.getBytes());
       buf.putInt(originator_port);
-      session.write(packet);
+      _session.write(packet);
 
       int retry=1000;
       try{
         while(this.getRecipient()==-1 && 
-              session.isConnected() &&
+              _session.isConnected() &&
               retry>0 &&
               !eof_remote){
           //Thread.sleep(500);
@@ -97,7 +98,7 @@ public class ChannelDirectTCPIP extends Channel{
       }
       catch(Exception ee){
       }
-      if(!session.isConnected()){
+      if(!_session.isConnected()){
 	throw new JSchException("session is down");
       }
       if(retry==0 || this.eof_remote){
@@ -114,9 +115,9 @@ public class ChannelDirectTCPIP extends Channel{
 
       if(io.in!=null){
         thread=new Thread(this);
-        thread.setName("DirectTCPIP thread "+session.getHost());
-        if(session.daemon_thread){
-          thread.setDaemon(session.daemon_thread);
+        thread.setName("DirectTCPIP thread "+_session.getHost());
+        if(_session.daemon_thread){
+          thread.setDaemon(_session.daemon_thread);
         }
         thread.start();
       }
@@ -138,6 +139,7 @@ public class ChannelDirectTCPIP extends Channel{
     int i=0;
 
     try{
+      Session _session=getSession();
       while(isConnected() &&
             thread!=null && 
             io!=null && 
@@ -158,7 +160,7 @@ public class ChannelDirectTCPIP extends Channel{
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
-        session.write(packet, this, i);
+        _session.write(packet, this, i);
       }
     }
     catch(Exception e){
