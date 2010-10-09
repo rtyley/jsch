@@ -47,8 +47,8 @@ Features
 * Key exchange: diffie-hellman-group-exchange-sha1
   From the implementation of Diffie-Hellman key exchange by JCE,
   the bit-size of prime number p is 1024.
-* Cipher: blowfish-cbc
-* MAC: hmac-md5
+* Cipher: blowfish-cbc, 3des-cbc
+* MAC: hmac-md5, hmac-sha1, hmac-sha1-96, hmac-md5-96
 * Key type: ssh-dss
 * Userauth: password
 * X11 forwarding.
@@ -73,8 +73,8 @@ JSch can do.  Please refer to '/examples/README' file.
 Stream Forwarding
 =================
 JSch has the unique functionality, Stream Forwarding.
-Stream Forwarding allows you to plug Java I/O streams to remote TCP
-port directly without assigning and opening a local TCP port.
+Stream Forwarding allows you to plug Java I/O streams directly into a remote TCP
+port without assigning and opening a local TCP port.
 In port forwarding like -L option of ssh command,  you have to assign
 and open a local TCP port and that port is also accessible by crackers
 on localhost.  In some case, that local TCP port may be plugged to a
@@ -85,9 +85,6 @@ this functionality.
 
 TODO
 ====
-* Cipher: 3des-cbc
-* MAC: hmac-sha1, hmac-sha1-96,
-* hmac-md5-96
 * Key type: ssh-rsa
 * Userauth: publickey
 * file transfer.

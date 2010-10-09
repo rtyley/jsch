@@ -36,7 +36,6 @@ public class Exec{
       ((ChannelExec)channel).setCommand(command);
       channel.setXForwarding(true);
       channel.connect();
-      channel.start();
     }
     catch(Exception e){
       System.out.println(e);

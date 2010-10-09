@@ -1,6 +1,6 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Oct 22 14:47:43 UTC 2002
+Last modified: Thu Oct 24 16:01:30 UTC 2002
 
 Changes since version 0.0.1:
 - the tunneling via HTTP proxy is supported.
@@ -15,9 +15,16 @@ Changes since version 0.0.2:
 - Const class is added. (lbruand)
 
 Changes since version 0.0.3:	
-- port forwarding like option -L of ssh command.
+- port forwarding, similar to the -L option of SSH.
 - examples/PortForwardingL.java is added.
+- examples/StreamForwarding.java is added.
 - examples/Exec.java is renamed as examples/Shell.java
 - stream forwarding is added.
 - ChannelSftp class is added for implementing filexfer.
 - interfaces for jsch users are changed.
+
+Changes since version 0.0.4:	
+- 3des-cbc is supported.
+- hmac-sha1 is supported.
+- hmac-md5-96 is supported.
+- hmac-sha1-96 is supported.	

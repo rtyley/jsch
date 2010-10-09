@@ -25,14 +25,23 @@ public class JSch{
   static java.util.Properties config=new java.util.Properties();
   static{
     config.put("random", "com.jcraft.jsch.jce.Random");
-    config.put("kex", "com.jcraft.jsch.jce.DHGEX");
+    config.put("kex", "diffie-hellman-group-exchange-sha1");
     config.put("dh", "com.jcraft.jsch.jce.DH");
-    config.put("cipher.s2c", "com.jcraft.jsch.jce.BlowfishCBC");
-    config.put("cipher.c2s", "com.jcraft.jsch.jce.BlowfishCBC");
-    config.put("mac.s2c", "com.jcraft.jsch.jce.HMACMD5");
-    config.put("mac.c2s", "com.jcraft.jsch.jce.HMACMD5");
+    config.put("cipher.s2c", "blowfish-cbc");
+    config.put("cipher.c2s", "blowfish-cbc");
+    config.put("mac.s2c", "hmac-md5");
+    config.put("mac.c2s", "hmac-md5");
     config.put("compress.s2c", "none");
     config.put("compress.c2s", "none");
+
+    config.put("diffie-hellman-group-exchange-sha1",
+	       "com.jcraft.jsch.jce.DHGEX");
+    config.put("3des-cbc",      "com.jcraft.jsch.jce.TripleDESCBC");
+    config.put("blowfish-cbc",  "com.jcraft.jsch.jce.BlowfishCBC");
+    config.put("hmac-sha1",     "com.jcraft.jsch.jce.HMACSHA1");
+    config.put("hmac-sha1-96",  "com.jcraft.jsch.jce.HMACSHA196");
+    config.put("hmac-md5",      "com.jcraft.jsch.jce.HMACMD5");
+    config.put("hmac-md5-96",   "com.jcraft.jsch.jce.HMACMD596");
   }
   private static java.util.Vector pool=new java.util.Vector();
   public JSch(){

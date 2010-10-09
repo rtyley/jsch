@@ -25,9 +25,9 @@ import com.jcraft.jsch.MAC;
 import javax.crypto.*;
 import javax.crypto.spec.*;
 
-public class HMACMD5 implements MAC{
-  private String name="hmac-md5";
-  private int bsize=16;
+public class HMACSHA1 implements MAC{
+  private String name="hmac-sha1";
+  private int bsize=20;
   private Mac mac;
   private byte[] tmp=new byte[4];
   public int getBlockSize(){return bsize;};
@@ -37,8 +37,8 @@ public class HMACMD5 implements MAC{
       System.arraycopy(key, 0, tmp, 0, bsize);	  
       key=tmp;
     }
-    SecretKeySpec skey=new SecretKeySpec(key, "HmacMD5");
-    mac=Mac.getInstance("HmacMD5");
+    SecretKeySpec skey=new SecretKeySpec(key, "HmacSHA1");
+    mac=Mac.getInstance("HmacSHA1");
     mac.init(skey);
   } 
   public void update(int i){

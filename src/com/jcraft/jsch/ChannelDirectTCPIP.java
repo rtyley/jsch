@@ -95,7 +95,7 @@ public class ChannelDirectTCPIP extends Channel{
         i=io.in.read(buf.buffer, 
 		     14, 
 		     buf.buffer.length-14
-		     -16 -16 // padding and mac
+		     -16 -20 // padding and mac
 		     );
 	if(i<=0){
           break;

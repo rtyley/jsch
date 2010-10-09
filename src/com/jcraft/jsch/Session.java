@@ -50,6 +50,7 @@ public class Session implements Runnable{
   private Cipher c2scipher;
   private MAC s2cmac;
   private MAC c2smac;
+  private byte[] mac_buf;
 
   private IO io;
 
@@ -109,10 +110,12 @@ public class Session implements Runnable{
 
       V_S=new byte[i-1]; System.arraycopy(buf.buffer, 0, V_S, 0, i-1);
 
+      //System.out.println("server: "+new String(V_S));
+
       io.put(V_C, 0, V_C.length); io.put("\n".getBytes(), 0, 1);
 
       buf=read(buf);
-      //System.out.println("read: 20 ? "+buf.buffer[5]);
+//System.out.println("read: 20 ? "+buf.buffer[5]);
       j=buf.getInt();
       I_S=new byte[j-1-buf.getByte()];
       System.arraycopy(buf.buffer, buf.s, I_S, 0, I_S.length);
@@ -151,7 +154,7 @@ public class Session implements Runnable{
 
       KeyExchange kex=null;
       try{
-	Class c=Class.forName(getConfig("kex"));
+	Class c=Class.forName(getConfig(getConfig("kex")));
         kex=(KeyExchange)(c.newInstance());
       }
       catch(Exception e){ System.err.println(e); }
@@ -251,7 +254,6 @@ public class Session implements Runnable{
      }
   }
 
-  byte[] mac=new byte[16];
   public Buffer read(Buffer buf) throws Exception{
     int j=0;
     while(true){
@@ -272,8 +274,10 @@ public class Session implements Runnable{
 	s2cmac.update(seqi);
 	s2cmac.update(buf.buffer, 0, buf.index);
 	byte[] result=s2cmac.doFinal();
-	io.getByte(mac, 0, 16);
-        if(java.util.Arrays.equals(result, mac)){
+	io.getByte(mac_buf, 0, mac_buf.length);
+        if(!java.util.Arrays.equals(result, mac_buf)){
+          System.out.println("mac error");
+          System.exit(-1);
 	}
       }
       seqi++;
@@ -360,19 +364,44 @@ public class Session implements Runnable{
     try{
       Class c;
   
-      c=Class.forName(getConfig("cipher.s2c"));
+      c=Class.forName(getConfig(getConfig("cipher.s2c")));
       s2ccipher=(Cipher)(c.newInstance());
+      while(s2ccipher.getBlockSize()>Es2c.length){
+        buf.reset();
+        buf.putMPInt(K);
+        buf.putByte(H);
+        buf.putByte(Es2c);
+        hash.update(buf.buffer, 0, buf.index);
+        byte[] foo=hash.digest();
+        byte[] bar=new byte[Es2c.length+foo.length];
+	System.arraycopy(Es2c, 0, bar, 0, Es2c.length);
+	System.arraycopy(foo, 0, bar, Es2c.length, foo.length);
+	Es2c=bar;
+      }
       s2ccipher.init(Cipher.DECRYPT_MODE, Es2c, IVs2c);
 
-      c=Class.forName(getConfig("mac.s2c"));
+      c=Class.forName(getConfig(getConfig("mac.s2c")));
       s2cmac=(MAC)(c.newInstance());
       s2cmac.init(MACs2c);
+      mac_buf=new byte[s2cmac.getBlockSize()];
 
-      c=Class.forName(getConfig("cipher.c2s"));
+      c=Class.forName(getConfig(getConfig("cipher.c2s")));
       c2scipher=(Cipher)(c.newInstance());
+      while(c2scipher.getBlockSize()>Ec2s.length){
+        buf.reset();
+        buf.putMPInt(K);
+        buf.putByte(H);
+        buf.putByte(Ec2s);
+        hash.update(buf.buffer, 0, buf.index);
+        byte[] foo=hash.digest();
+        byte[] bar=new byte[Ec2s.length+foo.length];
+	System.arraycopy(Ec2s, 0, bar, 0, Ec2s.length);
+	System.arraycopy(foo, 0, bar, Ec2s.length, foo.length);
+	Ec2s=bar;
+      }
       c2scipher.init(Cipher.ENCRYPT_MODE, Ec2s, IVc2s);
 
-      c=Class.forName(getConfig("mac.c2s"));
+      c=Class.forName(getConfig(getConfig("mac.c2s")));
       c2smac=(MAC)(c.newInstance());
       c2smac.init(MACc2s);
     }

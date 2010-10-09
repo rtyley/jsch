@@ -39,7 +39,7 @@ public abstract class KeyExchange{
   //                       ",diffie-hellman-group1-sha1";
   static String kex="diffie-hellman-group-exchange-sha1";
   static String server_host_key="ssh-dss";
-  static String enc_c2s="blowfish-cbc"; // 3des-cbc
+  static String enc_c2s="blowfish-cbc";
   static String enc_s2c="blowfish-cbc";
   static String mac_c2s="hmac-md5";     // hmac-md5,hmac-sha1,hmac-ripemd160,
                                         // hmac-sha1-96,hmac-md5-96

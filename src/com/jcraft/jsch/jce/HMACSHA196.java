@@ -25,20 +25,21 @@ import com.jcraft.jsch.MAC;
 import javax.crypto.*;
 import javax.crypto.spec.*;
 
-public class HMACMD5 implements MAC{
-  private String name="hmac-md5";
-  private int bsize=16;
+public class HMACSHA196 implements MAC{
+  private String name="hmac-sha1-96";
+  private int bsize=12;
   private Mac mac;
   private byte[] tmp=new byte[4];
+  private byte[] buf=new byte[12];
   public int getBlockSize(){return bsize;};
   public void init(byte[] key) throws Exception{
-    if(key.length>bsize){
-      byte[] tmp=new byte[bsize];
-      System.arraycopy(key, 0, tmp, 0, bsize);	  
+    if(key.length>20){
+      byte[] tmp=new byte[20];
+      System.arraycopy(key, 0, tmp, 0, 20);	  
       key=tmp;
     }
-    SecretKeySpec skey=new SecretKeySpec(key, "HmacMD5");
-    mac=Mac.getInstance("HmacMD5");
+    SecretKeySpec skey=new SecretKeySpec(key, "HmacSHA1");
+    mac=Mac.getInstance("HmacSHA1");
     mac.init(skey);
   } 
   public void update(int i){
@@ -52,7 +53,8 @@ public class HMACMD5 implements MAC{
     mac.update(foo, s, l);      
   }
   public byte[] doFinal(){
-    return mac.doFinal();
+    System.arraycopy(mac.doFinal(), 0, buf, 0, 12);
+    return buf;
   }
   public String getName(){
     return name;
