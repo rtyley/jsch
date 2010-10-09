@@ -8,7 +8,6 @@ public class Exec{
 
     String xhost="127.0.0.1";
     int xport=0;
-    Request request;
 
     try{
       JSch jsch=new JSch();
@@ -28,19 +27,16 @@ public class Exec{
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
-
       session.connect();
-
-      request=new RequestX11();
-      request.request(session, session.getChannel());
 
       String command=JOptionPane.showInputDialog("Please enter command", 
 						 "set|grep SSH");
-      request=new RequestExec();
-      ((RequestExec)request).setCommand(command);
-      request.request(session, session.getChannel());
 
-      session.start();
+      Channel channel=session.openChannel("exec");
+      ((ChannelExec)channel).setCommand(command);
+      channel.setXForwarding(true);
+      channel.connect();
+      channel.start();
     }
     catch(Exception e){
       System.out.println(e);

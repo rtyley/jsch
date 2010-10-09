@@ -3,30 +3,35 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class Login{
+public class StreamForwarding{
   public static void main(String[] arg){
-
-    Request request;
+    String host;
+    int port;
 
     try{
       JSch jsch=new JSch();
-      String host=JOptionPane.showInputDialog("Please enter hostname", 
-					      "localhost"); 
+      host=JOptionPane.showInputDialog("Please enter hostname", 
+				       "localhost"); 
       Session session=jsch.getSession(host, 22);
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
-
-      // 
       session.connect();
 
-      request=new RequestPtyReq();
-      request.request(session, session.getChannel());
-      request=new RequestShell();
-      request.request(session, session.getChannel());
+      String foo=JOptionPane.showInputDialog("Please enter host and port", 
+						 "host:port");
+      host=foo.substring(0, foo.indexOf(':'));
+      port=Integer.parseInt(foo.substring(foo.indexOf(':')+1));
 
-      session.start();
+      System.out.println("System.{in,out} will be forwarded to "+
+			 host+":"+port+".");
+      Channel channel=session.openChannel("direct-tcpip");
+      ((ChannelDirectTCPIP)channel).setInputStream(System.in);
+      ((ChannelDirectTCPIP)channel).setOutputStream(System.out);
+      ((ChannelDirectTCPIP)channel).setHost(host);
+      ((ChannelDirectTCPIP)channel).setPort(port);
+      channel.connect();
     }
     catch(Exception e){
       System.out.println(e);

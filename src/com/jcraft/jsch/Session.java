@@ -200,43 +200,7 @@ public class Session implements Runnable{
       UserAuth us=new UserAuthPassword(userinfo);
       us.start(this);
 
-      channel=Channel.getChannel("session");
-      addChannel(channel);
-      channel.init();
-
-      // send
-      // byte   SSH_MSG_CHANNEL_OPEN(90)
-      // string channel type         // "session"
-      // uint32 sender channel       // 0
-      // uint32 initial window size  // 0x100000(65536)
-      // uint32 maxmum packet size   // 0x4000(16384)
-      packet.reset();
-      buf.putByte((byte) Const.SSH_MSG_CHANNEL_OPEN);
-      buf.putString(channel.type);
-      buf.putInt(channel.id);
-      buf.putInt(channel.lwsize);
-      buf.putInt(channel.lmpsize);
-      packet.pack();
-      write(packet);
-
-      // receive
-      // byte   SSH_MSG_CHANNEL_OPEN_CONFIRMATION(91)
-      // uint32 recipient channel     //  0
-      // uint32 sender channel        // 0
-      // uint32 initial window size   // 0
-      // uint32 maxmum packet size    // 0x8000
-      buf=read(buf);
-      //System.out.println("read: 91 ? "+buf.buffer[5]);
-      buf.getInt();
-      buf.getByte();
-      buf.getByte();
-      j=buf.getInt();
-      channel=Channel.getChannel(j);
-      channel.setRecipient(buf.getInt());
-      channel.setRemoteWindowSize(buf.getInt());
-      channel.setRemotePacketSize(buf.getInt());
-
-      (new Thread(channel)).start();
+      (new Thread(this)).start();
     }
     catch(IOException e) {
       System.out.println("Session.connect: "+e);
@@ -249,7 +213,22 @@ public class Session implements Runnable{
     return;
   }
 
-  public void start(){ (new Thread(this)).start();  }
+//public void start(){ (new Thread(this)).start();  }
+
+  public Channel openChannel(String type){
+    try{
+      Channel channel=Channel.getChannel(type);
+      addChannel(channel);
+      channel.init();
+      return channel;
+    }
+    catch(Exception e){
+      System.out.println("??"+e);
+    }
+    return null;
+  }
+
+
 
   // encode will bin invoked in write with synchronization.
   public void encode(Packet packet) throws Exception{
@@ -310,6 +289,12 @@ public class Session implements Runnable{
 			   " "+new String(description)+
 			   " "+new String(language_tag));
 	break;
+      }
+      else if(buf.buffer[5]==93){ // ADJUST
+          buf.rewind();
+          buf.getInt();buf.getShort();
+	  Channel c=Channel.getChannel(buf.getInt());
+	  c.setRemoteWindowSize(c.rwsize+buf.getInt()); 
       }
       else if(buf.buffer[5]==2){ // IGNORE
       }
@@ -415,7 +400,7 @@ public class Session implements Runnable{
       while(thread!=null){
         buf=read(buf);
 //      if(buf.buffer[5]!=94)
-//        System.out.println("read: 94 ? "+buf.buffer[5]);
+//System.out.println("read: 94 ? "+buf.buffer[5]);
         switch(buf.buffer[5]){
 	case Const.SSH_MSG_CHANNEL_DATA:
           buf.getInt(); 
@@ -533,7 +518,12 @@ public class Session implements Runnable{
     }
   }
 
-  public void addChannelR(int rport, String host, int lport) throws Exception{
+  public void setPortForwardingL(int lport, String host, int rport){
+    PortWatcher pw=new PortWatcher(this, lport, host, rport);
+    (new Thread(pw)).start();
+  }
+
+  public void setPortForwardingR(int rport, String host, int lport) throws Exception{
     Buffer buf=new Buffer(100); // ??
     Packet packet=new Packet(buf);
 

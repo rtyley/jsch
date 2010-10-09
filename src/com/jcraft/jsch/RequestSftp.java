@@ -21,22 +21,42 @@
 
 package com.jcraft.jsch;
 
-class RequestShell implements Request{
+public class RequestSftp implements Request{
   public void request(Session session, Channel channel) throws Exception{
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
 
-    // send
-    // byte     SSH_MSG_CHANNEL_REQUEST(98)
-    // uint32 recipient channel
-    // string request type       // "shell"
-    // boolean want reply        // 0
     packet.reset();
-    buf.putByte((byte) Const.SSH_MSG_CHANNEL_REQUEST);
+    buf.putByte((byte)98);
     buf.putInt(channel.getRecipient());
-    buf.putString("shell".getBytes());
+    buf.putString("subsystem".getBytes());
+//    buf.putByte((byte)1);
     buf.putByte((byte)0);
+    buf.putString("sftp".getBytes());
     packet.pack();
     session.write(packet);
+
+    /*
+    buf=session.read(buf);
+    buf.getInt();
+    buf.getByte();
+    buf.getByte();
+    int foo=buf.getInt();  // recipient_channel
+    */
+
+    /*
+    Channel channel1=Channel.getChannel("sftp");
+    session.addChannel(channel1);
+    channel1.init();
+    channel1.setRecipient(foo);
+    channel1.lwsize=channel.lwsize;
+    channel1.lmpsize=channel.lmpsize;
+    channel1.rwsize=channel.rwsize;
+    channel1.rmpsize=channel.rmpsize;
+    Channel.del(channel);
+    channel1.id=channel.id;
+    session.channel=channel1; 
+    */
+
   }
 }

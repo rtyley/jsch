@@ -1,8 +1,7 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Sun Oct 20 14:21:46 UTC 2002
+Last modified: Tue Oct 22 14:47:43 UTC 2002
 
-	
 Changes since version 0.0.1:
 - the tunneling via HTTP proxy is supported.
 - port forwarding like option -R of ssh command.
@@ -14,3 +13,11 @@ Changes since version 0.0.2:
 - examples/Exec.java is added.
 - build.xml and some scripts for Ant are added. (lbruand)
 - Const class is added. (lbruand)
+
+Changes since version 0.0.3:	
+- port forwarding like option -L of ssh command.
+- examples/PortForwardingL.java is added.
+- examples/Exec.java is renamed as examples/Shell.java
+- stream forwarding is added.
+- ChannelSftp class is added for implementing filexfer.
+- interfaces for jsch users are changed.

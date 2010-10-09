@@ -23,18 +23,30 @@ package com.jcraft.jsch;
 
 import java.net.*;
 
-class Channel implements Runnable{
+public class Channel implements Runnable{
   static int index=0; 
   static java.util.Vector pool=new java.util.Vector();
   static Channel getChannel(String type){
     if(type.equals("session")){
       return new ChannelSession();
     }
+    if(type.equals("shell")){
+      return new ChannelShell();
+    }
+    if(type.equals("exec")){
+      return new ChannelExec();
+    }
     if(type.equals("x11")){
       return new ChannelX11();
     }
+    if(type.equals("direct-tcpip")){
+      return new ChannelDirectTCPIP();
+    }
     if(type.equals("forwarded-tcpip")){
       return new ChannelForwardedTCPIP();
+    }
+    if(type.equals("sftp")){
+      return new ChannelSftp();
     }
     return null;
   }
@@ -51,7 +63,7 @@ class Channel implements Runnable{
   }
 
   int id;
-  int recipient;
+  int recipient=-1;
   byte[] type="foo".getBytes();
   int lwsize_max=0x100000;
   int lwsize=lwsize_max;  // local initial window size
@@ -83,10 +95,54 @@ class Channel implements Runnable{
   void init(){
   }
 
+  public void connect(){
+    try{
+      Buffer buf=new Buffer(100);
+      Packet packet=new Packet(buf);
+      // send
+      // byte   SSH_MSG_CHANNEL_OPEN(90)
+      // string channel type         //
+     // uint32 sender channel       // 0
+      // uint32 initial window size  // 0x100000(65536)
+      // uint32 maxmum packet size   // 0x4000(16384)
+      packet.reset();
+      buf.putByte((byte)90);
+      buf.putString(this.type);
+      buf.putInt(this.id);
+      buf.putInt(this.lwsize);
+      buf.putInt(this.lmpsize);
+      packet.pack();
+      session.write(packet);
+
+      try{
+        while(this.getRecipient()==-1){
+          Thread.sleep(500);
+        }
+      }
+      catch(Exception ee){
+      }
+      start();
+    }
+    catch(Exception e){
+    }
+  }
+
+  public void setXForwarding(boolean foo){
+  }
+
+  void start(){ }
+
   void getData(Buffer buf){
     setRecipient(buf.getInt());
     setRemoteWindowSize(buf.getInt());
     setRemotePacketSize(buf.getInt());
+  }
+
+  public void setInputStream(java.io.InputStream in){
+    io.setInputStream(in);
+  }
+  public void setOutputStream(java.io.OutputStream out){
+    io.setOutputStream(out);
   }
 
   void setLocalWindowSize(int foo){ this.lwsize=foo; }

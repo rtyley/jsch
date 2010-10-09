@@ -6,36 +6,31 @@ import javax.swing.*;
 public class ViaHTTP{
   public static void main(String[] arg){
 
-    Request request;
-
     String proxy_host;
     int proxy_port;
 
     try{
       JSch jsch=new JSch();
-      String host=JOptionPane.showInputDialog("Please enter hostname", 
-					      "localhost"); 
-      Session session=jsch.getSession(host, 22);
 
       String proxy=JOptionPane.showInputDialog("Please enter proxy server",
                                                  "hostname:port");
       proxy_host=proxy.substring(0, proxy.indexOf(':'));
       proxy_port=Integer.parseInt(proxy.substring(proxy.indexOf(':')+1));
+
+      String host=JOptionPane.showInputDialog("Please enter hostname", 
+					      "localhost"); 
+      Session session=jsch.getSession(host, 22);
+
       session.setProxy(new ProxyHTTP(proxy_host, proxy_port));
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
 
-      // 
       session.connect();
 
-      request=new RequestPtyReq();
-      request.request(session, session.getChannel());
-      request=new RequestShell();
-      request.request(session, session.getChannel());
-
-      session.start();
+      Channel channel=session.openChannel("shell");
+      channel.connect();
     }
     catch(Exception e){
       System.out.println(e);

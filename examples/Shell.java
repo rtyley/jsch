@@ -3,26 +3,14 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class X11Forwarding{
+public class Shell{
   public static void main(String[] arg){
-
-    String xhost="127.0.0.1";
-    int xport=0;
 
     try{
       JSch jsch=new JSch();
       String host=JOptionPane.showInputDialog("Please enter hostname", 
 					      "localhost"); 
-  
       Session session=jsch.getSession(host, 22);
-
-      String display=JOptionPane.showInputDialog("Please enter display name", 
-						 xhost+":"+xport);
-      xhost=display.substring(0, display.indexOf(':'));
-      xport=Integer.parseInt(display.substring(display.indexOf(':')+1));
-
-      session.setX11Host(xhost);
-      session.setX11Port(xport+6000);
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
@@ -30,7 +18,6 @@ public class X11Forwarding{
       session.connect();
 
       Channel channel=session.openChannel("shell");
-      channel.setXForwarding(true);
       channel.connect();
     }
     catch(Exception e){

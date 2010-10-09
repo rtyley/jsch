@@ -21,12 +21,12 @@
 
 package com.jcraft.jsch;
 
-public class RequestPtyReq implements Request{
-  public void setCode(String cookie){
+class RequestPtyReq implements Request{
+  void setCode(String cookie){
   }
   public void request(Session session, Channel channel) throws Exception{
-    Packet packet=session.packet;
-    Buffer buf=session.buf;
+    Buffer buf=new Buffer();
+    Packet packet=new Packet(buf);
 
     packet.reset();
     buf.putByte((byte) Const.SSH_MSG_CHANNEL_REQUEST);

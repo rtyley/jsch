@@ -21,7 +21,7 @@
 
 package com.jcraft.jsch;
 
-public class RequestExec implements Request{
+class RequestExec implements Request{
   private String command="";
   public void setCommand(String foo){
     command=foo;

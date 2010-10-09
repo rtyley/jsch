@@ -5,13 +5,13 @@ Last modified: Wed Oct 16 13:53:12 UTC 2002
 
 This directory contains some examples, which demonstrate how to use JSch
 
-- Login.java
-  This program enables you to connect to sshd server.
-  $ CLASSPATH=.:../src javac Login.java 
-  $ CLASSPATH=.:../src java Login
+- Shell.java
+  This program enables you to connect to sshd server and get the shell prompt.
+  $ CLASSPATH=.:../src javac Shell.java 
+  $ CLASSPATH=.:../src java Shell
   You will be asked hostname, username and passwd. 
   If everything works fine, you will get the shell prompt. Output will
-  be ugly because of lacks of terminal-emulation, but you can issue command.
+  be ugly because of lacks of terminal-emulation, but you can issue commands.
 
 - X11Forwarding.java
   This program will demonstrate X11 forwarding.
@@ -31,7 +31,6 @@ This directory contains some examples, which demonstrate how to use JSch
   on the remote side and outputs will be printed out. In this sample,
   X forwarding is enabled, so you can give an X client as a command.
 
-
 - ViaHTTP.java
   This program will demonstrate the ssh session via HTTP proxy.
   $ CLASSPATH=.:../src javac ViaHTTP.java 
@@ -48,3 +47,24 @@ This directory contains some examples, which demonstrate how to use JSch
   You will be asked hostname, port:host:hostport, username and passwd. 
   If everything works fine, you will get the shell prompt.
   Try the port on remote host.
+
+- PortForwardingL.java
+  This program will demonstrate the port forwarding like option -L of
+  ssh command; the given port on the local host will be forwarded to
+  the given remote host and port on the remote side.
+  $ CLASSPATH=.:../src javac PortForwardingL.java
+  $ CLASSPATH=.:../src PortForwardingL
+  You will be asked hostname, port:host:hostport, username and passwd. 
+  If everything works fine, you will get the shell prompt.
+  Try the port on localhost.
+
+- StreamForwarding.java
+  This program will demonstrate the stream forwarding. The given Java
+  I/O streams will be forwared to the given remote host and port on
+  the remote side.  It is simmilar to the -L option of ssh command,
+  but you don't have to assign and open a local tcp port.
+  $ CLASSPATH=.:../src javac StreamForwarding.java
+  $ CLASSPATH=.:../src StreamForwarding
+  You will be asked hostname, host:hostport, username and passwd. 
+  If everything works fine, System.in and System.out streams will be
+  forwared to remote port and you can send messages from command line.

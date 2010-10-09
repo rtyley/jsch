@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Sun Oct 20 14:23:06 UTC 2002
+Last modified: Tue Oct 22 14:47:11 UTC 2002
 
 Description
 ===========
@@ -54,7 +54,8 @@ Features
 * X11 forwarding.
 * xauth spoofing.
 * connection through HTTP proxy.
-* port forwarding(-R).
+* port forwarding.
+* stream forwarding.
 * remote exec.
 * JSch is licensed under GNU LGPL.
 
@@ -69,6 +70,19 @@ the source code by your self.
 JSch can do.  Please refer to '/examples/README' file.
 
 
+Stream Forwarding
+=================
+JSch has the unique functionality, Stream Forwarding.
+Stream Forwarding allows you to plug Java I/O streams to remote TCP
+port directly without assigning and opening a local TCP port.
+In port forwarding like -L option of ssh command,  you have to assign
+and open a local TCP port and that port is also accessible by crackers
+on localhost.  In some case, that local TCP port may be plugged to a
+secret port via SSH session, so such accessibility will not be acceptable.
+A sample program, /example/StreamForwarding.java , demonstrates
+this functionality.
+
+
 TODO
 ====
 * Cipher: 3des-cbc
@@ -76,7 +90,6 @@ TODO
 * hmac-md5-96
 * Key type: ssh-rsa
 * Userauth: publickey
-* port forwarding(-L).
 * file transfer.
 * packet compression.
   JZlib(http://www.jcraft.com/jzlib/) will be used.

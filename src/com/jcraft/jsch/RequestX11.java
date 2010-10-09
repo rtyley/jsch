@@ -21,13 +21,14 @@
 
 package com.jcraft.jsch;
 
-public class RequestX11 implements Request{
+class RequestX11 implements Request{
   public void setCookie(String cookie){
     ChannelX11.cookie=cookie.getBytes();
   }
   public void request(Session session, Channel channel) throws Exception{
-    Packet packet=session.packet;
-    Buffer buf=session.buf;
+    Buffer buf=new Buffer();
+    Packet packet=new Packet(buf);
+
     // byte      SSH_MSG_CHANNEL_REQUEST(98)
     // uint32 recipient channel
     // string request type        // "x11-req"

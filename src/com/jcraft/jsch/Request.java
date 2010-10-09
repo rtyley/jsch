@@ -21,6 +21,6 @@
 
 package com.jcraft.jsch;
 
-public interface Request{
+interface Request{
   void request(Session session, Channel channel) throws Exception;
 }

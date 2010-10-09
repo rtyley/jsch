@@ -3,12 +3,12 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class PortForwardingR{
+public class PortForwardingL{
   public static void main(String[] arg){
 
-    int rport;
-    String lhost;
     int lport;
+    String rhost;
+    int rport;
 
     try{
       JSch jsch=new JSch();
@@ -16,12 +16,12 @@ public class PortForwardingR{
 					      "localhost"); 
       Session session=jsch.getSession(host, 22);
 
-      String foo=JOptionPane.showInputDialog("Please enter -R", 
+      String foo=JOptionPane.showInputDialog("Please enter -L", 
 					     "port:host:hostport");
-      rport=Integer.parseInt(foo.substring(0, foo.indexOf(':')));
+      lport=Integer.parseInt(foo.substring(0, foo.indexOf(':')));
       foo=foo.substring(foo.indexOf(':')+1);
-      lhost=foo.substring(0, foo.indexOf(':'));
-      lport=Integer.parseInt(foo.substring(foo.indexOf(':')+1));
+      rhost=foo.substring(0, foo.indexOf(':'));
+      rport=Integer.parseInt(foo.substring(foo.indexOf(':')+1));
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
@@ -29,12 +29,12 @@ public class PortForwardingR{
 
       session.connect();
 
-      // Channel channel=session.openChannel("shell");
-      // channel.connect();
+      //Channel channel=session.openChannel("shell");
+      //channel.connect();
 
-      session.setPortForwardingR(rport, lhost, lport);
+      System.out.println("localhost:"+lport+" -> "+rhost+":"+rport);
 
-      System.out.println(host+":"+rport+" -> "+lhost+":"+lport);
+      session.setPortForwardingL(lport, rhost, rport);
     }
     catch(Exception e){
       System.out.println(e);
