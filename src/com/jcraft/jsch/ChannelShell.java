@@ -33,7 +33,6 @@ import java.net.*;
 
 public class ChannelShell extends ChannelSession{
   boolean xforwading=false;
-  private Thread currentThread=null;
   /*
   ChannelShell(){
     super();
@@ -58,13 +57,13 @@ public class ChannelShell extends ChannelSession{
     }
     catch(Exception e){
     }
-    currentThread=new Thread(this);
-    currentThread.start();
+    thread=new Thread(this);
+    thread.start();
   }
   public void finalize() throws Throwable{
-    if(currentThread!=null){
-      currentThread.interrupt();
-      currentThread=null;
+    if(thread!=null){
+      thread.interrupt();
+      thread=null;
     }
     super.finalize();
   }
@@ -73,7 +72,7 @@ public class ChannelShell extends ChannelSession{
     io.setOutputStream(session.out);
   }
   public void run(){
-    thread=this;
+//    thread=Thread.currentThread();
     Buffer buf=new Buffer();
     Packet packet=new Packet(buf);
     int i=0;

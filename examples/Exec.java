@@ -24,13 +24,14 @@ public class Exec{
 
       Session session=jsch.getSession(user, host, 22);
 
+      /*
       String display=JOptionPane.showInputDialog("Enter display name", 
 						 xhost+":"+xport);
       xhost=display.substring(0, display.indexOf(':'));
       xport=Integer.parseInt(display.substring(display.indexOf(':')+1));
-
       session.setX11Host(xhost);
       session.setX11Port(xport+6000);
+      */
 
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
@@ -44,25 +45,26 @@ public class Exec{
       channel.setXForwarding(true);
 
       channel.setInputStream(System.in);
-      channel.setOutputStream(System.out);
+      //channel.setOutputStream(System.out);
 
       //FileOutputStream fos=new FileOutputStream("/tmp/stderr");
       //((ChannelExec)channel).setErrStream(fos);
       ((ChannelExec)channel).setErrStream(System.err);
 
+      InputStream in = channel.getInputStream();
+
       channel.connect();
 
-      /*
-      byte[] tmp=new byte[1];
-      InputStream in = channel.getInputStream();
+      byte[] tmp=new byte[1024];
       while(true){
-	if(channel.isEOF()) break;
-	while (in.available()>0){
-	  in.read(tmp, 0, 1);
-	  System.out.print(new String(tmp, 0, 1));
+	if(channel.isEOF() && in.available()<=0) break;
+	while(in.available()>0){
+	  int i=in.read(tmp, 0, 1024);
+	  if(i<0)break;
+	  System.out.print(new String(tmp, 0, i));
 	}
       }
-      */
+      channel.disconnect();
     }
     catch(Exception e){
       System.out.println(e);

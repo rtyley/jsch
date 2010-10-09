@@ -90,9 +90,8 @@ public abstract class Channel implements Runnable{
   int rmpsize=0;        // remote maximum packet size
 
   IO io=null;    
-  Runnable thread=null;
+  Thread thread=null;
 
-//  boolean eof=false;
   boolean eof_local=false;
   boolean eof_remote=false;
 

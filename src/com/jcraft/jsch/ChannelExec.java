@@ -57,9 +57,8 @@ public class ChannelExec extends ChannelSession{
     }
     catch(Exception e){
     }
-    //(new Thread(this)).start();
     thread=new Thread(this);
-    ((Thread)thread).start();
+    thread.start();
   }
   public void setCommand(String foo){ command=foo;}
   public void init(){
@@ -67,13 +66,15 @@ public class ChannelExec extends ChannelSession{
     io.setOutputStream(session.out);
   }
   public void finalize() throws java.lang.Throwable{
-    ((Thread)thread).interrupt();
-    thread=null;
+    if(thread!=null){
+      ((Thread)thread).interrupt();
+      thread=null;
+    }
     super.finalize();
   }
   public void run(){
 //System.out.println(this+":run >");
-    thread=this;
+//    thread=Thread.currentThread();
     Buffer buf=new Buffer();
 //    Buffer buf=new Buffer(lmpsize);
     Packet packet=new Packet(buf);

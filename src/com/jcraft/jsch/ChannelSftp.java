@@ -181,7 +181,8 @@ public class ChannelSftp extends ChannelSession{
       Request request=new RequestSftp();
       request.request(session, this);
 
-      thread=this;
+//      thread=Thread.currentThread();
+
       buf=new Buffer();
       packet=new Packet(buf);
       int i=0;

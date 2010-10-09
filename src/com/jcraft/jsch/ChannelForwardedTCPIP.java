@@ -64,7 +64,7 @@ class ChannelForwardedTCPIP extends Channel{
   }
 
   public void run(){
-    thread=this;
+    thread=Thread.currentThread();
     Buffer buf=new Buffer(rmpsize);
     Packet packet=new Packet(buf);
     int i=0;

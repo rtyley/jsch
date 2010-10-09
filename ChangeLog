@@ -1,6 +1,11 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Thu Jan 13 20:36:13 JST 2005
+Last modified: Tue Jan 25 14:42:09 UTC 2005
+
+
+Changes since version 0.1.19:		
+- ClassCastException while calling Channel.finalize() method. FIXED.
+  Thanks to wswiatek at ais dot pl.
 
 	
 Changes since version 0.1.18:		

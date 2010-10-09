@@ -95,14 +95,15 @@ public class ChannelDirectTCPIP extends Channel{
 	return;
       }
 
-      (new Thread(this)).start();
+      thread=new Thread(this);
+      thread.start();
     }
     catch(Exception e){
     }
   }
 
   public void run(){
-    thread=this;
+//    thread=Thread.currentThread();
 //System.out.println("rmpsize: "+rmpsize+", lmpsize: "+lmpsize);
     Buffer buf=new Buffer(rmpsize);
 //    Buffer buf=new Buffer(lmpsize);
