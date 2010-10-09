@@ -72,16 +72,20 @@ public class ChannelExec extends ChannelSession{
         throw new JSchException("ChannelExec", (Throwable)e);
       throw new JSchException("ChannelExec");
     }
-    thread=new Thread(this);
-    thread.setName("Exec thread "+session.getHost());
-    thread.start();
+
+    if(io.in!=null){
+      thread=new Thread(this);
+      thread.setName("Exec thread "+session.getHost());
+      thread.start();
+    }
   }
+
   public void setCommand(String foo){ command=foo;}
   public void init(){
     io.setInputStream(session.in);
     io.setOutputStream(session.out);
   }
-  //public void finalize() throws java.lang.Throwable{ super.finalize(); }
+
   public void setErrStream(java.io.OutputStream out){
     setExtOutputStream(out);
   }

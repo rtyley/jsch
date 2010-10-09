@@ -228,12 +228,92 @@ public abstract class Channel implements Runnable{
     return in;
   }
   public OutputStream getOutputStream() throws IOException {
+    /*
     PipedOutputStream out=new PipedOutputStream();
     io.setInputStream(new PassiveInputStream(out
                                              , 32*1024
                                              ), false);
-//  io.setInputStream(new PassiveInputStream(out), false);
     return out;
+    */
+
+    final Channel channel=this;
+    OutputStream out=new OutputStream(){
+        private int dataLen=0;
+        private Buffer buffer=null;
+        private Packet packet=null;
+        private boolean closed=false;
+        private void init(){
+          buffer=new Buffer(rmpsize);
+          packet=new Packet(buffer);
+        }
+        byte[] b=new byte[1];
+        public void write(int w) throws java.io.IOException{
+          b[0]=(byte)w;
+          write(b, 0, 1);
+        }
+        public void write(byte[] buf, int s, int l) throws java.io.IOException{
+          if(packet==null){
+            init();
+          }
+          if(closed){
+            throw new java.io.IOException("Already closed");
+          }
+
+          byte[] _buf=buffer.buffer;
+          int _bufl=_buf.length;
+          while(l>0){
+            int _l=l;
+            if(l>_bufl-(14+dataLen)-32-20){
+              _l=_bufl-(14+dataLen)-32-20;
+            }
+
+            if(_l<=0){
+              flush();
+              continue;
+            }
+
+            System.arraycopy(buf, s, _buf, 14+dataLen, _l);
+            dataLen+=_l;
+            s+=_l;
+            l-=_l;
+          }
+        }
+
+        public void flush() throws java.io.IOException{
+          if(dataLen==0)
+            return;
+          packet.reset();
+          buffer.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
+          buffer.putInt(recipient);
+          buffer.putInt(dataLen);
+          buffer.skip(dataLen);
+          try{
+            int foo=dataLen;
+            dataLen=0;
+            session.write(packet, channel, foo);
+          }
+          catch(Exception e){
+            close();
+            throw new java.io.IOException(e.toString());
+          }
+
+        }
+        public void close() throws java.io.IOException{
+          if(packet==null){
+            init();
+          }
+          if(closed){
+            throw new java.io.IOException("Already closed");
+          }
+          if(dataLen>0){
+            flush();
+          }
+          channel.eof();
+          closed=true;
+        }
+      };
+    return out;
+
   }
   class MyPipedInputStream extends PipedInputStream{
     MyPipedInputStream() throws IOException{ super(); }

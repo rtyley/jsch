@@ -32,13 +32,10 @@ package com.jcraft.jsch;
 import java.util.Vector;
 
 class UserAuthPublicKey extends UserAuth{
-  UserInfo userinfo;
-  UserAuthPublicKey(UserInfo userinfo){
-   this.userinfo=userinfo;
-  }
 
-  public boolean start(Session session) throws Exception{
+  public boolean start(Session session, UserInfo userinfo) throws Exception{
     //super.start(session);
+   this.userinfo=userinfo;
 
     Vector identities=session.jsch.identities;
 
@@ -50,9 +47,13 @@ class UserAuthPublicKey extends UserAuth{
 
     byte[] _username=null;
 
-    _username=Util.str2byte(username);
-
     synchronized(identities){
+      if(identities.size()<=0){
+        return false;
+      }
+
+      _username=Util.str2byte(username);
+
       for(int i=0; i<identities.size(); i++){
         Identity identity=(Identity)(identities.elementAt(i));
         byte[] pubkeyblob=identity.getPublicKeyBlob();
@@ -68,7 +69,7 @@ class UserAuthPublicKey extends UserAuth{
           // boolen    FALSE
           // string    plaintext password (ISO-10646 UTF-8)
           packet.reset();
-          buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
+          buf.putByte((byte)SSH_MSG_USERAUTH_REQUEST);
           buf.putString(_username);
           buf.putString("ssh-connection".getBytes());
           buf.putString("publickey".getBytes());
@@ -84,15 +85,15 @@ class UserAuthPublicKey extends UserAuth{
             // string    service name
             buf=session.read(buf);
 //System.err.println("read: 60 ? "+    buf.buffer[5]);
-            if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_PK_OK){
+            if(buf.buffer[5]==SSH_MSG_USERAUTH_PK_OK){
               break;
             }
-            else if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
+            else if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
 //	System.err.println("USERAUTH publickey "+session.getIdentity()+
 //			   " is not acceptable.");
               break;
             }
-            else if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_BANNER){
+            else if(buf.buffer[5]==SSH_MSG_USERAUTH_BANNER){
               buf.getInt(); buf.getByte(); buf.getByte();
               byte[] _message=buf.getString();
               byte[] lang=buf.getString();
@@ -112,7 +113,7 @@ class UserAuthPublicKey extends UserAuth{
               break;
             }
           }
-          if(buf.buffer[5]!=Session.SSH_MSG_USERAUTH_PK_OK){
+          if(buf.buffer[5]!=SSH_MSG_USERAUTH_PK_OK){
             continue;
           }
         }
@@ -164,7 +165,7 @@ class UserAuthPublicKey extends UserAuth{
       // boolen    TRUE
       // string    plaintext password (ISO-10646 UTF-8)
         packet.reset();
-        buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
+        buf.putByte((byte)SSH_MSG_USERAUTH_REQUEST);
         buf.putString(_username);
         buf.putString("ssh-connection".getBytes());
         buf.putString("publickey".getBytes());
@@ -199,10 +200,10 @@ class UserAuthPublicKey extends UserAuth{
 	// string    service name
           buf=session.read(buf);
 	//System.err.println("read: 52 ? "+    buf.buffer[5]);
-          if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
+          if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
             return true;
           }
-          else if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_BANNER){
+          else if(buf.buffer[5]==SSH_MSG_USERAUTH_BANNER){
             buf.getInt(); buf.getByte(); buf.getByte();
             byte[] _message=buf.getString();
             byte[] lang=buf.getString();
@@ -216,7 +217,7 @@ class UserAuthPublicKey extends UserAuth{
             }
             continue loop2;
           }
-          else if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
+          else if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
             buf.getInt(); buf.getByte(); buf.getByte(); 
             byte[] foo=buf.getString();
             int partial_success=buf.getByte();

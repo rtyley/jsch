@@ -1,8 +1,38 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Fri Aug 25 17:29:09 UTC 2006
+Last modified: Wed Nov  1 14:43:13 UTC 2006
 
-	
+
+Changes since version 0.1.29:		
+- bugfix: ChannelSftp#cd() will not throw an exception even if
+	  a file is given.                                           FIXED.
+- bugfix: ChannelSftp#put() has a bug which will appear in using
+	  on the slow network.                                       FIXED.
+- bugfix: ChannelSftp#ls() has a bug which will appear in using
+	  on the slow network.                                       FIXED.
+- bugfix: a bug had sneaked in the remote port forwarding.           FIXED.
+- bugfix: some APIs from JCE have the memory leak on Mac OS X,
+	  so we have re-written the code(com.jcraft.jsch.jcraft.HMAC*
+	  classes) without them.  On Mac OS X, such new classes will
+	  be used automatically.                                     FIXED.
+- bugfix: the session will be crashed by the long banner message.    FIXED.
+- change: '/dev/random' will not be referred on Gnu/Linux.
+- change: if non-standard TCP port number is used, that number will 
+	  be saved in known_hosts file as recent OpenSSH's ssh client does.
+- change: Channel#getOutputStream will not use Piped{Output,Input}Stream.
+- change: com.jcraft.jsch.HostKeyRepository interface has been
+	  slightly modified.
+- feature: Session#setPortForwardingR(String bind_address, ...) has been added.
+- feature: the packet compression method 'zlib@openssh.com' has been supported.
+- feature: the hashed known_hosts file has been supported.
+	   Refer to 'examples/KnownHosts.java'.
+- feature: the authentication method 'gssapi-with-mic' has been
+ 	   experimentally supported.
+- feature: com.jcraft.jsch.Logger interface and 
+	   JSch#setLogger(Logger logger) have been added.
+	   Refer to 'examples/Logger.java' for the usage.
+
+
 Changes since version 0.1.28:	
 - bugfix: ChannelSftp#put will stack in some situations              FIXED.
 - bugfix: ChannelSftp invoked 'glob_remote' redundantly.             FIXED.
@@ -47,9 +77,9 @@ Changes since version 0.1.28:
 - feature: JSch#addIdentity(String path, byte[] passphrase) is added.
 - feature: JSch#getIdentityNames() is added.
 - feature: JSch#removeIdentity(String name) is added.
-- feature: JSch.#emoveAllIdentity() is added.
-- feature: Channel#readlin(String path) is added.
-- feature: Channel#getHome() is added.
+- feature: JSch#removeAllIdentity() is added.
+- feature: ChannelSftp#readlink(String path) is added.
+- feature: ChannelSftp#getHome() is added.
 - feature: Channel#connect(int connectTimeout) is added.
 - feature: ChannelShell#setPtyType(String ttype) is added.
 - feature: Session#setPassword(byte[] password) is added.
@@ -65,8 +95,8 @@ Changes since version 0.1.28:
 	
 
 Changes since version 0.1.27:	
-- bugfix: ChannelSftp.localAbsolutePath did not work correctly.      FIXED.
-- bugfix: ChannelSftp.chmod did not work for directory.              FIXED.
+- bugfix: ChannelSftp#localAbsolutePath did not work correctly.      FIXED.
+- bugfix: ChannelSftp#chmod did not work for directory.              FIXED.
 - bugfix: ProxyHTTP had a bug in processing HTTP headers.            FIXED.
 - bugfix: messages before server's version string should be ignored. FIXED.
 - feature: Environment Variable Passing.

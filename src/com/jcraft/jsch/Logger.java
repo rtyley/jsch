@@ -29,45 +29,26 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-public abstract class UserAuth{
-  protected static final int SSH_MSG_USERAUTH_REQUEST=               50;
-  protected static final int SSH_MSG_USERAUTH_FAILURE=               51;
-  protected static final int SSH_MSG_USERAUTH_SUCCESS=               52;
-  protected static final int SSH_MSG_USERAUTH_BANNER=                53;
-  protected static final int SSH_MSG_USERAUTH_INFO_REQUEST=          60;
-  protected static final int SSH_MSG_USERAUTH_INFO_RESPONSE=         61;
-  protected static final int SSH_MSG_USERAUTH_PK_OK=                 60;
+public interface Logger{
 
-  protected UserInfo userinfo;
-  public boolean start(Session session, UserInfo userinfo) throws Exception{
-    this.userinfo=userinfo;
-    Packet packet=session.packet;
-    Buffer buf=session.buf;
-    // send
-    // byte      SSH_MSG_SERVICE_REQUEST(5)
-    // string    service name "ssh-userauth"
-    packet.reset();
-    buf.putByte((byte)Session.SSH_MSG_SERVICE_REQUEST);
-    buf.putString("ssh-userauth".getBytes());
-    session.write(packet);
+  public final int DEBUG=0;
+  public final int INFO=1;
+  public final int WARN=2;
+  public final int ERROR=3;
+  public final int FATAL=4;
 
-    if(JSch.getLogger().isEnabled(Logger.INFO)){
-      JSch.getLogger().log(Logger.INFO, 
-                           "SSH_MSG_SERVICE_REQUEST sent");
-    }
+  public boolean isEnabled(int level);
 
-    // receive
-    // byte      SSH_MSG_SERVICE_ACCEPT(6)
-    // string    service name
-    buf=session.read(buf);
-    //System.err.println("read: 6 ? "+buf.buffer[5]);
-    boolean result=(buf.buffer[5]==6);
+  public void log(int level, String message);
 
-    if(JSch.getLogger().isEnabled(Logger.INFO)){
-      JSch.getLogger().log(Logger.INFO, 
-                           "SSH_MSG_SERVICE_ACCEPT received");
-    }
-
-    return result;
-  }
+  /*
+  public final Logger SIMPLE_LOGGER=new Logger(){
+      public boolean isEnabled(int level){return true;}
+      public void log(int level, String message){System.err.println(message);}
+    };
+  final Logger DEVNULL=new Logger(){
+      public boolean isEnabled(int level){return false;}
+      public void log(int level, String message){}
+    };
+  */
 }

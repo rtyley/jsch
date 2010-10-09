@@ -1,5 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 import com.jcraft.jsch.*;
+import java.awt.*;
 import javax.swing.*;
 
 public class Compression{
@@ -19,11 +20,13 @@ public class Compression{
       // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
+
       java.util.Hashtable config=new java.util.Hashtable();
-      config.put("compression.s2c", "zlib,none");
-      config.put("compression.c2s", "zlib,none");
+      config.put("compression.s2c", "zlib@openssh.com,zlib,none");
+      config.put("compression.c2s", "zlib@openssh.com,zlib,none");
       config.put("compression_level", "9");
       session.setConfig(config);
+
       session.connect();
 
       Channel channel=session.openChannel("shell");
@@ -38,7 +41,7 @@ public class Compression{
     }
   }
 
-  public static class MyUserInfo implements UserInfo{
+  public static class MyUserInfo implements UserInfo, UIKeyboardInteractive{
     public String getPassword(){ return passwd; }
     public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
@@ -69,6 +72,63 @@ public class Compression{
     }
     public void showMessage(String message){
       JOptionPane.showMessageDialog(null, message);
+    }
+    final GridBagConstraints gbc = 
+      new GridBagConstraints(0,0,1,1,1,1,
+                             GridBagConstraints.NORTHWEST,
+                             GridBagConstraints.NONE,
+                             new Insets(0,0,0,0),0,0);
+    private Container panel;
+    public String[] promptKeyboardInteractive(String destination,
+                                              String name,
+                                              String instruction,
+                                              String[] prompt,
+                                              boolean[] echo){
+      panel = new JPanel();
+      panel.setLayout(new GridBagLayout());
+
+      gbc.weightx = 1.0;
+      gbc.gridwidth = GridBagConstraints.REMAINDER;
+      gbc.gridx = 0;
+      panel.add(new JLabel(instruction), gbc);
+      gbc.gridy++;
+
+      gbc.gridwidth = GridBagConstraints.RELATIVE;
+
+      JTextField[] texts=new JTextField[prompt.length];
+      for(int i=0; i<prompt.length; i++){
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.gridx = 0;
+        gbc.weightx = 1;
+        panel.add(new JLabel(prompt[i]),gbc);
+
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weighty = 1;
+        if(echo[i]){
+          texts[i]=new JTextField(20);
+        }
+        else{
+          texts[i]=new JPasswordField(20);
+        }
+        panel.add(texts[i], gbc);
+        gbc.gridy++;
+      }
+
+      if(JOptionPane.showConfirmDialog(null, panel, 
+                                       destination+": "+name,
+                                       JOptionPane.OK_CANCEL_OPTION,
+                                       JOptionPane.QUESTION_MESSAGE)
+         ==JOptionPane.OK_OPTION){
+        String[] response=new String[prompt.length];
+        for(int i=0; i<prompt.length; i++){
+          response[i]=texts[i].getText();
+        }
+	return response;
+      }
+      else{
+        return null;  // cancel
+      }
     }
   }
 }

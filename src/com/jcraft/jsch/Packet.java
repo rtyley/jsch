@@ -35,7 +35,7 @@ public class Packet{
   static void setRandom(Random foo){ random=foo;}
 
   Buffer buffer;
-  byte[] tmp=new byte[4]; 
+  byte[] ba4=new byte[4]; 
   public Packet(Buffer buffer){
     this.buffer=buffer;
   }
@@ -49,11 +49,11 @@ public class Packet{
       pad+=bsize;
     }
     len=len+pad-4;
-    tmp[0]=(byte)(len>>>24);
-    tmp[1]=(byte)(len>>>16);
-    tmp[2]=(byte)(len>>>8);
-    tmp[3]=(byte)(len);
-    System.arraycopy(tmp, 0, buffer.buffer, 0, 4);
+    ba4[0]=(byte)(len>>>24);
+    ba4[1]=(byte)(len>>>16);
+    ba4[2]=(byte)(len>>>8);
+    ba4[3]=(byte)(len);
+    System.arraycopy(ba4, 0, buffer.buffer, 0, 4);
     buffer.buffer[4]=(byte)pad;
     synchronized(random){
       random.fill(buffer.buffer, buffer.index, pad);

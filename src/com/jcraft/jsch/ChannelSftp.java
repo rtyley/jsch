@@ -169,7 +169,6 @@ public class ChannelSftp extends ChannelSession{
 
       PipedOutputStream pos=new PipedOutputStream();
       io.setOutputStream(pos);
-//      PipedInputStream pis=new PipedInputStream(pos);
       PipedInputStream pis=new MyPipedInputStream(pos, 32*1024);
       io.setInputStream(pis);
 
@@ -262,7 +261,6 @@ public class ChannelSftp extends ChannelSession{
 	throw new SftpException(SSH_FX_FAILURE, v.toString());
       }
       path=(String)(v.elementAt(0));
-
       sendREALPATH(path.getBytes());
 
       Header header=new Header();
@@ -285,9 +283,20 @@ public class ChannelSftp extends ChannelSession{
       if(str!=null && str[0]!='/'){
         str=(cwd+"/"+new String(str)).getBytes();
       }
-      cwd=new String(str);
       str=buf.getString();         // logname
       i=buf.getInt();              // attrs
+
+      String newpwd=new String(str);
+      SftpATTRS attr=_stat(newpwd);
+      if((attr.getFlags()&SftpATTRS.SSH_FILEXFER_ATTR_PERMISSIONS)==0){
+        throw new SftpException(SSH_FX_FAILURE, 
+                                "Can't change directory: "+path);
+      }
+      if(!attr.isDir()){
+        throw new SftpException(SSH_FX_FAILURE, 
+                                "Can't change directory: "+path);
+      }
+      cwd=newpwd;
     }
     catch(Exception e){
       if(e instanceof SftpException) throw (SftpException)e;
@@ -668,7 +677,10 @@ public class ChannelSftp extends ChannelSession{
           try{
             int _len=len;
             while(_len>0){
-              _len-=sendWRITE(handle, _offset[0], d, s, _len);
+              int sent=sendWRITE(handle, _offset[0], d, s, _len);
+              _offset[0]+=sent;
+              s+=sent;
+              _len-=sent;
               if((seq-1)==startid ||
                  io.in.available()>=1024){
                 while(io.in.available()>0){
@@ -684,9 +696,7 @@ public class ChannelSftp extends ChannelSession{
                   }
                 }
               }
-
             }
-            _offset[0]+=len;
     	    if(monitor!=null && !monitor.count(len)){
               close();
               throw new IOException("canceled");
@@ -1201,9 +1211,9 @@ public class ChannelSftp extends ChannelSession{
            buf.rewind();
            fill(buf.buffer, 0, length);
            int i=buf.getInt();
-           if(i==SSH_FX_EOF) break;
+           if(i==SSH_FX_EOF)
+             break;
            throwStatusError(buf, i);
-           break;
          }
 
          buf.rewind();
@@ -1218,11 +1228,7 @@ public class ChannelSftp extends ChannelSession{
            if(length>0){
              buf.shift();
              int j=(buf.buffer.length>(buf.index+length)) ? length : (buf.buffer.length-buf.index);
-             int i=io.in.read(buf.buffer, buf.index, j);
-             if(i<=0){
-               throw new IOException("inputstream is closed");
-               //break;
-             }
+             int i=fill(buf.buffer, buf.index, j);
              buf.index+=i;
              length-=i;
            }

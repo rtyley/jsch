@@ -126,10 +126,7 @@ public class ChannelDirectTCPIP extends Channel{
   }
 
   public void run(){
-//    thread=Thread.currentThread();
-//System.err.println("rmpsize: "+rmpsize+", lmpsize: "+lmpsize);
     Buffer buf=new Buffer(rmpsize);
-//    Buffer buf=new Buffer(lmpsize);
     Packet packet=new Packet(buf);
     int i=0;
     try{
@@ -142,6 +139,7 @@ public class ChannelDirectTCPIP extends Channel{
                      buf.buffer.length-14
                      -32 -20 // padding and mac
                      );
+
         if(i<=0){
           eof();
           break;
@@ -158,19 +156,7 @@ public class ChannelDirectTCPIP extends Channel{
     catch(Exception e){
     }
     disconnect();
-//System.err.println("connect end");
-
-/*
-    try{
-      packet.reset();
-      buf.putByte((byte)Session.SSH_MSG_CHANNEL_EOF);
-      buf.putInt(recipient);
-      session.write(packet);
-    }
-    catch(Exception e){
-    }
-*/
-//    close();
+    //System.err.println("connect end");
   }
 
   public void setInputStream(InputStream in){

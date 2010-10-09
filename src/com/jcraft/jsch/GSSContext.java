@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; indent-tabs-mode:nil -*- */
 /*
-Copyright (c) 2002,2003,2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2004,2005,2006 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -29,59 +29,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class ChannelSession extends Channel{
-  private static byte[] _session="session".getBytes();
-  ChannelSession(){
-    super();
-    type=_session;
-    io=new IO();
-  }
-  
-  public void run(){
-//System.err.println(this+":run >");
-/*
-    if(thread!=null){ return; }
-    thread=Thread.currentThread();
-*/
-
-//    Buffer buf=new Buffer();
-    Buffer buf=new Buffer(rmpsize);
-    Packet packet=new Packet(buf);
-    int i=-1;
-    try{
-      while(isConnected() &&
-	    thread!=null && 
-            io!=null && 
-            io.in!=null){
-        i=io.in.read(buf.buffer, 
-                     14,    
-                     buf.buffer.length-14
-                     -32 -20 // padding and mac
-		     );
-
-	if(i==0)continue;
-	if(i==-1){
-	  eof();
-	  break;
-	}
-	if(close)break;
-//System.out.println("write: "+i);
-        packet.reset();
-        buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
-        buf.putInt(recipient);
-        buf.putInt(i);
-        buf.skip(i);
-	session.write(packet, this, i);
-      }
-    }
-    catch(Exception e){
-      //System.err.println("# ChannelExec.run");
-      //e.printStackTrace();
-    }
-    if(thread!=null){
-      synchronized(thread){ thread.notifyAll(); }
-    }
-    thread=null;
-    //System.err.println(this+":run <");
-  }
+public interface GSSContext{
+  public void create(String user, String host) throws JSchException;
+  public boolean isEstablished();
+  public byte[] init(byte[] token, int s, int l) throws JSchException;
+  public byte[] getMIC(byte[] message, int s, int l);
+  public void dispose();
 }

@@ -85,12 +85,15 @@ public class ChannelForwardedTCPIP extends Channel{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null && io!=null && io.in!=null){
+      while(thread!=null && 
+            io!=null && 
+            io.in!=null){
         i=io.in.read(buf.buffer, 
                      14, 
                      buf.buffer.length-14
                      -32 -20 // padding and mac
                      );
+
         if(i<=0){
           eof();
           break;
@@ -115,13 +118,12 @@ public class ChannelForwardedTCPIP extends Channel{
     setRecipient(buf.getInt());
     setRemoteWindowSize(buf.getInt());
     setRemotePacketSize(buf.getInt());
-
-    int port=buf.getInt();
-
-    /*
     byte[] addr=buf.getString();
+    int port=buf.getInt();
     byte[] orgaddr=buf.getString();
     int orgport=buf.getInt();
+
+    /*
     System.err.println("addr: "+new String(addr));
     System.err.println("port: "+port);
     System.err.println("orgaddr: "+new String(orgaddr));

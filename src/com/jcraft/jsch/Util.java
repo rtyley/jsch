@@ -99,6 +99,8 @@ class Util{
   }
 
   static String[] split(String foo, String split){
+    if(foo==null)
+      return null;
     byte[] buf=foo.getBytes();
     java.util.Vector bar=new java.util.Vector();
     int start=0;
@@ -309,6 +311,12 @@ class Util{
     try{ return str.getBytes("UTF-8"); }
     catch(java.io.UnsupportedEncodingException e){
       return str.getBytes();
+    }
+  }
+  static String byte2str(byte[] str){
+    try{ return new String(str, "UTF-8"); }
+    catch(java.io.UnsupportedEncodingException e){
+      return new String(str);
     }
   }
 

@@ -31,13 +31,9 @@ package com.jcraft.jsch;
 
 class UserAuthNone extends UserAuth{
   private String methods=null;
-  private UserInfo userinfo;
-  UserAuthNone(UserInfo userinfo){
-   this.userinfo=userinfo;
-  }
 
-  public boolean start(Session session) throws Exception{
-    super.start(session);
+  public boolean start(Session session, UserInfo userinfo) throws Exception{
+    super.start(session, userinfo);
 //System.err.println("UserAuthNone: start");
     Packet packet=session.packet;
     Buffer buf=session.buf;
@@ -52,7 +48,7 @@ class UserAuthNone extends UserAuth{
     // string    service name ("ssh-connection")
     // string    "none"
     packet.reset();
-    buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
+    buf.putByte((byte)SSH_MSG_USERAUTH_REQUEST);
     buf.putString(_username);
     buf.putString("ssh-connection".getBytes());
     buf.putString("none".getBytes());
@@ -64,25 +60,31 @@ class UserAuthNone extends UserAuth{
       // byte      SSH_MSG_USERAUTH_SUCCESS(52)
       // string    service name
       buf=session.read(buf);
-//System.err.println("UserAuthNone: read: 52 ? "+    buf.buffer[5]);
-      if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
+      // System.err.println("UserAuthNone: read: 52 ? "+    buf.buffer[5]);
+      if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
 	return true;
       }
-      if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_BANNER){
+      if(buf.buffer[5]==SSH_MSG_USERAUTH_BANNER){
 	buf.getInt(); buf.getByte(); buf.getByte();
 	byte[] _message=buf.getString();
 	byte[] lang=buf.getString();
 	String message=null;
-	try{ message=new String(_message, "UTF-8"); }
+	try{ 
+          message=new String(_message, "UTF-8"); 
+        }
 	catch(java.io.UnsupportedEncodingException e){
 	  message=new String(_message);
 	}
 	if(userinfo!=null){
-	  userinfo.showMessage(message);
+          try{
+            userinfo.showMessage(message);
+          }
+          catch(RuntimeException ee){
+          }
 	}
 	continue loop;
       }
-      if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
+      if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
 	buf.getInt(); buf.getByte(); buf.getByte(); 
 	byte[] foo=buf.getString();
 	int partial_success=buf.getByte();
@@ -92,6 +94,7 @@ class UserAuthNone extends UserAuth{
 //	if(partial_success!=0){
 //	  throw new JSchPartialAuthException(new String(foo));
 //	}
+
         break;
       }
       else{

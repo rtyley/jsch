@@ -34,11 +34,6 @@ import java.io.*;
 public
 class KnownHosts implements HostKeyRepository{
   private static final String _known_hosts="known_hosts";
-  /*
-  static final int OK=0;
-  static final int NOT_INCLUDED=1;
-  static final int CHANGED=2;
-  */
 
   /*
   static final int SSHDSS=0;
@@ -49,6 +44,8 @@ class KnownHosts implements HostKeyRepository{
   private JSch jsch=null;
   private String known_hosts=null;
   private java.util.Vector pool=null;
+
+  private MAC hmacsha1=null;
 
   KnownHosts(JSch jsch){
     super();
@@ -156,9 +153,10 @@ loop:
 	//System.err.println(host);
 	//System.err.println("|"+key+"|");
 
-	HostKey hk = new HostKey(host, type, 
-				 Util.fromBase64(key.getBytes(), 0, 
-						 key.length()));
+	HostKey hk = null;
+        hk = new HashedHostKey(host, type, 
+                               Util.fromBase64(key.getBytes(), 0, 
+                                               key.length()));
 	pool.addElement(hk);
       }
       fis.close();
@@ -174,7 +172,7 @@ loop:
       throw new JSchException(e.toString());
     }
   }
-  private void addInvalidLine(String line){
+  private void addInvalidLine(String line) throws JSchException {
     HostKey hk = new HostKey(line, HostKey.UNKNOWN, null);
     pool.addElement(hk);
   }
@@ -182,14 +180,18 @@ loop:
   public String getKnownHostsRepositoryID(){ return known_hosts; }
 
   public int check(String host, byte[] key){
-    HostKey hk;
     int result=NOT_INCLUDED;
+    if(host==null){
+      return result;
+    }
+
     int type=getType(key);
+    HostKey hk;
 
     synchronized(pool){
     for(int i=0; i<pool.size(); i++){
       hk=(HostKey)(pool.elementAt(i));
-      if(isIncluded(hk.host, host) && hk.type==type){
+      if(hk.isMatched(host) && hk.type==type){
         if(Util.array_equals(hk.key, key)){
 	  //System.err.println("find!!");
           return OK;
@@ -203,14 +205,16 @@ loop:
     //System.err.println("fail!!");
     return result;
   }
-  public void add(String host, byte[] key, UserInfo userinfo){
-    HostKey hk;
-    int type=getType(key);
+  public void add(HostKey hostkey, UserInfo userinfo){
+    int type=hostkey.type;
+    String host=hostkey.getHost();
+    byte[] key=hostkey.key;
 
+    HostKey hk=null;
     synchronized(pool){
       for(int i=0; i<pool.size(); i++){
         hk=(HostKey)(pool.elementAt(i));
-        if(isIncluded(hk.host, host) && hk.type==type){
+        if(hk.isMatched(host) && hk.type==type){
 /*
 	  if(Util.array_equals(hk.key, key)){ return; }
 	  if(hk.host.equals(host)){
@@ -226,7 +230,8 @@ loop:
       }
     }
 
-    hk=new HostKey(host, type, key);
+    hk=hostkey;
+
     pool.addElement(hk);
 
     String bar=getKnownHostsRepositoryID();
@@ -276,7 +281,7 @@ loop:
 	HostKey hk=(HostKey)pool.elementAt(i);
 	if(hk.type==HostKey.UNKNOWN) continue;
 	if(host==null || 
-	   (isIncluded(hk.host, host) && 
+	   (hk.isMatched(host) && 
 	    (type==null || hk.getType().equals(type)))){
 	  count++;
 	}
@@ -288,7 +293,7 @@ loop:
 	HostKey hk=(HostKey)pool.elementAt(i);
 	if(hk.type==HostKey.UNKNOWN) continue;
 	if(host==null || 
-	   (isIncluded(hk.host, host) && 
+	   (hk.isMatched(host) && 
 	    (type==null || hk.getType().equals(type)))){
 	  foo[j++]=hk;
 	}
@@ -304,12 +309,14 @@ loop:
     synchronized(pool){
     for(int i=0; i<pool.size(); i++){
       HostKey hk=(HostKey)(pool.elementAt(i));
-      String hosts=hk.getHost();
       if(host==null ||
-	 (isIncluded(hosts, host) && 
+	 (hk.isMatched(host) && 
 	  (type==null || (hk.getType().equals(type) &&
 			  (key==null || Util.array_equals(key, hk.key)))))){
-        if(hosts.equals(host)){
+        String hosts=hk.getHost();
+        if(hosts.equals(host) || 
+           ((hk instanceof HashedHostKey) &&
+            ((HashedHostKey)hk).isHashed())){
           pool.removeElement(hk);
         }
         else{
@@ -388,82 +395,106 @@ loop:
     }
     return hosts;
   }
-  private boolean isIncluded(String hosts, String host){
-    int i=0;
-    int hostlen=host.length();
-    int hostslen=hosts.length();
-    int j;
-    while(i<hostslen){
-      j=hosts.indexOf(',', i);
-      if(j==-1){
-       if(hostlen!=hostslen-i) return false;
-       return hosts.regionMatches(true, i, host, 0, hostlen);
-       //return hosts.substring(i).equals(host);
-      }
-      if(hostlen==(j-i)){
-	if(hosts.regionMatches(true, i, host, 0, hostlen)) return true;
-        //if(hosts.substring(i, i+hostlen).equals(host)) return true;
-      }
-      i=j+1;
-    }
-    return false;
-  }
-  /*
-  private static boolean equals(byte[] foo, byte[] bar){
-    if(foo.length!=bar.length)return false;
-    for(int i=0; i<foo.length; i++){
-      if(foo[i]!=bar[i])return false;
-    }
-    return true;
-  }
-  */
 
-  /*
-  private static final byte[] space={(byte)0x20};
-  private static final byte[] sshdss="ssh-dss".getBytes();
-  private static final byte[] sshrsa="ssh-rsa".getBytes();
-  private static final byte[] cr="\n".getBytes();
-
-  public class HostKey{
-    String host;
-    int type;
-    byte[] key;
-    HostKey(String host, int type, byte[] key){
-      this.host=host; this.type=type; this.key=key;
-    }
-    void dump(OutputStream out) throws IOException{
-      if(type==UNKNOWN){
-	out.write(host.getBytes());
-	out.write(cr);
-	return;
-      }
-      out.write(host.getBytes());
-      out.write(space);
-      if(type==HostKey.SSHDSS){ out.write(sshdss); }
-      else if(type==HostKey.SSHRSA){ out.write(sshrsa);}
-      out.write(space);
-      out.write(Util.toBase64(key, 0, key.length));
-      out.write(cr);
-    }
-
-    public String getHost(){ return host; }
-    public String getType(){
-      if(type==SSHDSS){ return new String(sshdss); }
-      if(type==SSHRSA){ return new String(sshrsa);}
-      return "UNKNOWN";
-    }
-    public String getKey(){
-      return new String(Util.toBase64(key, 0, key.length));
-    }
-    public String getFingerPrint(){
-      HASH hash=null;
+  private synchronized MAC getHMACSHA1(){
+    if(hmacsha1==null){
       try{
-	Class c=Class.forName(jsch.getConfig("md5"));
-	hash=(HASH)(c.newInstance());
+        Class c=Class.forName(jsch.getConfig("hmac-sha1"));
+        hmacsha1=(MAC)(c.newInstance());
       }
-      catch(Exception e){ System.err.println("getFingerPrint: "+e); }
-      return Util.getFingerPrint(hash, key);
+      catch(Exception e){ 
+        System.err.println("hmacsha1: "+e); 
+      }
+    }
+    return hmacsha1;
+  }
+
+  HostKey createHashedHostKey(String host, byte[]key) throws JSchException {
+    HashedHostKey hhk=new HashedHostKey(host, key);
+    hhk.hash();
+    return hhk;
+  } 
+  class HashedHostKey extends HostKey{
+    private static final String HASH_MAGIC="|1|";
+    private static final String HASH_DELIM="|";
+
+    private boolean hashed=false;
+    byte[] salt=null;
+    byte[] hash=null;
+
+
+    HashedHostKey(String host, byte[] key) throws JSchException {
+      this(host, GUESS, key);
+    }
+    HashedHostKey(String host, int type, byte[] key) throws JSchException {
+      super(host, type, key);
+      if(this.host.startsWith(HASH_MAGIC) &&
+         this.host.substring(HASH_MAGIC.length()).indexOf(HASH_DELIM)>0){
+        String data=this.host.substring(HASH_MAGIC.length());
+        String _salt=data.substring(0, data.indexOf(HASH_DELIM));
+        String _hash=data.substring(data.indexOf(HASH_DELIM)+1);
+        salt=Util.fromBase64(_salt.getBytes(), 0, _salt.length());
+        hash=Util.fromBase64(_hash.getBytes(), 0, _hash.length());
+        if(salt.length!=20 ||  // block size of hmac-sha1
+           hash.length!=20){
+          salt=null;
+          hash=null;
+          return;
+        }
+        hashed=true;
+      }
+    }
+
+    boolean isMatched(String _host){
+      if(!hashed){
+        return super.isMatched(_host);
+      }
+      MAC macsha1=getHMACSHA1();
+      try{
+        synchronized(macsha1){
+          macsha1.init(salt);
+          byte[] foo=_host.getBytes();
+          macsha1.update(foo, 0, foo.length);
+          byte[] bar=new byte[macsha1.getBlockSize()];
+          macsha1.doFinal(bar, 0);
+          return Util.array_equals(hash, bar);
+        }
+      }
+      catch(Exception e){
+        System.out.println(e);
+      }
+      return false;
+    }
+
+    boolean isHashed(){
+      return hashed;
+    }
+
+    void hash(){
+      if(hashed)
+        return;
+      MAC macsha1=getHMACSHA1();
+      if(salt==null){
+        Random random=Session.random;
+        synchronized(random){
+          salt=new byte[macsha1.getBlockSize()];
+          random.fill(salt, 0, salt.length);
+        }
+      }
+      try{
+        synchronized(macsha1){
+          macsha1.init(salt);
+          byte[] foo=host.getBytes();
+          macsha1.update(foo, 0, foo.length);
+          hash=new byte[macsha1.getBlockSize()];
+          macsha1.doFinal(hash, 0);
+        }
+      }
+      catch(Exception e){
+      }
+      host=HASH_MAGIC+new String(Util.toBase64(salt, 0, salt.length))+
+        HASH_DELIM+new String(Util.toBase64(hash, 0, hash.length));
+      hashed=true;
     }
   }
-  */
 }

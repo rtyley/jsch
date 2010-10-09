@@ -52,8 +52,8 @@ public class DHG1 extends KeyExchange{
 (byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF
 };
 
-  static final int SSH_MSG_KEXDH_INIT=                     30;
-  static final int SSH_MSG_KEXDH_REPLY=                    31;
+  private static final int SSH_MSG_KEXDH_INIT=                     30;
+  private static final int SSH_MSG_KEXDH_REPLY=                    31;
 
   static final int RSA=0;
   static final int DSS=1;
@@ -125,6 +125,13 @@ public class DHG1 extends KeyExchange{
     buf.putByte((byte)SSH_MSG_KEXDH_INIT);
     buf.putMPInt(e);
     session.write(packet);
+
+    if(JSch.getLogger().isEnabled(Logger.INFO)){
+      JSch.getLogger().log(Logger.INFO, 
+                           "SSH_MSG_KEXDH_INIT sent");
+      JSch.getLogger().log(Logger.INFO, 
+                           "expecting SSH_MSG_KEXDH_REPLY");
+    }
 
     state=SSH_MSG_KEXDH_REPLY;
   }
@@ -233,6 +240,12 @@ System.err.println("");
 	sig.setPubKey(ee, n);   
 	sig.update(H);
 	result=sig.verify(sig_of_H);
+
+        if(JSch.getLogger().isEnabled(Logger.INFO)){
+          JSch.getLogger().log(Logger.INFO, 
+                               "ssh_rsa_verify: signature "+result);
+        }
+
       }
       else if(alg.equals("ssh-dss")){
 	byte[] q=null;
@@ -272,9 +285,15 @@ System.err.println("");
 	sig.setPubKey(f, p, q, g);   
 	sig.update(H);
 	result=sig.verify(sig_of_H);
+
+        if(JSch.getLogger().isEnabled(Logger.INFO)){
+          JSch.getLogger().log(Logger.INFO, 
+                               "ssh_dss_verify: signature "+result);
+        }
+
       }
       else{
-	System.err.println("unknow alg");
+	System.err.println("unknown alg");
       }	    
       state=STATE_END;
       return result;

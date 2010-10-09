@@ -78,9 +78,12 @@ public class ChannelShell extends ChannelSession{
         throw new JSchException("ChannelShell", (Throwable)e);
       throw new JSchException("ChannelShell");
     }
-    thread=new Thread(this);
-    thread.setName("Shell for "+session.host);
-    thread.start();
+
+    if(io.in!=null){
+      thread=new Thread(this);
+      thread.setName("Shell for "+session.host);
+      thread.start();
+    }
   }
   //public void finalize() throws Throwable{ super.finalize(); }
   public void init(){

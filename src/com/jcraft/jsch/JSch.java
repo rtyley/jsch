@@ -38,7 +38,7 @@ public class JSch{
 //  config.put("kex", "diffie-hellman-group-exchange-sha1");
     config.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group-exchange-sha1");
     config.put("server_host_key", "ssh-rsa,ssh-dss");
-    //config.put("server_host_key", "ssh-dss,ssh-rsa");
+//    config.put("server_host_key", "ssh-dss,ssh-rsa");
 
     config.put("cipher.s2c", "3des-cbc,blowfish-cbc");
     config.put("cipher.c2s", "3des-cbc,blowfish-cbc");
@@ -46,7 +46,10 @@ public class JSch{
     config.put("mac.s2c", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
     config.put("mac.c2s", "hmac-md5,hmac-sha1,hmac-sha1-96,hmac-md5-96");
     config.put("compression.s2c", "none");
+    // config.put("compression.s2c", "zlib@openssh.com,zlib,none");
     config.put("compression.c2s", "none");
+    // config.put("compression.c2s", "zlib@openssh.com,zlib,none");
+
     config.put("lang.s2c", "");
     config.put("lang.c2s", "");
 
@@ -80,17 +83,44 @@ public class JSch{
 //  config.put("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc");
 //  config.put("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc");
 
-    config.put("zlib",          "com.jcraft.jsch.jcraft.Compression");
+    config.put("userauth.none",    "com.jcraft.jsch.UserAuthNone");
+    config.put("userauth.password",    "com.jcraft.jsch.UserAuthPassword");
+    config.put("userauth.keyboard-interactive",    "com.jcraft.jsch.UserAuthKeyboardInteractive");
+    config.put("userauth.publickey",    "com.jcraft.jsch.UserAuthPublicKey");
+    config.put("userauth.gssapi-with-mic",    "com.jcraft.jsch.UserAuthGSSAPIWithMIC");
+    config.put("gssapi-with-mic.krb5",    "com.jcraft.jsch.jgss.GSSContextKrb5");
+
+    config.put("zlib",             "com.jcraft.jsch.jcraft.Compression");
+    config.put("zlib@openssh.com", "com.jcraft.jsch.jcraft.Compression");
 
     config.put("StrictHostKeyChecking",  "ask");
+    config.put("HashKnownHosts",  "no");
+    //config.put("HashKnownHosts",  "yes");
   }
   java.util.Vector pool=new java.util.Vector();
   java.util.Vector identities=new java.util.Vector();
-  //private KnownHosts known_hosts=null;
   private HostKeyRepository known_hosts=null;
 
+  private static final Logger DEVNULL=new Logger(){
+      public boolean isEnabled(int level){return false;}
+      public void log(int level, String message){}
+    };
+  static Logger logger=DEVNULL;
+
   public JSch(){
-    //known_hosts=new KnownHosts(this);
+
+    try{
+      String osname=(String)(System.getProperties().get("os.name"));
+      if(osname!=null && osname.equals("Mac OS X")){
+        config.put("hmac-sha1",     "com.jcraft.jsch.jcraft.HMACSHA1"); 
+        config.put("hmac-md5",      "com.jcraft.jsch.jcraft.HMACMD5"); 
+        config.put("hmac-md5-96",   "com.jcraft.jsch.jcraft.HMACMD596"); 
+        config.put("hmac-sha1-96",  "com.jcraft.jsch.jcraft.HMACSHA196"); 
+      }
+    }
+    catch(Exception e){
+    }
+
   }
 
   public Session getSession(String username, String host) throws JSchException { return getSession(username, host, 22); }
@@ -105,8 +135,14 @@ public class JSch{
     s.setUserName(username);
     s.setHost(host);
     s.setPort(port);
-    pool.addElement(s);
+    //pool.addElement(s);
     return s;
+  }
+
+  protected void addSession(Session session){
+    synchronized(pool){
+      pool.addElement(session);
+    }
   }
 
   protected boolean removeSession(Session session){
@@ -141,22 +177,35 @@ public class JSch{
     return known_hosts; 
   }
 
-  public void addIdentity(String pkey) throws JSchException{
-    addIdentity(pkey, (byte[])null);
+  public void addIdentity(String prvkey) throws JSchException{
+    addIdentity(prvkey, (byte[])null);
   }
 
-  public void addIdentity(String pkey, String passphrase) throws JSchException{
+  public void addIdentity(String prvkey, String passphrase) throws JSchException{
     byte[] _passphrase=null;
     if(passphrase!=null){
       _passphrase=Util.str2byte(passphrase);
     }
-    addIdentity(pkey, _passphrase);
+    addIdentity(prvkey, _passphrase);
     if(_passphrase!=null)
       Util.bzero(_passphrase);
   }
 
-  public void addIdentity(String pkey, byte[] passphrase) throws JSchException{
-    Identity identity=new IdentityFile(pkey, this);
+  public void addIdentity(String prvkey, byte[] passphrase) throws JSchException{
+    Identity identity=IdentityFile.newInstance(prvkey, null, this);
+    addIdentity(identity, passphrase);
+  }
+  public void addIdentity(String prvkey, String pubkey, byte[] passphrase) throws JSchException{
+    Identity identity=IdentityFile.newInstance(prvkey, pubkey, this);
+    addIdentity(identity, passphrase);
+  }
+
+  public void addIdentity(String name, byte[]prvkey, byte[]pubkey, byte[] passphrase) throws JSchException{
+    Identity identity=IdentityFile.newInstance(name, prvkey, pubkey, this);
+    addIdentity(identity, passphrase);
+  }
+
+  public void addIdentity(Identity identity, byte[] passphrase) throws JSchException{
     if(passphrase!=null){
       try{ 
         byte[] goo=new byte[passphrase.length];
@@ -182,8 +231,7 @@ public class JSch{
 	if(!identity.getName().equals(name))
           continue;
         identities.removeElement(identity);
-        if(identity instanceof IdentityFile)
-          ((IdentityFile)identity).clear();
+        identity.clear();
         break;
       }
     }
@@ -254,5 +302,13 @@ public class JSch{
 	config.put(key, (String)(newconf.get(key)));
       }
     }
+  }
+
+  public static void setLogger(Logger logger){
+    if(logger==null) JSch.logger=DEVNULL;
+    JSch.logger=logger;
+  }
+  static Logger getLogger(){
+    return logger;
   }
 }

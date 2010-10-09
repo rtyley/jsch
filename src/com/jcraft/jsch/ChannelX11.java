@@ -143,8 +143,6 @@ System.err.println("");
     catch(Exception e){
       //System.err.println(e);
     }
-//    thread.notifyAll();
-//    thread=null;
   }
 
   private byte[] cache=new byte[0];

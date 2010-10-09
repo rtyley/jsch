@@ -61,7 +61,6 @@ public abstract class KeyExchange{
 
   public static final int STATE_END=0;
 
-  public String[] guess=null;
   protected Session session=null;
   protected HASH sha=null;
   protected byte[] K=null;
@@ -131,6 +130,19 @@ public abstract class KeyExchange{
 //System.err.println("  fail");
 	return null;
       }
+    }
+
+    if(JSch.getLogger().isEnabled(Logger.INFO)){
+      JSch.getLogger().log(Logger.INFO, 
+                           "kex: server->client"+
+                           " "+guess[PROPOSAL_ENC_ALGS_STOC]+
+                           " "+guess[PROPOSAL_MAC_ALGS_STOC]+
+                           " "+guess[PROPOSAL_COMP_ALGS_STOC]);
+      JSch.getLogger().log(Logger.INFO, 
+                           "kex: client->server"+
+                           " "+guess[PROPOSAL_ENC_ALGS_CTOS]+
+                           " "+guess[PROPOSAL_MAC_ALGS_CTOS]+
+                           " "+guess[PROPOSAL_COMP_ALGS_CTOS]);
     }
 
 //    for(int i=0; i<PROPOSAL_MAX; i++){

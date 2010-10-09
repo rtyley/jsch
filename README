@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Thu May  4 02:13:31 UTC 2006
+Last modified: Wed Nov  1 14:43:31 UTC 2006
 
 
 Description
@@ -57,6 +57,7 @@ Features
 * Userauth: password
 * Userauth: publickey(DSA,RSA)
 * Userauth: keyboard-interactive
+* Userauth: gssapi-with-mic
 * X11 forwarding.
 * xauth spoofing.
 * connection through HTTP proxy.
@@ -71,8 +72,9 @@ Features
 * generating DSA and RSA key pairs.
 * SSH File Transfer Protocol(version 0, 1, 2, 3)
 * partial authentication
-* packet compression.
+* packet compression: zlib, zlib@openssh.com
   JZlib(http://www.jcraft.com/jzlib/) has been used.
+* hashed known_hosts file.
 * NONE Cipher switching.
   http://www.psc.edu/networking/projects/hpn-ssh/none.php
 * JSch is licensed under BSD style license(refer to LICENSE.txt).

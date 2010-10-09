@@ -30,12 +30,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 class UserAuthPassword extends UserAuth{
-  UserInfo userinfo;
-  UserAuthPassword(UserInfo userinfo){
-   this.userinfo=userinfo;
-  }
 
-  public boolean start(Session session) throws Exception{
+  public boolean start(Session session, UserInfo userinfo) throws Exception{
+    this.userinfo=userinfo;
 //    super.start(session);
 //System.err.println("UserAuthPassword: start");
     Packet packet=session.packet;
@@ -77,7 +74,7 @@ class UserAuthPassword extends UserAuth{
       // boolen    FALSE
       // string    plaintext password (ISO-10646 UTF-8)
       packet.reset();
-      buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
+      buf.putByte((byte)SSH_MSG_USERAUTH_REQUEST);
       buf.putString(_username);
       buf.putString("ssh-connection".getBytes());
       buf.putString("password".getBytes());
@@ -93,25 +90,21 @@ class UserAuthPassword extends UserAuth{
 	// byte      SSH_MSG_USERAUTH_SUCCESS(52)
 	// string    service name
 	buf=session.read(buf);
-	//System.err.println("read: 52 ? "+    buf.buffer[5]);
-	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
+        // System.err.println("read: 52 ? "+    buf.buffer[5]);
+	if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
 	  return true;
 	}
-	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_BANNER){
+	if(buf.buffer[5]==SSH_MSG_USERAUTH_BANNER){
 	  buf.getInt(); buf.getByte(); buf.getByte();
 	  byte[] _message=buf.getString();
 	  byte[] lang=buf.getString();
-	  String message=null;
-	  try{ message=new String(_message, "UTF-8"); }
-	  catch(java.io.UnsupportedEncodingException e){
-	    message=new String(_message);
-	  }
+          String message=Util.byte2str(_message);
 	  if(userinfo!=null){
 	    userinfo.showMessage(message);
 	  }
 	  continue loop;
 	}
-	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
+	if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
 	  buf.getInt(); buf.getByte(); buf.getByte(); 
 	  byte[] foo=buf.getString();
 	  int partial_success=buf.getByte();

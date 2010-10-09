@@ -31,9 +31,10 @@ package com.jcraft.jsch;
 
 public class DHGEX extends KeyExchange{
 
-  static final int SSH_MSG_KEX_DH_GEX_GROUP=               31;
-  static final int SSH_MSG_KEX_DH_GEX_INIT=                32;
-  static final int SSH_MSG_KEX_DH_GEX_REPLY=               33;
+  private static final int SSH_MSG_KEX_DH_GEX_GROUP=               31;
+  private static final int SSH_MSG_KEX_DH_GEX_INIT=                32;
+  private static final int SSH_MSG_KEX_DH_GEX_REPLY=               33;
+  private static final int SSH_MSG_KEX_DH_GEX_REQUEST=             34;
 
   static int min=1024;
 
@@ -97,11 +98,18 @@ public class DHGEX extends KeyExchange{
     }
 
     packet.reset();
-    buf.putByte((byte)0x22);
+    buf.putByte((byte)SSH_MSG_KEX_DH_GEX_REQUEST);
     buf.putInt(min);
     buf.putInt(preferred);
     buf.putInt(max);
     session.write(packet); 
+
+    if(JSch.getLogger().isEnabled(Logger.INFO)){
+      JSch.getLogger().log(Logger.INFO, 
+                           "SSH_MSG_KEX_DH_GEX_REQUEST("+min+"<"+preferred+"<"+max+") sent");
+      JSch.getLogger().log(Logger.INFO, 
+                           "expecting SSH_MSG_KEX_DH_GEX_GROUP");
+    }
 
     state=SSH_MSG_KEX_DH_GEX_GROUP;
   }
@@ -116,8 +124,8 @@ public class DHGEX extends KeyExchange{
       _buf.getInt();
       _buf.getByte();
       j=_buf.getByte();
-      if(j!=31){
-	System.err.println("type: must be 31 "+j);
+      if(j!=SSH_MSG_KEX_DH_GEX_GROUP){
+	System.err.println("type: must be SSH_MSG_KEX_DH_GEX_GROUP "+j);
 	return false;
       }
 
@@ -143,9 +151,16 @@ System.err.println("0x"+Integer.toHexString(g[iii]&0xff)+",");
       e=dh.getE();
 
       packet.reset();
-      buf.putByte((byte)0x20);
+      buf.putByte((byte)SSH_MSG_KEX_DH_GEX_INIT);
       buf.putMPInt(e);
       session.write(packet);
+
+      if(JSch.getLogger().isEnabled(Logger.INFO)){
+        JSch.getLogger().log(Logger.INFO, 
+                             "SSH_MSG_KEX_DH_GEX_INIT sent");
+        JSch.getLogger().log(Logger.INFO, 
+                             "expecting SSH_MSG_KEX_DH_GEX_REPLY");
+      }
 
       state=SSH_MSG_KEX_DH_GEX_REPLY;
       return true;
@@ -160,8 +175,8 @@ System.err.println("0x"+Integer.toHexString(g[iii]&0xff)+",");
       j=_buf.getInt();
       j=_buf.getByte();
       j=_buf.getByte();
-      if(j!=33){
-	System.err.println("type: must be 33 "+j);
+      if(j!=SSH_MSG_KEX_DH_GEX_REPLY){
+	System.err.println("type: must be SSH_MSG_KEX_DH_GEX_REPLY "+j);
 	return false;
       }
 
@@ -254,6 +269,12 @@ System.err.println("0x"+Integer.toHexString(g[iii]&0xff)+",");
 	sig.setPubKey(ee, n);   
 	sig.update(H);
 	result=sig.verify(sig_of_H);
+
+        if(JSch.getLogger().isEnabled(Logger.INFO)){
+          JSch.getLogger().log(Logger.INFO, 
+                               "ssh_rsa_verify: signature "+result);
+        }
+
       }
       else if(alg.equals("ssh-dss")){
 	byte[] q=null;
@@ -294,9 +315,15 @@ System.err.println("0x"+Integer.toHexString(g[iii]&0xff)+",");
 	sig.setPubKey(f, p, q, g);   
 	sig.update(H);
 	result=sig.verify(sig_of_H);
+
+        if(JSch.getLogger().isEnabled(Logger.INFO)){
+          JSch.getLogger().log(Logger.INFO, 
+                               "ssh_dss_verify: signature "+result);
+        }
+
       }
       else{
-	System.err.println("unknow alg");
+	System.err.println("unknown alg");
       }	    
       state=STATE_END;
       return result;

@@ -30,13 +30,12 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 class UserAuthKeyboardInteractive extends UserAuth{
-  UserInfo userinfo;
-  UserAuthKeyboardInteractive(UserInfo userinfo){
-   this.userinfo=userinfo;
-  }
+  public boolean start(Session session, UserInfo userinfo) throws Exception{
+    this.userinfo=userinfo;
+    if(!(userinfo instanceof UIKeyboardInteractive)){
+      return false;
+    }
 
-  public boolean start(Session session) throws Exception{
-//System.err.println("UserAuthKeyboardInteractive: start");
     Packet packet=session.packet;
     Buffer buf=session.buf;
     final String username=session.username;
@@ -59,7 +58,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
       // string    language tag (as defined in [RFC-3066])
       // string    submethods (ISO-10646 UTF-8)
       packet.reset();
-      buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
+      buf.putByte((byte)SSH_MSG_USERAUTH_REQUEST);
       buf.putString(_username);
       buf.putString("ssh-connection".getBytes());
       //buf.putString("ssh-userauth".getBytes());
@@ -82,10 +81,10 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  return false;
 	}
 	//System.err.println("read: 52 ? "+    buf.buffer[5]);
-	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
+	if(buf.buffer[5]==SSH_MSG_USERAUTH_SUCCESS){
 	  return true;
 	}
-	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_BANNER){
+	if(buf.buffer[5]==SSH_MSG_USERAUTH_BANNER){
 	  buf.getInt(); buf.getByte(); buf.getByte();
 	  byte[] _message=buf.getString();
 	  byte[] lang=buf.getString();
@@ -99,7 +98,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  }
 	  continue loop;
 	}
-	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
+	if(buf.buffer[5]==SSH_MSG_USERAUTH_FAILURE){
 	  buf.getInt(); buf.getByte(); buf.getByte(); 
 	  byte[] foo=buf.getString();
 	  int partial_success=buf.getByte();
@@ -117,7 +116,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	  }
 	  break;
 	}
-	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_INFO_REQUEST){
+	if(buf.buffer[5]==SSH_MSG_USERAUTH_INFO_REQUEST){
 	  firsttime=false;
 	  buf.getInt(); buf.getByte(); buf.getByte();
 	  String name=new String(buf.getString());
@@ -165,7 +164,7 @@ class UserAuthKeyboardInteractive extends UserAuth{
 //else
 //System.err.println("response is null");
 	  packet.reset();
-	  buf.putByte((byte)Session.SSH_MSG_USERAUTH_INFO_RESPONSE);
+	  buf.putByte((byte)SSH_MSG_USERAUTH_INFO_RESPONSE);
 	  if(num>0 &&
 	     (response==null ||  // cancel
 	      num!=response.length)){

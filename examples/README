@@ -154,3 +154,7 @@ or
 - Daemon.java
   This program will demonstrate how to provide a network service like
   inetd by using remote port-forwarding functionality.
+
+- Logger.java
+  This program will demonstrate how to enable logging mechanism and
+  get logging messages.

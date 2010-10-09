@@ -72,8 +72,75 @@ class IdentityFile implements Identity{
 
   private boolean encrypted=true;
 
-  IdentityFile(String identity, JSch jsch) throws JSchException{
-    this.identity=identity;
+  static IdentityFile newInstance(String prvfile, String pubfile, JSch jsch) throws JSchException{
+    byte[] prvkey=null;
+    byte[] pubkey=null;
+
+    File file=null;
+    FileInputStream fis=null;
+    try{
+      file=new File(prvfile);
+      fis=new FileInputStream(prvfile);
+      prvkey=new byte[(int)(file.length())];
+      int len=0;
+      while(true){
+        int i=fis.read(prvkey, len, prvkey.length-len);
+        if(i<=0)
+          break;
+        len+=i;
+      }
+      fis.close();
+    }
+    catch(Exception e){
+      try{ if(fis!=null) fis.close();}
+      catch(Exception ee){}
+      if(e instanceof Throwable)
+        throw new JSchException(e.toString(), (Throwable)e);
+      throw new JSchException(e.toString());
+    }
+
+    String _pubfile=pubfile;
+    if(pubfile==null){
+      _pubfile=prvfile+".pub";
+    }
+
+    try{
+      file=new File(_pubfile);
+      fis = new FileInputStream(_pubfile);
+      pubkey=new byte[(int)(file.length())];
+      int len=0;
+      while(true){
+        int i=fis.read(pubkey, len, pubkey.length-len);
+        if(i<=0)
+          break;
+        len+=i;
+      }
+      fis.close();
+    }
+    catch(Exception e){
+      try{ if(fis!=null) fis.close();}
+      catch(Exception ee){}
+      if(pubfile!=null){  
+        // The pubfile is explicitry given, but not accessible.
+        if(e instanceof Throwable)
+          throw new JSchException(e.toString(), (Throwable)e);
+        throw new JSchException(e.toString());
+      }
+    }
+    return newInstance(prvfile, prvkey, pubkey, jsch);
+  }
+
+  static IdentityFile newInstance(String name, byte[] prvkey, byte[] pubkey, JSch jsch) throws JSchException{
+    try{
+      return new IdentityFile(name, prvkey, pubkey, jsch);
+    }
+    finally{
+      Util.bzero(prvkey);
+    }
+  }
+
+  private IdentityFile(String name, byte[] prvkey, byte[] pubkey, JSch jsch) throws JSchException{
+    this.identity=name;
     this.jsch=jsch;
     try{
       Class c;
@@ -84,19 +151,10 @@ class IdentityFile implements Identity{
       c=Class.forName((String)jsch.getConfig("md5"));
       hash=(HASH)(c.newInstance());
       hash.init();
-      File file=new File(identity);
-      FileInputStream fis = new FileInputStream(identity);
-      byte[] buf=new byte[(int)(file.length())];
-      int len=0;
-      while(true){
-        int i=fis.read(buf, len, buf.length-len);
-        if(i<=0)
-          break;
-        len+=i;
-      }
-      fis.close();
+      byte[] buf=prvkey;
 
       int i=0;
+      int len=buf.length;
       while(i<len){
         if(buf[i]=='B'&& buf[i+1]=='E'&& buf[i+2]=='G'&& buf[i+3]=='I'){
           i+=6;	    
@@ -108,7 +166,7 @@ class IdentityFile implements Identity{
 	  }
 	  else{
             //System.err.println("invalid format: "+identity);
-	    throw new JSchException("invaid privatekey: "+identity);
+	    throw new JSchException("invalid privatekey: "+identity);
 	  }
           i+=3;
 	  continue;
@@ -148,7 +206,7 @@ class IdentityFile implements Identity{
       }
 
       if(type==ERROR){
-	throw new JSchException("invaid privatekey: "+identity);
+	throw new JSchException("invalid privatekey: "+identity);
       }
 
       int start=i;
@@ -204,30 +262,17 @@ class IdentityFile implements Identity{
 
       }
 
-      try{
-        file=new File(identity+".pub");
-        fis=new FileInputStream(identity+".pub");
-        buf=new byte[(int)(file.length())];
-        len=0;
-        while(true){
-          i=fis.read(buf, len, buf.length-len);
-          if(i<=0)
-            break;
-          len+=i;
-        }
-        fis.close();
+      if(pubkey==null){
+        return;
       }
-      catch(Exception ee){
-	return;
-      }
+      
+      buf=pubkey;
 
       if(buf.length>4 &&             // FSecure's public key
 	 buf[0]=='-' && buf[1]=='-' && buf[2]=='-' && buf[3]=='-'){
-
 	i=0;
 	do{i++;}while(buf.length>i && buf[i]!=0x0a);
 	if(buf.length<=i) return;
-
 	while(true){
 	  if(buf[i]==0x0a){
 	    boolean inheader=false;
@@ -274,16 +319,14 @@ class IdentityFile implements Identity{
 	while(i<len){ if(buf[i]==' ')break; i++;}
 	publickeyblob=Util.fromBase64(buf, start, i-start);
       }
-
     }
     catch(Exception e){
-      //System.err.println("Identity: "+e);
+      //System.err.println("IdentityFile: "+e);
       if(e instanceof JSchException) throw (JSchException)e;
       if(e instanceof Throwable)
         throw new JSchException(e.toString(), (Throwable)e);
       throw new JSchException(e.toString());
     }
-
   }
 
   public String getAlgName(){
@@ -389,15 +432,6 @@ class IdentityFile implements Identity{
       rsa.init();
       rsa.setPrvKey(d_array, n_array);
 
-      /*
-      byte[] goo=new byte[4];
-      goo[0]=(byte)(session.getSessionId().length>>>24);
-      goo[1]=(byte)(session.getSessionId().length>>>16);
-      goo[2]=(byte)(session.getSessionId().length>>>8);
-      goo[3]=(byte)(session.getSessionId().length);
-      rsa.update(goo);
-      rsa.update(session.getSessionId());
-      */
       rsa.update(data);
       byte[] sig = rsa.sign();
       Buffer buf=new Buffer("ssh-rsa".length()+4+
@@ -440,16 +474,6 @@ class IdentityFile implements Identity{
       SignatureDSA dsa=(SignatureDSA)(c.newInstance());
       dsa.init();
       dsa.setPrvKey(prv_array, P_array, Q_array, G_array);
-
-      /*
-      byte[] goo=new byte[4];
-      goo[0]=(byte)(session.getSessionId().length>>>24);
-      goo[1]=(byte)(session.getSessionId().length>>>16);
-      goo[2]=(byte)(session.getSessionId().length>>>8);
-      goo[3]=(byte)(session.getSessionId().length);
-      dsa.update(goo);
-      dsa.update(session.getSessionId());
-      */
 
       dsa.update(data);
       byte[] sig = dsa.sign();
@@ -799,46 +823,9 @@ System.err.println("");
   public boolean isEncrypted(){
     return encrypted;
   }
-  public String getName(){return identity;}
-  /*
-  private int writeSEQUENCE(byte[] buf, int index, int len){
-    buf[index++]=0x30;
-    index=writeLength(buf, index, len);
-    return index;
-  }
-  private int writeINTEGER(byte[] buf, int index, byte[] data){
-    buf[index++]=0x02;
-    index=writeLength(buf, index, data.length);
-    System.arraycopy(data, 0, buf, index, data.length);
-    index+=data.length;
-    return index;
-  }
-  */
 
-  private int countLength(int len){
-    int i=1;
-    if(len<=0x7f) return i;
-    while(len>0){
-      len>>>=8;
-      i++;
-    }
-    return i;
-  }
-
-  private int writeLength(byte[] data, int index, int len){
-    int i=countLength(len)-1;
-    if(i==0){
-      data[index++]=(byte)len;
-      return index;
-    }
-    data[index++]=(byte)(0x80|i);
-    int j=index+i;
-    while(i>0){
-      data[index+i-1]=(byte)(len&0xff);
-      len>>>=8;
-      i--;
-    }
-    return j;
+  public String getName(){
+    return identity;
   }
 
   private byte a2b(byte c){
@@ -846,19 +833,14 @@ System.err.println("");
     if('a'<=c&&c<='z') return (byte)(c-'a'+10);
     return (byte)(c-'A'+10);
   }
-  /*
-  private byte b2a(byte c){
-    if(0<=c&&c<=9) return (byte)(c+'0');
-    return (byte)(c-10+'A');
-  }
-  */
+
   public boolean equals(Object o){
     if(!(o instanceof IdentityFile)) return super.equals(o);
     IdentityFile foo=(IdentityFile)o;
-    return identity.equals(foo.identity);
+    return getName().equals(foo.getName());
   }
 
-  void clear(){
+  public void clear(){
     Util.bzero(encoded_data);
     Util.bzero(prv_array);
     Util.bzero(d_array);

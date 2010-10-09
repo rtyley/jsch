@@ -29,12 +29,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-interface Identity{
-  boolean setPassphrase(byte[] passphrase) throws JSchException;
-  byte[] getPublicKeyBlob();
-  byte[] getSignature(byte[] data);
-  boolean decrypt();
-  String getAlgName();
-  String getName();
+public interface Identity{
+  public boolean setPassphrase(byte[] passphrase) throws JSchException;
+  public byte[] getPublicKeyBlob();
+  public byte[] getSignature(byte[] data);
+  public boolean decrypt();
+  public String getAlgName();
+  public String getName();
   public boolean isEncrypted();
+  public void clear();
 }

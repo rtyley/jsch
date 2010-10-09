@@ -440,7 +440,7 @@ public abstract class KeyPair{
 	  }
 	  else{
             //System.err.println("invalid format: "+identity);
-	    throw new JSchException("invaid privatekey: "+prvkey);
+	    throw new JSchException("invalid privatekey: "+prvkey);
 	  }
           i+=3;
 	  continue;
@@ -479,7 +479,7 @@ public abstract class KeyPair{
       }
 
       if(type==ERROR){
-	throw new JSchException("invaid privatekey: "+prvkey);
+	throw new JSchException("invalid privatekey: "+prvkey);
       }
 
       int start=i;
@@ -631,7 +631,7 @@ public abstract class KeyPair{
 	  return kpair;
 	}
 	else{
-	  throw new JSchException("invaid privatekey: "+prvkey);
+	  throw new JSchException("invalid privatekey: "+prvkey);
 	}
       }
     }
