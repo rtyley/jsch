@@ -45,7 +45,7 @@ class UserAuthPassword extends UserAuth{
     // boolen    FALSE
     // string    plaintext password (ISO-10646 UTF-8)
     packet.reset();
-    buf.putByte((byte)Const.SSH_MSG_USERAUTH_REQUEST);
+    buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
     buf.putString(userinfo.getName().getBytes());
     buf.putString("ssh-connection".getBytes());
     buf.putString("password".getBytes());
@@ -58,10 +58,10 @@ class UserAuthPassword extends UserAuth{
     // string    service name
     buf=session.read(buf);
     //System.out.println("read: 52 ? "+    buf.buffer[5]);
-    if(buf.buffer[5]==Const.SSH_MSG_USERAUTH_SUCCESS){
+    if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
       return true;
     }
-    if(buf.buffer[5]==Const.SSH_MSG_USERAUTH_FAILURE){
+    if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
       buf.getInt(); buf.getByte(); buf.getByte(); 
       byte[] foo=buf.getString();
       int partial_success=buf.getByte();

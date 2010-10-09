@@ -160,7 +160,34 @@ public class Channel implements Runnable{
     io.put(foo, s, l);
   }
 
+  void eof(){
+    if(eof)return;
+    setEOF();
+    try{
+      Buffer buf=new Buffer(100);
+      Packet packet=new Packet(buf);
+      packet.reset();
+      buf.putByte((byte)96);
+      buf.putInt(getRecipient());
+      session.write(packet);
+    }
+    catch(Exception e){
+      System.out.println(e);
+    }
+  }
+
   void close(){
+    try{
+      Buffer buf=new Buffer(100);
+      Packet packet=new Packet(buf);
+      packet.reset();
+      buf.putByte((byte)97);
+      buf.putInt(getRecipient());
+      session.write(packet);
+    }
+    catch(Exception e){
+      System.out.println(e);
+    }
     thread=null;
     try{
       if(io!=null){
@@ -172,6 +199,7 @@ public class Channel implements Runnable{
       System.out.println(e);
     }
     io=null;
+    Channel.del(this);
   }
 
 //  public String toString(){

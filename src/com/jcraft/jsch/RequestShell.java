@@ -32,7 +32,7 @@ class RequestShell implements Request{
     // string request type       // "shell"
     // boolean want reply        // 0
     packet.reset();
-    buf.putByte((byte) Const.SSH_MSG_CHANNEL_REQUEST);
+    buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
     buf.putInt(channel.getRecipient());
     buf.putString("shell".getBytes());
     buf.putByte((byte)0);

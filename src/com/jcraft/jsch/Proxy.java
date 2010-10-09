@@ -26,4 +26,5 @@ interface Proxy{
   void connect(String host, int port) throws Exception;
   InputStream getInputStream();
   OutputStream getOutputStream();
+  void close();
 }

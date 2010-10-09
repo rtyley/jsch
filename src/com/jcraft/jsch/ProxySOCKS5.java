@@ -37,7 +37,7 @@ public class ProxySOCKS5 implements Proxy{
   private int port;
   private InputStream in;
   private OutputStream out;
-
+  private Socket socket;
   private String user;
   private String passwd;
 
@@ -55,7 +55,6 @@ public class ProxySOCKS5 implements Proxy{
   public void connect(String host, int port) throws JSchException{
     this.host=host;
     this.port=port;
-    Socket socket=null;
     try{
       socket=new Socket(proxy_host, proxy_port);    
       socket.setTcpNoDelay(true);
@@ -281,4 +280,16 @@ public class ProxySOCKS5 implements Proxy{
   }
   public InputStream getInputStream(){ return in; }
   public OutputStream getOutputStream(){ return out; }
+  public void close(){
+    try{
+      if(in!=null)in.close();
+      if(out!=null)out.close();
+      if(socket!=null)socket.close();
+    }
+    catch(Exception e){
+    }
+    in=null;
+    out=null;
+    socket=null;
+  }
 }

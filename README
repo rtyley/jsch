@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Wed Dec 18 13:25:13 UTC 2002
+Last modified: Mon Jan  6 14:20:12 UTC 2003
 
 Description
 ===========
@@ -29,13 +29,14 @@ Directories & Files in the Source Tree
 * example/ has some samples, which demonstrate the usages.
 * tools/ has scripts for Ant.
 
+
 Why JSch?
 ==========
-Our intension of developing this stuff is to enable users of our pure
-java X servers, WiredX(http://wiredx.net/), WeirdX to enjoy secure X
-sessions.  So, our efforts have been done mostly in the SSH2 protocol related
-to X Window System; X11 forwarding.  Of course, we are also interested in 
-adding other functionalities; port forward, file transfer, terminal emulation, etc.
+Our intension in developing this stuff is to enable users of our pure
+java X servers, WiredX(http://wiredx.net/) and WeirdX, to enjoy secure X
+sessions.  Our efforts have mostly targeted the SSH2 protocol in relation
+to X Window System and X11 forwarding.  Of course, we are also interested in 
+adding other functionality - port forward, file transfer, terminal emulation, etc.
 
 
 Features
@@ -59,6 +60,7 @@ Features
 * port forwarding.
 * stream forwarding.
 * remote exec.
+* SSH File Transfer Protocol(partially)
 * packet compression.
   JZlib(http://www.jcraft.com/jzlib/) has been used.
 * JSch is licensed under GNU LGPL.
@@ -76,13 +78,13 @@ JSch can do.  Please refer to '/examples/README' file.
 
 Stream Forwarding
 =================
-JSch has the unique functionality, Stream Forwarding.
+JSch has a unique functionality, Stream Forwarding.
 Stream Forwarding allows you to plug Java I/O streams directly into a remote TCP
 port without assigning and opening a local TCP port.
-In port forwarding like -L option of ssh command,  you have to assign
+In port forwarding, as with the -L option of ssh command, you have to assign
 and open a local TCP port and that port is also accessible by crackers
 on localhost.  In some case, that local TCP port may be plugged to a
-secret port via SSH session, so such accessibility will not be acceptable.
+secret port via SSH session.
 A sample program, /example/StreamForwarding.java , demonstrates
 this functionality.
 
@@ -92,17 +94,17 @@ Packet Compression
 According to the draft from IETF sesch working group, the packet
 compression can be applied to each data stream directions; from sshd
 server to ssh client and from ssh client to sshd server.  So, jsch
-allow you to choose which data stream direction will be compressed or not.
+allows you to choose which data stream direction will be compressed or not.
 For example, in X11 forwarding session, the packet compression for data
 stream from sshd to ssh client will save the network traffic, but
-usually the traffic from ssh client to sshd is not so much, so by omitting
-the compression for this direction, you may be able to save the CPU time.
+usually the traffic from ssh client to sshd is light, so by omitting
+the compression for this direction, you may be able to save some CPU time.
 Please refer to a sample program 'examples/Compression.java'.
 
 
 TODO
 ====
-* file transfer.
+* SSH File Transfer Protocol
 * re-implementation with java.nio.
 * replacing cipher, hash by JCE with pure Java code.
   It seems BeeCrypt(http://www.virtualunlimited.com/products/beecrypt/),

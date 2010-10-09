@@ -59,7 +59,7 @@ class UserAuthPublicKey extends UserAuth{
     // boolen    FALSE
     // string    plaintext password (ISO-10646 UTF-8)
     packet.reset();
-    buf.putByte((byte)Const.SSH_MSG_USERAUTH_REQUEST);
+    buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
     buf.putString(userinfo.getName().getBytes());
     buf.putString("ssh-connection".getBytes());
     buf.putString("publickey".getBytes());
@@ -73,9 +73,9 @@ class UserAuthPublicKey extends UserAuth{
     // string    service name
     buf=session.read(buf);
     //System.out.println("read: 60 ? "+    buf.buffer[5]);
-    if(buf.buffer[5]==Const.SSH_MSG_USERAUTH_PK_OK){
+    if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_PK_OK){
     }
-    else if(buf.buffer[5]==Const.SSH_MSG_USERAUTH_FAILURE){
+    else if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
       System.out.println("USERAUTH publickey "+session.getIdentity()+
 			 " is not acceptable.");
       return false;
@@ -93,7 +93,7 @@ class UserAuthPublicKey extends UserAuth{
     // boolen    TRUE
     // string    plaintext password (ISO-10646 UTF-8)
     packet.reset();
-    buf.putByte((byte)Const.SSH_MSG_USERAUTH_REQUEST);
+    buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
     buf.putString(userinfo.getName().getBytes());
     buf.putString("ssh-connection".getBytes());
     buf.putString("publickey".getBytes());
@@ -112,10 +112,10 @@ class UserAuthPublicKey extends UserAuth{
     // string    service name
     buf=session.read(buf);
     //System.out.println("read: 52 ? "+    buf.buffer[5]);
-    if(buf.buffer[5]==Const.SSH_MSG_USERAUTH_SUCCESS){
+    if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
       return true;
     }
-    if(buf.buffer[5]==Const.SSH_MSG_USERAUTH_FAILURE){
+    if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){
       buf.getInt(); buf.getByte(); buf.getByte(); 
       byte[] foo=buf.getString();
       int partial_success=buf.getByte();

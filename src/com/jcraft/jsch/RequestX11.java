@@ -38,7 +38,7 @@ class RequestX11 implements Request{
     // string    x11 authentication cookie
     // uint32    x11 screen number
     packet.reset();
-    buf.putByte((byte) Const.SSH_MSG_CHANNEL_REQUEST);
+    buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
     buf.putInt(channel.getRecipient());
     buf.putString("x11-req".getBytes());
     buf.putByte((byte)0);

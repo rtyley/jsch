@@ -10,16 +10,14 @@ public class Exec{
     int xport=0;
 
     try{
-      JSch jsch=new JSch();
-      String host=JOptionPane.showInputDialog("Please enter hostname", 
-					      "localhost"); 
-  
-      Session session=jsch.getSession(host, 22);
+      String host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
 
-      String display=JOptionPane.showInputDialog("Please enter display name", 
-						 xhost+":"+xport);
+      String display=JOptionPane.showInputDialog("Enter display name", xhost+":"+xport);
       xhost=display.substring(0, display.indexOf(':'));
       xport=Integer.parseInt(display.substring(display.indexOf(':')+1));
+
+      JSch jsch=new JSch();  
+      Session session=jsch.getSession(host, 22);
 
       session.setX11Host(xhost);
       session.setX11Port(xport+6000);
@@ -29,8 +27,7 @@ public class Exec{
       session.setUserInfo(ui);
       session.connect();
 
-      String command=JOptionPane.showInputDialog("Please enter command", 
-						 "set|grep SSH");
+      String command=JOptionPane.showInputDialog("Enter command", "set|grep SSH");
 
       Channel channel=session.openChannel("exec");
       ((ChannelExec)channel).setCommand(command);

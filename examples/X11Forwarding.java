@@ -10,10 +10,9 @@ public class X11Forwarding{
     int xport=0;
 
     try{
-      JSch jsch=new JSch();
-      String host=JOptionPane.showInputDialog("Please enter hostname", 
-					      "localhost"); 
-  
+      String host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
+
+      JSch jsch=new JSch();  
       Session session=jsch.getSession(host, 22);
 
       String display=JOptionPane.showInputDialog("Please enter display name", 

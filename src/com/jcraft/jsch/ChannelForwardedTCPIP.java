@@ -69,7 +69,7 @@ class ChannelForwardedTCPIP extends Channel{
           break;
 	}
         packet.reset();
-        buf.putByte((byte)Const.SSH_MSG_CHANNEL_DATA);
+        buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);
@@ -83,7 +83,7 @@ class ChannelForwardedTCPIP extends Channel{
 
     try{
       packet.reset();
-      buf.putByte((byte) Const.SSH_MSG_CHANNEL_EOF);
+      buf.putByte((byte) Session.SSH_MSG_CHANNEL_EOF);
       buf.putInt(recipient);
       session.write(packet);
     }

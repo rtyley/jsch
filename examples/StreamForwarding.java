@@ -9,9 +9,9 @@ public class StreamForwarding{
     int port;
 
     try{
+      host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
+
       JSch jsch=new JSch();
-      host=JOptionPane.showInputDialog("Please enter hostname", 
-				       "localhost"); 
       Session session=jsch.getSession(host, 22);
 
       // username and password will be given via UserInfo interface.

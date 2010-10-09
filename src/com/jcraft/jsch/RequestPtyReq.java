@@ -29,7 +29,7 @@ class RequestPtyReq implements Request{
     Packet packet=new Packet(buf);
 
     packet.reset();
-    buf.putByte((byte) Const.SSH_MSG_CHANNEL_REQUEST);
+    buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
     buf.putInt(channel.getRecipient());
     buf.putString("pty-req".getBytes());
     buf.putByte((byte)0);

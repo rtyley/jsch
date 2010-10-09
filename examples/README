@@ -100,3 +100,13 @@ This directory contains some examples, which demonstrate how to use JSch
   You will be asked username and passwd. 
   If everything works fine, a file 'file1' on 'remotehost' will copied to
   local 'file1'.
+
+- Sftp.java
+  This program will demonstrate the sftp protocol support.
+  $ CLASSPATH=.:../src javac Sftp.java
+  $ CLASSPATH=.:../src java Sftp remotehost
+  You will be asked username and passwd. 
+  If everything works fine, you will get a prompt 'sftp>'. 
+  'help' command will show available command.
+  In current implementation, the destination path for 'get' and 'put'
+  commands must be a file, not a directory.

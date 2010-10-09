@@ -7,7 +7,9 @@ you can integrate its functionality into your own Java programs
   <!-- set global properties for this build -->
   <property name="version" location="0.0.2"/>
   <property name="src" location="src"/>
+  <property name="exasrc" location="examples"/>
   <property name="build" location="build"/>
+  <property name="exabuild" location="examples"/>
   <property name="dist"  location="dist"/>
   <path id="project.cp">
     <pathelement location="${build}"/>
@@ -36,6 +38,20 @@ you can integrate its functionality into your own Java programs
     <jar jarfile="${dist}/lib/jsch-${DSTAMP}.jar" basedir="${build}"/>
   </target>
 
+  <target name="examples"
+  	description="compiles the examples"
+	depends="compile">
+	
+    <path id="compile.classpath">
+      <pathelement location="${build}" /> 
+    </path>
+
+    <javac srcdir="${exasrc}" destdir="${exabuild}">
+          <classpath refid="compile.classpath"/>
+    </javac>
+    
+  </target>
+	
   <target name="clean"
         description="clean up" >
     <!-- Delete the ${build} and ${dist} directory trees -->
@@ -43,5 +59,3 @@ you can integrate its functionality into your own Java programs
     <delete dir="${dist}"/>
   </target>
 </project>
-
-

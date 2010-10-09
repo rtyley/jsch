@@ -114,7 +114,7 @@ System.out.println("");
           break;
 	}
         packet.reset();
-        buf.putByte((byte)Const.SSH_MSG_CHANNEL_DATA);
+        buf.putByte((byte)Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);

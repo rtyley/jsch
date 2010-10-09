@@ -29,7 +29,7 @@ abstract class UserAuth{
     // byte      SSH_MSG_SERVICE_REQUEST(5)
     // string    service name "ssh-userauth"
     packet.reset();
-    buf.putByte((byte)Const.SSH_MSG_SERVICE_REQUEST);
+    buf.putByte((byte)Session.SSH_MSG_SERVICE_REQUEST);
     buf.putString("ssh-userauth".getBytes());
     session.write(packet);
 

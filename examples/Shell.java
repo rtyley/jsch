@@ -7,9 +7,9 @@ public class Shell{
   public static void main(String[] arg){
 
     try{
+      String host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
+
       JSch jsch=new JSch();
-      String host=JOptionPane.showInputDialog("Please enter hostname", 
-					      "localhost"); 
       Session session=jsch.getSession(host, 22);
 
       // username and password will be given via UserInfo interface.

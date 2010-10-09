@@ -10,15 +10,14 @@ public class ViaHTTP{
     int proxy_port;
 
     try{
-      JSch jsch=new JSch();
-
-      String proxy=JOptionPane.showInputDialog("Please enter proxy server",
+      String proxy=JOptionPane.showInputDialog("Enter proxy server",
                                                  "hostname:port");
       proxy_host=proxy.substring(0, proxy.indexOf(':'));
       proxy_port=Integer.parseInt(proxy.substring(proxy.indexOf(':')+1));
 
-      String host=JOptionPane.showInputDialog("Please enter hostname", 
-					      "localhost"); 
+      String host=JOptionPane.showInputDialog("Enter hostname", "localhost"); 
+
+      JSch jsch=new JSch();
       Session session=jsch.getSession(host, 22);
 
       session.setProxy(new ProxyHTTP(proxy_host, proxy_port));

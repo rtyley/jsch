@@ -1,6 +1,15 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Dec 18 13:25:13 UTC 2002
+Last modified: Mon Jan  6 11:47:36 UTC 2003
+
+	
+Changes since version 0.0.9:	
+- SSH File Transfer Protocol is supported partially.
+- 'examples/Sftp.java' is added.
+  This example is a tiny sftp command and supports 'cd','put','get','rm',etc.
+- 'close' method is added to Channel interface.	
+- build.xml for examples is added.
+  Thanks to Ronald Broberg.
 
 	
 Changes since version 0.0.8:	

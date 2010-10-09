@@ -27,6 +27,38 @@ import java.lang.*;
 
 public class Session implements Runnable{
   static private final String version="JSCH-0.0.6";
+
+  // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
+  static final int SSH_MSG_DISCONNECT=                      1;
+  static final int SSH_MSG_IGNORE=                          2;
+  static final int SSH_MSG_UNIMPLEMENTED=                   3;
+  static final int SSH_MSG_DEBUG=                           4;
+  static final int SSH_MSG_SERVICE_REQUEST=                 5;
+  static final int SSH_MSG_SERVICE_ACCEPT=                  6;
+  static final int SSH_MSG_KEXINIT=                        20;
+  static final int SSH_MSG_NEWKEYS=                        21;
+  static final int SSH_MSG_KEXDH_INIT=                     30;
+  static final int SSH_MSG_KEXDH_REPLY=                    31;
+  static final int SSH_MSG_USERAUTH_REQUEST=               50;
+  static final int SSH_MSG_USERAUTH_FAILURE=               51;
+  static final int SSH_MSG_USERAUTH_SUCCESS=               52;
+  static final int SSH_MSG_USERAUTH_BANNER=                53;
+  static final int SSH_MSG_USERAUTH_PK_OK=                 60;
+  static final int SSH_MSG_GLOBAL_REQUEST=                 80;
+  static final int SSH_MSG_REQUEST_SUCCESS=                81;
+  static final int SSH_MSG_REQUEST_FAILURE=                82;
+  static final int SSH_MSG_CHANNEL_OPEN=                   90;
+  static final int SSH_MSG_CHANNEL_OPEN_CONFIRMATION=      91;
+  static final int SSH_MSG_CHANNEL_OPEN_FAILURE=           92;
+  static final int SSH_MSG_CHANNEL_WINDOW_ADJUST=          93;
+  static final int SSH_MSG_CHANNEL_DATA=                   94;
+  static final int SSH_MSG_CHANNEL_EXTENDED_DATA=          95;
+  static final int SSH_MSG_CHANNEL_EOF=                    96;
+  static final int SSH_MSG_CHANNEL_CLOSE=                  97;
+  static final int SSH_MSG_CHANNEL_REQUEST=                98;
+  static final int SSH_MSG_CHANNEL_SUCCESS=                99;
+  static final int SSH_MSG_CHANNEL_FAILURE=               100;
+
   private byte[] V_S;                                 // server version
   private byte[] V_C=("SSH-2.0-"+version).getBytes(); // client version
 
@@ -56,6 +88,7 @@ public class Session implements Runnable{
   private Compression inflater;
 
   private IO io;
+  private Socket socket;
 
   private String identity;
 
@@ -99,7 +132,7 @@ public class Session implements Runnable{
       int pad=0;
       if(proxy==null){
         //System.out.println("host="+host+", port="+port);
-        Socket socket = new Socket(host, port);
+        socket = new Socket(host, port);
         socket.setTcpNoDelay(true);
         io.setInputStream(socket.getInputStream());
         io.setOutputStream(socket.getOutputStream());
@@ -142,7 +175,7 @@ public class Session implements Runnable{
       // string    languages_client_to_server
       // string    languages_server_to_client
       packet.reset();
-      buf.putByte((byte) Const.SSH_MSG_KEXINIT);
+      buf.putByte((byte) SSH_MSG_KEXINIT);
       random.fill(buf.buffer, buf.index, 16); buf.skip(16);
       buf.putString(KeyExchange.kex.getBytes());
       buf.putString(KeyExchange.server_host_key.getBytes());
@@ -472,7 +505,7 @@ public class Session implements Runnable{
 //      if(buf.buffer[5]!=94)
 //System.out.println("read: 94 ? "+buf.buffer[5]);
         switch(buf.buffer[5]){
-	case Const.SSH_MSG_CHANNEL_DATA:
+	case SSH_MSG_CHANNEL_DATA:
           buf.getInt(); 
           buf.getByte(); 
           buf.getByte(); 
@@ -492,7 +525,7 @@ public class Session implements Runnable{
 	    channel.setLocalWindowSize(channel.lwsize_max);
 	  }
 	  break;
-        case Const.SSH_MSG_CHANNEL_EXTENDED_DATA:
+        case SSH_MSG_CHANNEL_EXTENDED_DATA:
           buf.getInt();
 	  buf.getShort();
 	  i=buf.getInt();
@@ -501,39 +534,37 @@ public class Session implements Runnable{
 	  foo=buf.getString(start, length);
 	  channel.write(foo, start[0], length[0]);
 	  break;
-	case Const.SSH_MSG_CHANNEL_WINDOW_ADJUST:
+	case SSH_MSG_CHANNEL_WINDOW_ADJUST:
           buf.getInt(); 
 	  buf.getShort(); 
 	  i=buf.getInt(); 
 	  channel=Channel.getChannel(i);
 	  channel.setRemoteWindowSize(channel.rwsize+buf.getInt()); 
 	  break;
-	case Const.SSH_MSG_CHANNEL_EOF:
+	case SSH_MSG_CHANNEL_EOF:
           buf.getInt(); 
           buf.getShort(); 
           i=buf.getInt(); 
 	  channel=Channel.getChannel(i);
-	  channel.setEOF();
-
+	  channel.eof();
+	  /*
 	  packet.reset();
-	  buf.putByte((byte)Const.SSH_MSG_CHANNEL_EOF);
+	  buf.putByte((byte)SSH_MSG_CHANNEL_EOF);
 	  buf.putInt(channel.getRecipient());
 	  write(packet);
+	  */
 	  break;
-	case Const.SSH_MSG_CHANNEL_CLOSE:
+	case SSH_MSG_CHANNEL_CLOSE:
           buf.getInt(); 
 	  buf.getShort(); 
 	  i=buf.getInt(); 
 	  channel=Channel.getChannel(i);
 	  channel.close();
-
-	  packet.reset();
-	  buf.putByte((byte) Const.SSH_MSG_CHANNEL_CLOSE);
-	  buf.putInt(channel.getRecipient());
-	  write(packet);
-	  Channel.del(channel);
+          if(Channel.pool.size()==0){
+	    thread=null;
+	  }
 	  break;
-	case Const.SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
+	case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
           buf.getInt(); 
 	  buf.getShort(); 
 	  i=buf.getInt(); 
@@ -542,7 +573,7 @@ public class Session implements Runnable{
 	  channel.setRemoteWindowSize(buf.getInt());
 	  channel.setRemotePacketSize(buf.getInt());
 	  break;
-	case Const.SSH_MSG_CHANNEL_REQUEST:
+	case SSH_MSG_CHANNEL_REQUEST:
           buf.getInt(); 
 	  buf.getShort(); 
 	  i=buf.getInt(); 
@@ -555,7 +586,7 @@ public class Session implements Runnable{
 //          channel.close();
 	  }
 	  break;
-	case Const.SSH_MSG_CHANNEL_OPEN:
+	case SSH_MSG_CHANNEL_OPEN:
           buf.getInt(); 
 	  buf.getShort(); 
 	  foo=buf.getString(); 
@@ -566,7 +597,7 @@ public class Session implements Runnable{
 	  channel.init();
 
 	  packet.reset();
-	  buf.putByte((byte)Const.SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+	  buf.putByte((byte)SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
 	  buf.putInt(channel.getRecipient());
 	  buf.putInt(channel.id);
 	  buf.putInt(channel.lwsize);
@@ -583,8 +614,37 @@ public class Session implements Runnable{
     catch(Exception e){
       System.out.println(e);
     }
+    close();
   }
 
+  public void close(){
+    for(int i=0; i<Channel.pool.size(); i++){
+      try{
+        ((Channel)(Channel.pool.elementAt(i))).eof();
+      }
+      catch(Exception e){
+      }
+    }      
+    thread=null;
+    try{
+      if(io!=null){
+        io.in.close();
+        io.out.close();
+      }
+      if(proxy==null){
+        if(socket!=null) socket.close();	  
+      }
+      else{
+        proxy.close();	  
+	proxy=null;
+      }
+    }
+    catch(Exception e){
+      System.out.println(e);
+    }
+    io=null;
+    socket=null;
+  }
   public void setPortForwardingL(int lport, String host, int rport){
     PortWatcher pw=new PortWatcher(this, lport, host, rport);
     (new Thread(pw)).start();
@@ -603,7 +663,7 @@ public class Session implements Runnable{
       // string  address_to_bind
       // uint32  port number to bind
       packet.reset();
-      buf.putByte((byte) Const.SSH_MSG_GLOBAL_REQUEST);
+      buf.putByte((byte) SSH_MSG_GLOBAL_REQUEST);
       buf.putString("tcpip-forward".getBytes());
       buf.putByte((byte)0);
       buf.putString("0.0.0.0".getBytes());

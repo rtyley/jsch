@@ -45,7 +45,7 @@ class ChannelSession extends Channel{
 	if(i==0)continue;
 	if(i==-1)break;
         packet.reset();
-        buf.putByte((byte) Const.SSH_MSG_CHANNEL_DATA);
+        buf.putByte((byte) Session.SSH_MSG_CHANNEL_DATA);
         buf.putInt(recipient);
         buf.putInt(i);
         buf.skip(i);

@@ -31,6 +31,7 @@ public class ProxyHTTP implements Proxy{
   private int port;
   private InputStream in;
   private OutputStream out;
+  private Socket socket;
 
   private String user;
   private String passwd;
@@ -49,7 +50,7 @@ public class ProxyHTTP implements Proxy{
   public void connect(String host, int port) throws Exception{
     this.host=host;
     this.port=port;
-    Socket socket=new Socket(proxy_host, proxy_port);    
+    socket=new Socket(proxy_host, proxy_port);    
     socket.setTcpNoDelay(true);
     in=socket.getInputStream();
     out=socket.getOutputStream();
@@ -70,4 +71,16 @@ public class ProxyHTTP implements Proxy{
   }
   public InputStream getInputStream(){ return in; }
   public OutputStream getOutputStream(){ return out; }
+  public void close(){
+    try{
+      if(in!=null)in.close();
+      if(out!=null)out.close();
+      if(socket!=null)socket.close();
+    }
+    catch(Exception e){
+    }
+    in=null;
+    out=null;
+    socket=null;
+  }
 }
