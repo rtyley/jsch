@@ -56,11 +56,12 @@ class RequestWindowChange implements Request{
     buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
     buf.putInt(channel.getRecipient());
     buf.putString("window-change".getBytes());
-    buf.putByte((byte)0);
+    buf.putByte((byte)(waitForReply() ? 1 : 0));
     buf.putInt(width_columns);
     buf.putInt(height_rows);
     buf.putInt(width_pixels);
     buf.putInt(height_pixels);
     session.write(packet);
   }
+  public boolean waitForReply(){ return false; }
 }

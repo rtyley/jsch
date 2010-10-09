@@ -38,13 +38,15 @@ public class ChannelSubsystem extends ChannelSession {
     this.subsystem=subsystem;
   }
   */
-  public void start(){
+  public void start() throws JSchException{
     try{
       RequestSubsystem request=new RequestSubsystem(subsystem);
+      boolean reply=request.waitForReply();
       request.request(session, this);
     }
-    catch (Exception e){
-      e.printStackTrace();
+    catch(Exception e){
+      if(e instanceof JSchException) throw (JSchException)e;
+      throw new JSchException(e.toString());
     }
     (new Thread(this)).start();
   }

@@ -47,8 +47,9 @@ class RequestExec implements Request{
     buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
     buf.putInt(channel.getRecipient());
     buf.putString("exec".getBytes());
-    buf.putByte((byte)0);
+    buf.putByte((byte)(waitForReply() ? 1 : 0));
     buf.putString(command.getBytes());
     session.write(packet);
   }
+  public boolean waitForReply(){ return false; }
 }

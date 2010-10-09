@@ -40,8 +40,9 @@ class RequestSignal implements Request{
     buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
     buf.putInt(channel.getRecipient());
     buf.putString("signal".getBytes());
-    buf.putByte((byte)0);               // false
+    buf.putByte((byte)(waitForReply() ? 1 : 0));
     buf.putString(signal.getBytes());
     session.write(packet);
   }
+  public boolean waitForReply(){ return false; }
 }

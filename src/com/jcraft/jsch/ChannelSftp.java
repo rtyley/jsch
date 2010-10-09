@@ -170,7 +170,7 @@ public class ChannelSftp extends ChannelSubsystem{
     */
   }
 
-  public void start(){
+  public void start() throws JSchException{
     try{
 
       PipedOutputStream pos=new PipedOutputStream();
@@ -178,8 +178,7 @@ public class ChannelSftp extends ChannelSubsystem{
       PipedInputStream pis=new PipedInputStream(pos);
       io.setInputStream(pis);
 
-      Request request;
-      request=new RequestSubsystem("sftp");
+      Request request=new RequestSubsystem("sftp");
       request.request(session, this);
 
       thread=this;
@@ -222,6 +221,8 @@ public class ChannelSftp extends ChannelSubsystem{
     }
     catch(Exception e){
       //System.out.println(e);
+      if(e instanceof JSchException) throw (JSchException)e;
+      throw new JSchException(e.toString());
     }
   }
 

@@ -187,7 +187,7 @@ class Identity{
 	}
 	else if(cipher.equals("none")){
   	   _buf.getInt();
-  	   _buf.getInt();
+  	   //_buf.getInt();
 
            encrypted=false;
 
@@ -483,11 +483,12 @@ class Identity{
 	plain=encoded_data;
       }
 
-      int index=0;
-      int length=0;
-
-      if(plain[index]!=0x30){                  // FSecure
+      if(keytype==FSECURE){              // FSecure   
 	Buffer buf=new Buffer(plain);
+        int foo=buf.getInt();
+        if(plain.length!=foo+4){
+          return false;
+        }
 	e_array=buf.getMPIntBits();
         d_array=buf.getMPIntBits();
 	n_array=buf.getMPIntBits();
@@ -497,6 +498,10 @@ class Identity{
         return true;
       }
 
+      int index=0;
+      int length=0;
+
+      if(plain[index]!=0x30)return false;
       index++; // SEQUENCE
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -684,9 +689,12 @@ System.out.println("");
 	plain=encoded_data;
       }
 
-      if(plain[0]!=0x30){              // FSecure
+      if(keytype==FSECURE){              // FSecure   
 	Buffer buf=new Buffer(plain);
-	buf.getInt();
+        int foo=buf.getInt();
+        if(plain.length!=foo+4){
+          return false;
+        }
 	P_array=buf.getMPIntBits();
         G_array=buf.getMPIntBits();
 	Q_array=buf.getMPIntBits();
@@ -767,7 +775,7 @@ System.out.println("");
     }
     catch(Exception e){
       //System.out.println(e);
-      e.printStackTrace();
+      //e.printStackTrace();
       return false;
     }
     return true;

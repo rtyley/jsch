@@ -96,6 +96,8 @@ public abstract class Channel implements Runnable{
 
   int exitstatus=-1;
 
+  int reply=0; 
+
   Session session;
 
   Channel(){
@@ -156,7 +158,7 @@ public abstract class Channel implements Runnable{
   public void setXForwarding(boolean foo){
   }
 
-  void start(){ }
+  public void start() throws JSchException{}
 
   public boolean isEOF() {return eof;}
 

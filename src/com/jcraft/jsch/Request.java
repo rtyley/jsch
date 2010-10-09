@@ -30,5 +30,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package com.jcraft.jsch;
 
 interface Request{
+  boolean waitForReply();
   void request(Session session, Channel channel) throws Exception;
 }

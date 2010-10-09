@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.12";
+  static private final String version="JSCH-0.1.14";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -123,13 +123,8 @@ public class Session implements Runnable{
 
   String username=null;
   String password=null;
-  //String passphrase=null;
 
   JSch jsch;
-
-//  static{
-//    Class ccc=Channel.class;
-//  }
 
   Session(JSch jsch) throws JSchException{
     super();
@@ -183,7 +178,7 @@ public class Session implements Runnable{
 		}
 	      }).start();
 	    try{ Thread.sleep(timeout); }
-	    catch(Exception eee){}
+	    catch(java.lang.InterruptedException eee){}
 	    done[0]=true;
 	    if(sockp[0]!=null) socket=sockp[0];
 	    else{
@@ -319,6 +314,9 @@ public class Session implements Runnable{
 	      //System.out.println("PartialAuth: "+methods);
 	      continue loop;
 	    }
+	    catch(RuntimeException ee){
+	      throw ee;
+	    }
 	    catch(Exception ee){
 	      //System.out.println("ee: "+ee);
 	    }
@@ -355,6 +353,7 @@ public class Session implements Runnable{
       }
       isConnected=false;
       //e.printStackTrace();
+      if(e instanceof RuntimeException) throw (RuntimeException)e;
       if(e instanceof JSchException) throw (JSchException)e;
       throw new JSchException("Session.connect: "+e);
     }
@@ -828,11 +827,25 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
 
   public /*synchronized*/ void write(Packet packet, Channel c, int length) throws Exception{
     while(true){
-      if(c.rwsize>length){
+      if(c.rwsize>=length){
         c.rwsize-=length;
         break;
       }
-      try{Thread.sleep(10);}catch(Exception e){};
+      if(c.close || !isConnected()){
+	throw new IOException("channel is broken");
+      }
+      if(c.rwsize>0){
+	int len=c.rwsize;
+	int s=packet.shift(len, (c2smac!=null ? c2smac.getBlockSize() : 0));
+	byte command=packet.buffer.buffer[5];
+	int recipient=c.getRecipient();
+	length-=len;
+	c.rwsize=0;
+	write(packet);
+	packet.unshift(command, recipient, s, length);
+      }
+      try{Thread.sleep(10);}
+      catch(java.lang.InterruptedException e){};
     }
     write(packet);
   }
@@ -1039,13 +1052,33 @@ break;
 	    packet.reset();
 	    buf.putByte((byte)SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
 	    buf.putInt(channel.getRecipient());
-	    buf.putInt(channel.id);
+ 	    buf.putInt(channel.id);
 	    buf.putInt(channel.lwsize);
 	    buf.putInt(channel.lmpsize);
 	    write(packet);
 	    (new Thread(channel)).start();
 	    break;
 	  }
+	case SSH_MSG_CHANNEL_SUCCESS:
+          buf.getInt(); 
+	  buf.getShort(); 
+	  i=buf.getInt(); 
+	  channel=Channel.getChannel(i, this);
+	  if(channel==null){
+	    break;
+	  }
+	  channel.reply=1;
+	  break;
+	case SSH_MSG_CHANNEL_FAILURE:
+          buf.getInt(); 
+	  buf.getShort(); 
+	  i=buf.getInt(); 
+	  channel=Channel.getChannel(i, this);
+	  if(channel==null){
+	    break;
+	  }
+	  channel.reply=0;
+	  break;
 	default:
           System.out.println("Session.run: unsupported type "+msgType); 
 	  throw new IOException("Unknown SSH message type "+msgType);
@@ -1212,5 +1245,8 @@ break;
   }
   public String getClientVersion(){
     return new String(V_C);
+  }
+  public void setClientVersion(String cv){
+    V_C=cv.getBytes();
   }
 }

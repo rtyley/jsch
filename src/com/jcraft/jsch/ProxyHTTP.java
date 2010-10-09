@@ -97,6 +97,9 @@ public class ProxyHTTP implements Proxy{
         break;
       }
     }
+    catch(RuntimeException e){
+      throw e;
+    }
     catch(Exception e){
       try{ if(socket!=null)socket.close(); }
       catch(Exception eee){

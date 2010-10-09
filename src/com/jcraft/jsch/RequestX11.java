@@ -49,11 +49,12 @@ class RequestX11 implements Request{
     buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
     buf.putInt(channel.getRecipient());
     buf.putString("x11-req".getBytes());
-    buf.putByte((byte)0);
+    buf.putByte((byte)(waitForReply() ? 1 : 0));
     buf.putByte((byte)0);
     buf.putString("MIT-MAGIC-COOKIE-1".getBytes());
     buf.putString(ChannelX11.getFakedCookie(session));
     buf.putInt(0);
     session.write(packet);
   }
+  public boolean waitForReply(){ return false; }
 }

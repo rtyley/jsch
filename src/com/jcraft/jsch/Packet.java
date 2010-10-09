@@ -65,4 +65,30 @@ System.out.println("");
 */
   }
 
+  int shift(int len, int mac){
+    int s=len+5+9;
+    int pad=(-s)&7;
+    if(pad<8)pad+=8;
+    s+=pad;
+    s+=mac;
+
+    System.arraycopy(buffer.buffer, 
+		     len+5+9, 
+		     buffer.buffer, s, buffer.index-5-9-len);
+    buffer.index=10;
+    buffer.putInt(len);
+    buffer.index=len+5+9;
+    return s;
+  }
+  void unshift(byte command, int recipient, int s, int len){
+    System.arraycopy(buffer.buffer, 
+		     s, 
+		     buffer.buffer, 5+9, len);
+    buffer.buffer[5]=command;
+    buffer.index=6;
+    buffer.putInt(recipient);
+    buffer.putInt(len);
+    buffer.index=len+5+9;
+  }
+
 }

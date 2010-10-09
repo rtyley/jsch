@@ -1,14 +1,27 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Fri Jan 23 00:04:36 JST 2004
+Last modified: Wed Mar 24 17:33:34 UTC 2004
 
+
+Changes since version 0.1.13:		
+- added 'setClientVersion' method to Session class.
+- fixed hung-up problem on SftpChannel in connecting to
+  the sshd, which does not support sftp.
+- fixed OutOfMemory exception problem in decrypting a private key
+  with bad passphrase.
+- fixed hung-up problem in communicating with the sshd,
+  whose window size is small.
+- RuntimeExceptions will be thrown from jsch APIs.
+- SSH_MSG_CHANNEL_SUCCESS and SSH_MSG_CHANNEL_FAILURE requests
+  have been supported.
+  	
 	
 Changes since version 0.1.12:	
 - added the partial authentication support.
 - allowing to change the passphrase of a private key file
   instead of creating a new private key.
 - added 'examples/ChangePassphrase.java' 	
-- the interface 'UIKeyboardInteractive.java' has been modified.
+- the interface 'UIKeyboardInteractive' has been modified.
 
 	
 Changes since version 0.1.11:	
