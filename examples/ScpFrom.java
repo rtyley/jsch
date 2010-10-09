@@ -5,18 +5,23 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class ScpTo{
+public class ScpFrom{
   public static void main(String[] arg){
     if(arg.length!=2){
-      System.err.println("usage: java ScpTo file1 remotehost:file2");
+      System.err.println("usage: java ScpFrom remotehost:file1 file2");
       System.exit(-1);
     }      
 
     try{
 
-      String lfile=arg[0];
-      String host=arg[1].substring(0, arg[1].indexOf(':'));
-      String rfile=arg[1].substring(arg[1].indexOf(':')+1);
+      String host=arg[0].substring(0, arg[0].indexOf(':'));
+      String rfile=arg[0].substring(arg[0].indexOf(':')+1);
+      String lfile=arg[1];
+
+      String prefix=null;
+      if(new File(lfile).isDirectory()){
+        prefix=lfile+File.separator;
+      }
 
       JSch jsch=new JSch();
       Session session=jsch.getSession(host, 22);
@@ -26,9 +31,8 @@ public class ScpTo{
       session.setUserInfo(ui);
       session.connect();
 
-
-      // exec 'scp -t rfile' remotely
-      String command="scp -t "+rfile;
+      // exec 'scp -f rfile' remotely
+      String command="scp -f "+rfile;
       Channel channel=session.openChannel("exec");
       ((ChannelExec)channel).setCommand(command);
 
@@ -40,41 +44,59 @@ public class ScpTo{
 
       channel.connect();
 
-      byte[] tmp=new byte[1];
-
-      // wait for '\0'
-      do{ in.read(tmp, 0, 1); }while(tmp[0]!=0);
-
-      // send "C0644 filesize filename", where filename should not include '/'
-      int filesize=(int)(new File(lfile)).length();
-      command="C0644 "+filesize+" ";
-      if(lfile.lastIndexOf('/')>0){
-        command+=lfile.substring(lfile.lastIndexOf('/')+1);
-      }
-      else{
-        command+=lfile;
-      }
-      command+="\n";
-      out.write(command.getBytes()); out.flush();
-
-      // wait for '\0'
-      do{ in.read(tmp, 0, 1); }while(tmp[0]!=0);
-
-      // send a content of lfile
-      FileInputStream fis=new FileInputStream(lfile);
       byte[] buf=new byte[1024];
-      while(true){
-        int len=fis.read(buf, 0, buf.length);
-	if(len<=0) break;
-        out.write(buf, 0, len); out.flush();
-      }
 
       // send '\0'
       buf[0]=0; out.write(buf, 0, 1); out.flush();
 
-      // wait for '\0'
-      do{ in.read(tmp, 0, 1); }while(tmp[0]!=0);
+      while(true){
+        // read 'C0644 '
+        in.read(buf, 0, 6);
+        if(buf[0]!='C')break;
 
+        int filesize=0;
+        while(true){
+          in.read(buf, 0, 1);
+          if(buf[0]==' ')break;
+          filesize=filesize*10+(buf[0]-'0');
+        }
+
+        String file=null;
+        for(int i=0;;i++){
+          in.read(buf, i, 1);
+          if(buf[i]==(byte)0x0a){
+            file=new String(buf, 0, i);
+            break;
+  	  }
+        }
+
+        //System.out.println("filesize="+filesize+", file="+file);
+
+        // send '\0'
+        buf[0]=0; out.write(buf, 0, 1); out.flush();
+
+        // read a content of lfile
+        FileOutputStream fos=new FileOutputStream(prefix==null ? 
+						  lfile :
+						  prefix+file);
+        int foo;
+        while(true){
+          if(buf.length<filesize) foo=buf.length;
+	  else foo=filesize;
+          in.read(buf, 0, foo);
+          fos.write(buf, 0, foo);
+          filesize-=foo;
+          if(filesize==0) break;
+        }
+        fos.close();
+
+        byte[] tmp=new byte[1];
+        // wait for '\0'
+        do{ in.read(tmp, 0, 1); }while(tmp[0]!=0);
+
+        // send '\0'
+        buf[0]=0; out.write(buf, 0, 1); out.flush();
+      }
       System.exit(0);
     }
     catch(Exception e){

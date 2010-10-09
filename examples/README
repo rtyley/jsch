@@ -43,7 +43,7 @@ This directory contains some examples, which demonstrate how to use JSch
   ssh command; the given port on the remote host will be forwarded to
   the given host and port  on the local side.
   $ CLASSPATH=.:../src javac PortForwardingR.java
-  $ CLASSPATH=.:../src PortForwardingR
+  $ CLASSPATH=.:../src java PortForwardingR
   You will be asked hostname, port:host:hostport, username and passwd. 
   If everything works fine, you will get the shell prompt.
   Try the port on remote host.
@@ -53,7 +53,7 @@ This directory contains some examples, which demonstrate how to use JSch
   ssh command; the given port on the local host will be forwarded to
   the given remote host and port on the remote side.
   $ CLASSPATH=.:../src javac PortForwardingL.java
-  $ CLASSPATH=.:../src PortForwardingL
+  $ CLASSPATH=.:../src java PortForwardingL
   You will be asked hostname, port:host:hostport, username and passwd. 
   If everything works fine, you will get the shell prompt.
   Try the port on localhost.
@@ -64,7 +64,7 @@ This directory contains some examples, which demonstrate how to use JSch
   the remote side.  It is simmilar to the -L option of ssh command,
   but you don't have to assign and open a local tcp port.
   $ CLASSPATH=.:../src javac StreamForwarding.java
-  $ CLASSPATH=.:../src StreamForwarding
+  $ CLASSPATH=.:../src java StreamForwarding
   You will be asked hostname, host:hostport, username and passwd. 
   If everything works fine, System.in and System.out streams will be
   forwared to remote port and you can send messages from command line.
@@ -72,15 +72,31 @@ This directory contains some examples, which demonstrate how to use JSch
 - UserAuthPubKey.java
   This program will demonstrate the user authentification by public key.
   $ CLASSPATH=.:../src javac UserAuthPubKey.java
-  $ CLASSPATH=.:../src UserAuthPubKey
+  $ CLASSPATH=.:../src java UserAuthPubKey
   You will be asked hostname, privatekey(id_dsa), username and passphrase. 
   If everything works fine, you will get the shell prompt
 
 - Compression.java
   This program will demonstrate the packet compression.
   $ CLASSPATH=.:../src javac Compression.java
-  $ CLASSPATH=.:../src Compression
+  $ CLASSPATH=.:../src java Compression
   You will be asked hostname, username and passwd. 
   If everything works fine, you will get the shell prompt. 
   In this program, all data from sshd server to jsch will be
   compressed.
+
+- ScpTo.java
+  This program will demonstrate the file transfer from local to remote.
+  $ CLASSPATH=.:../src javac ScpTo.java
+  $ CLASSPATH=.:../src java ScpTo file1 remotehost:file2
+  You will be asked username and passwd. 
+  If everything works fine, a local file 'file1' will copied to
+  'file2' on 'remotehost'.
+
+- ScpFrom.java
+  This program will demonstrate the file transfer from remote to local
+  $ CLASSPATH=.:../src javac ScpFrom.java
+  $ CLASSPATH=.:../src java ScpFrom remotehost:file1 file2
+  You will be asked username and passwd. 
+  If everything works fine, a file 'file1' on 'remotehost' will copied to
+  local 'file1'.

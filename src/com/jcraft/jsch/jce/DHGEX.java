@@ -25,9 +25,13 @@ import com.jcraft.jsch.*;
 
 public class DHGEX extends KeyExchange{
   static int min=1024;
+
 //  static int min=512;
   static int preferred=1024;
   static int max=1024;
+
+//  static int preferred=1024;
+//  static int max=2000;
 
   static final int RSA=0;
   static final int DSS=1;
@@ -84,7 +88,11 @@ public class DHGEX extends KeyExchange{
     buf=session.read(buf);
     buf.getInt();
     buf.getByte();
-    buf.getByte();
+j=    buf.getByte();
+if(j!=31){
+  System.err.println("type: must be 31 "+j);
+  return false;
+}
     byte[] p=buf.getMPInt();
     byte[] g=buf.getMPInt();
 
@@ -112,7 +120,11 @@ public class DHGEX extends KeyExchange{
     j=buf.getInt();
     j=buf.getByte();
     j=buf.getByte();
-    //System.err.println("type: must be 33 "+j);
+if(j!=33){
+System.err.println("type: must be 33 "+j);
+return false;
+}
+
     K_S=buf.getString();
     // K_S is server_key_blob, which includes ....
     // string ssh-dss

@@ -33,7 +33,10 @@ class UserAuthPassword extends UserAuth{
     Packet packet=session.packet;
     Buffer buf=session.buf;
 
-    do{
+    while(true){
+      if(!userinfo.promptNameAndPassword("??")){
+        break;
+      }
     // send
     // byte      SSH_MSG_USERAUTH_REQUEST(50)
     // string    user name
@@ -67,11 +70,10 @@ class UserAuthPassword extends UserAuth{
     }
     else{
       System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
-      System.exit(-1);
+      throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
     }
     }
-    while(userinfo.retry());
+   //throw new JSchException("USERAUTH fail");
     return false;
-
   }
 }

@@ -1,18 +1,37 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Nov  5 14:38:14 UTC 2002
+Last modified: Wed Dec 18 13:25:13 UTC 2002
 
-Changes since version 0.0.1:
-- the tunneling via HTTP proxy is supported.
-- port forwarding like option -R of ssh command.
-  the given port on the remote host will be forwarded to the given host
-  and port on the local side.	
+	
+Changes since version 0.0.8:	
+- the tunneling through a SOCKS5 proxy is supported.
+- 'examples/ScpFrom.java' is added.
+- 'com.jcraft.jsch.UserInfo' interface is modified.
 
-Changes since version 0.0.2:	
-- remote exec is supported.	
-- examples/Exec.java is added.
-- build.xml and some scripts for Ant are added. (lbruand)
-- Const class is added. (lbruand)
+	
+Changes since version 0.0.7:	
+- Packet comression is supported.
+- 'examples/Compression.java' is added.
+- JZlib is included.
+
+	
+Changes since version 0.0.6:	
+- RSA host key is supported.
+- RSA public key authentication is supported.
+
+
+Changes since version 0.0.5:	
+- DSA public key authentication is supported.
+- examples/UserAuthPubKey.java is added.
+- examples/ScpTo.java is added.
+	
+
+Changes since version 0.0.4:	
+- 3des-cbc is supported.
+- hmac-sha1 is supported.
+- hmac-md5-96 is supported.
+- hmac-sha1-96 is supported.	
+	
 
 Changes since version 0.0.3:	
 - port forwarding, similar to the -L option of SSH.
@@ -22,23 +41,17 @@ Changes since version 0.0.3:
 - stream forwarding is added.
 - ChannelSftp class is added for implementing filexfer.
 - interfaces for jsch users are changed.
+	
 
-Changes since version 0.0.4:	
-- 3des-cbc is supported.
-- hmac-sha1 is supported.
-- hmac-md5-96 is supported.
-- hmac-sha1-96 is supported.	
+Changes since version 0.0.2:	
+- remote exec is supported.	
+- examples/Exec.java is added.
+- build.xml and some scripts for Ant are added. (lbruand)
+- Const class is added. (lbruand)
 
-Changes since version 0.0.5:	
-- DSA public key authentication is supported.
-- examples/UserAuthPubKey.java is added.
-- examples/ScpTo.java is added.
-
-Changes since version 0.0.6:	
-- RSA host key is supported.
-- RSA public key authentication is supported.
-
-Changes since version 0.0.7:	
-- Packet comression is supported.
-- 'example/Compression.java' is added.
-- JZlib is included.
+	
+Changes since version 0.0.1:
+- the tunneling via HTTP proxy is supported.
+- port forwarding like option -R of ssh command.
+  the given port on the remote host will be forwarded to the given host
+  and port on the local side.	

@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Tue Nov  5 14:40:30 UTC 2002
+Last modified: Wed Dec 18 13:25:13 UTC 2002
 
 Description
 ===========
@@ -55,6 +55,7 @@ Features
 * X11 forwarding.
 * xauth spoofing.
 * connection through HTTP proxy.
+* connection through SOCKS5 proxy.
 * port forwarding.
 * stream forwarding.
 * remote exec.
@@ -94,8 +95,9 @@ server to ssh client and from ssh client to sshd server.  So, jsch
 allow you to choose which data stream direction will be compressed or not.
 For example, in X11 forwarding session, the packet compression for data
 stream from sshd to ssh client will save the network traffic, but
-usually the traffic from ssh client to sshd is not so many, so by omitting
-the  compression, you may be able to save the CPU time.
+usually the traffic from ssh client to sshd is not so much, so by omitting
+the compression for this direction, you may be able to save the CPU time.
+Please refer to a sample program 'examples/Compression.java'.
 
 
 TODO
@@ -105,7 +107,6 @@ TODO
 * replacing cipher, hash by JCE with pure Java code.
   It seems BeeCrypt(http://www.virtualunlimited.com/products/beecrypt/),
   which in under GNU LGPL, can be integrated into JSch.
-* terminal emulation.
 * error handling.
 
 

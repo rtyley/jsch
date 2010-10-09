@@ -37,12 +37,17 @@ class UserAuthPublicKey extends UserAuth{
     Packet packet=session.packet;
     Buffer buf=session.buf;
 
-    do{
+    while(true){
+      if(!userinfo.promptNameAndPassphrase("??")){
+        throw new JSchException("USERAUTH cancel");
+      }
       if(identity.setPassphrase(userinfo.getPassphrase(session.getIdentity()).getBytes())){
         break;
       }
+      if(!userinfo.retry()){
+        throw new JSchException("USERAUTH cansel");
+      }
     }
-    while(userinfo.retry());
 
     byte[] pubkeyblob=identity.getPublicKeyBlob();
 
@@ -77,7 +82,7 @@ class UserAuthPublicKey extends UserAuth{
     }
     else{
       System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
-      System.exit(-1);
+      throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
     }
 
     // send
@@ -119,8 +124,9 @@ class UserAuthPublicKey extends UserAuth{
     }
     else{
       System.out.println("USERAUTH fail ("+buf.buffer[5]+")");
-      System.exit(-1);
+      throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
     }
+
     return false;
   }
 

@@ -21,12 +21,11 @@
 
 package com.jcraft.jsch;
 
-public interface UserInfo{
-  String getName();
-  String getPassphrase(String message);
-  String getPassword();
-  boolean promptNameAndPassword(String message);
-  boolean promptNameAndPassphrase(String message);
-  boolean prompt(String str);
-  boolean retry();
+public class JSchException extends Exception{
+  public JSchException () {
+    super();
+  }
+  public JSchException (String s) {
+    super(s);
+  }
 }

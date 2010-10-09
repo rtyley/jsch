@@ -75,6 +75,10 @@ public class Session implements Runnable{
   private String host="127.0.0.1";
   private int port=22;
 
+  static{
+    Class ccc=Channel.class;
+  }
+
   Session(){    
     if(random==null){
       try{
@@ -89,12 +93,12 @@ public class Session implements Runnable{
     Packet.setRandom(random);
   }
 
-  public void connect(){    
+  public void connect() throws JSchException{    
     try	{
       int i, j;
       int pad=0;
-
       if(proxy==null){
+        //System.out.println("host="+host+", port="+port);
         Socket socket = new Socket(host, port);
         socket.setTcpNoDelay(true);
         io.setInputStream(socket.getInputStream());
@@ -115,12 +119,12 @@ public class Session implements Runnable{
 
       V_S=new byte[i-1]; System.arraycopy(buf.buffer, 0, V_S, 0, i-1);
 
-      //System.out.println("server: "+new String(V_S));
+      //System.out.println("V_S: "+new String(V_S));
 
       io.put(V_C, 0, V_C.length); io.put("\n".getBytes(), 0, 1);
 
       buf=read(buf);
-//System.out.println("read: 20 ? "+buf.buffer[5]);
+      //System.out.println("read: 20 ? "+buf.buffer[5]);
       j=buf.getInt();
       I_S=new byte[j-1-buf.getByte()];
       System.arraycopy(buf.buffer, buf.s, I_S, 0, I_S.length);
@@ -169,8 +173,8 @@ public class Session implements Runnable{
       boolean result=kex.start(this);
 
       if(!result){
-        System.out.println("verify: "+result);
-        System.exit(-1);
+        //System.out.println("verify: "+result);
+        throw new JSchException("verify: "+result);
       }
 
       byte[] K_S=kex.getHostKey();
@@ -181,7 +185,7 @@ public class Session implements Runnable{
           "Are you sure you want to continue connecting (yes/no)?"
         );
         if(!result){
-          System.exit(-1);
+          throw new JSchException("reject to continue");
         }
       }
 
@@ -205,26 +209,31 @@ public class Session implements Runnable{
 
       updateKeys(hash, K, H, session_id);
 
+      boolean auth=false;
       if(getIdentity()!=null){
         UserAuth us=new UserAuthPublicKey(userinfo);
-        us.start(this);
+        auth=us.start(this);
       }
-      else{
-        UserAuth us=new UserAuthPassword(userinfo);
-        us.start(this);
+      if(auth){
+        (new Thread(this)).start();
+        return; 
       }
-
-      (new Thread(this)).start();
+      UserAuth us=new UserAuthPassword(userinfo);
+      auth=us.start(this);
+      if(auth){
+        (new Thread(this)).start();
+	return;
+      }
+      throw new JSchException("Auth fail");
     }
     catch(IOException e) {
       System.out.println("Session.connect: "+e);
-      System.exit(-1);
+      throw new JSchException("Session.connect: "+e);
     }
     catch(Exception e) {
       System.out.println("Session.connect: "+e);
-      System.exit(-1);
+      throw new JSchException("Session.connect: "+e);
     }
-    return;
   }
 
 //public void start(){ (new Thread(this)).start();  }
@@ -237,7 +246,8 @@ public class Session implements Runnable{
       return channel;
     }
     catch(Exception e){
-      System.out.println("??"+e);
+      System.out.println("?? "+e);
+      e.printStackTrace();
     }
     return null;
   }
@@ -299,6 +309,8 @@ public class Session implements Runnable{
       if(inflater!=null){
         inflater.uncompress(buf);
       }
+
+      //System.out.println("read: "+buf.buffer[5]);
 
       if(buf.buffer[5]==1){
         buf.rewind();
@@ -539,7 +551,8 @@ public class Session implements Runnable{
             buf.getByte();
             channel=Channel.getChannel(i);
    	    i=buf.getInt();             // exit-status
-	    System.out.println("exit-stauts: "+i);
+//	    System.out.println("exit-stauts: "+i);
+//          channel.close();
 	  }
 	  break;
 	case Const.SSH_MSG_CHANNEL_OPEN:
@@ -577,24 +590,29 @@ public class Session implements Runnable{
     (new Thread(pw)).start();
   }
 
-  public void setPortForwardingR(int rport, String host, int lport) throws Exception{
+  public void setPortForwardingR(int rport, String host, int lport) throws JSchException{
     Buffer buf=new Buffer(100); // ??
     Packet packet=new Packet(buf);
 
     ChannelForwardedTCPIP.addPort(this, rport, host, lport);
 
-    // byte SSH_MSG_GLOBAL_REQUEST 80
-    // string "tcpip-forward"
-    // boolean want_reply
-    // string  address_to_bind
-    // uint32  port number to bind
-    packet.reset();
-    buf.putByte((byte) Const.SSH_MSG_GLOBAL_REQUEST);
-    buf.putString("tcpip-forward".getBytes());
-    buf.putByte((byte)0);
-    buf.putString("0.0.0.0".getBytes());
-    buf.putInt(rport);
-    write(packet);
+    try{
+      // byte SSH_MSG_GLOBAL_REQUEST 80
+      // string "tcpip-forward"
+      // boolean want_reply
+      // string  address_to_bind
+      // uint32  port number to bind
+      packet.reset();
+      buf.putByte((byte) Const.SSH_MSG_GLOBAL_REQUEST);
+      buf.putString("tcpip-forward".getBytes());
+      buf.putByte((byte)0);
+      buf.putString("0.0.0.0".getBytes());
+      buf.putInt(rport);
+      write(packet);
+    }
+    catch(Exception e){
+      throw new JSchException(e.toString());
+    }
   }
 
   void addChannel(Channel channel){

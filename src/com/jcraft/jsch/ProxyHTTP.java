@@ -32,12 +32,19 @@ public class ProxyHTTP implements Proxy{
   private InputStream in;
   private OutputStream out;
 
+  private String user;
+  private String passwd;
+
   public ProxyHTTP(String proxy_host){
     this(proxy_host, 80);
   }
   public ProxyHTTP(String proxy_host, int proxy_port){
     this.proxy_host=proxy_host;
     this.proxy_port=proxy_port;
+  }
+  public void setUserPasswd(String user, String passwd){
+    this.user=user;
+    this.passwd=passwd;
   }
   public void connect(String host, int port) throws Exception{
     this.host=host;
