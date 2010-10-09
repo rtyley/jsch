@@ -1,7 +1,18 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue Oct 16 07:24:24 UTC 2007
+Last modified: Tue Oct 30 07:52:32 UTC 2007
 
+	
+Changes since version 0.1.35:			
+- bugfix: ChannelSftp can not handle the local filenames correctly on Windows.
+- bugfix: '/' must be handled as the file separator on JVM for Windows.
+- change: the system property
+	    "javax.security.auth.useSubjectCredsOnly"
+	  will be set to "false" for "gssapi-with-mic"
+	  if that property is not given explicitly.
+- change: added changes about ChannelSftp#{pwd(), home()} to
+	  ChangeLog; 'Changes since version 0.1.34:' section.
+	
 	
 Changes since version 0.1.34:			
 - bugfix: the OutputStream from the channel may make the JVM
@@ -15,6 +26,8 @@ Changes since version 0.1.34:
 - change: ChannelSftp supports the filename globbing for 
 	  the filename in multi-byte characters.
 - change: ChannelSftp will internally handle filenames in UTF-8 encoding. 
+- change: ChannelSftp#pwd() may throw an SftpException.
+- change: ChannelSftp#home() may throw an SftpException.
 - feature: following methods have been added in ChannelSftp
 	   String getServerVersion()
 	   String getClientVersion()

@@ -128,7 +128,6 @@ public class ChannelSftp extends ChannelSession{
   public static final int RESUME=1;
   public static final int APPEND=2;
 
-//  private boolean interactive=true;
   private boolean interactive=false;
   private int seq=1;
   private int[] ackid=new int[1];
@@ -159,6 +158,7 @@ public class ChannelSftp extends ChannelSession{
 
   private static final String file_separator=java.io.File.separator;
   private static final char file_separatorc=java.io.File.separatorChar;
+  private static boolean fs_is_bs=(byte)java.io.File.separatorChar == '\\';
 
   private String cwd;
   private String home;
@@ -334,6 +334,11 @@ public class ChannelSftp extends ChannelSession{
 	String _dst=null;
 	if(isRemoteDir){
 	  int i=_src.lastIndexOf(file_separatorc);
+          if(fs_is_bs){
+            int ii=_src.lastIndexOf('/');
+            if(ii!=-1 && ii>i)
+              i=ii; 
+          }
 	  if(i==-1) dstsb.append(_src);
 	  else dstsb.append(_src.substring(i + 1));
           _dst=dstsb.toString();
@@ -2221,7 +2226,7 @@ public class ChannelSftp extends ChannelSession{
         i--;
         continue;
       }
-      if((byte)file_separatorc != '\\' &&
+      if(!fs_is_bs &&
          i>0 && path[i-1]=='\\'){
         i--;
         if(i>0 && path[i-1]=='\\'){
@@ -2233,9 +2238,17 @@ public class ChannelSftp extends ChannelSession{
       break;
     }
 
-    if(i<0){ v.addElement(Util.unquote(_path)); return v;}
-    while(i>=0){if(path[i]==file_separatorc)break;i--;}
-    if(i<0){ v.addElement(Util.unquote(_path)); return v;}
+    if(i<0){ v.addElement(fs_is_bs ? _path : Util.unquote(_path)); return v;}
+
+    while(i>=0){
+      if(path[i]==file_separatorc ||
+         (fs_is_bs && path[i]=='/')){ // On Windows, '/' is also the separator.
+        break;
+      }
+      i--;
+    }
+
+    if(i<0){ v.addElement(fs_is_bs ? _path : Util.unquote(_path)); return v;}
 
     byte[] dir;
     if(i==0){dir=new byte[]{(byte)file_separatorc};}

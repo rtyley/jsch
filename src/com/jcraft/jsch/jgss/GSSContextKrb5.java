@@ -42,6 +42,12 @@ import org.ietf.jgss.MessageProp;
 import org.ietf.jgss.Oid;
 
 public class GSSContextKrb5 implements com.jcraft.jsch.GSSContext{
+
+  private static final String pUseSubjectCredsOnly = 
+    "javax.security.auth.useSubjectCredsOnly";
+  private static String useSubjectCredsOnly = 
+    getSystemProperty(pUseSubjectCredsOnly);
+
   private GSSContext context=null;
   public void create(String user, String host) throws JSchException{
     try{
@@ -111,10 +117,28 @@ public class GSSContextKrb5 implements com.jcraft.jsch.GSSContext{
 
   public byte[] init(byte[] token, int s, int l) throws JSchException {
     try{
+      // Without setting "javax.security.auth.useSubjectCredsOnly" to "false",
+      // Sun's JVM for Un*x will show messages to stderr in
+      // processing context.initSecContext().
+      // This hack is not thread safe ;-<.
+      // If that property is explicitly given as "true" or "false",
+      // this hack must not be invoked.
+      if(useSubjectCredsOnly==null){
+        setSystemProperty(pUseSubjectCredsOnly, "false");
+      }
       return context.initSecContext(token, 0, l);
     }
     catch(GSSException ex){
       throw new JSchException(ex.toString());
+    }
+    catch(java.lang.SecurityException ex){
+      throw new JSchException(ex.toString());
+    }
+    finally{
+      if(useSubjectCredsOnly==null){
+        // By the default, it must be "true".
+        setSystemProperty(pUseSubjectCredsOnly, "true");
+      }
     }
   }
 
@@ -133,6 +157,21 @@ public class GSSContextKrb5 implements com.jcraft.jsch.GSSContext{
       context.dispose();
     }
     catch(GSSException ex){
+    }
+  }
+
+  private static String getSystemProperty(String key){
+    try{ return System.getProperty(key); }
+    catch(Exception e){ 
+      // We are not allowed to get the System properties.
+      return null; 
+    } 
+  }
+
+  private static void setSystemProperty(String key, String value){
+    try{ System.setProperty(key, value); }
+    catch(Exception e){ 
+      // We are not allowed to set the System properties.
     }
   }
 }
