@@ -26,7 +26,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  private String version="JSCH-0.1";
+  static private final String version="JSCH-0.0.6";
   private byte[] V_S;                                 // server version
   private byte[] V_C=("SSH-2.0-"+version).getBytes(); // client version
 
@@ -173,7 +173,7 @@ public class Session implements Runnable{
       if(!JSch.isKnownHost(host, K_S)){
         result=userinfo.prompt(
           "The authenticity of host '"+host+"' can't be established.\n"+
-          "DSA key fingerprint is "+kex.getFingerPrint()+".\n"+
+          kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
           "Are you sure you want to continue connecting (yes/no)?"
         );
         if(!result){

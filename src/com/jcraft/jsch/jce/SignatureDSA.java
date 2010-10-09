@@ -21,8 +21,6 @@
 
 package com.jcraft.jsch.jce;
 
-import com.jcraft.jsch.Signature;
-
 import java.math.BigInteger;
 import java.security.*;
 import java.security.spec.*;
@@ -31,7 +29,7 @@ import javax.crypto.*;
 import javax.crypto.spec.*;
 import javax.crypto.interfaces.*;
 
-public class SignatureDSA implements Signature{
+public class SignatureDSA implements com.jcraft.jsch.SignatureDSA{
 
   java.security.Signature signature;
   KeyFactory keyFactory;

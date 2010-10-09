@@ -21,7 +21,7 @@
 
 package com.jcraft.jsch;
 
-public interface Signature{
+public interface SignatureDSA{
   void init() throws Exception;
   void setPubKey(byte[] y, byte[] p, byte[] q, byte[] g) throws Exception;
   void setPrvKey(byte[] x, byte[] p, byte[] q, byte[] g) throws Exception;

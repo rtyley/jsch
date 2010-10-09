@@ -44,7 +44,8 @@ public class JSch{
     config.put("hmac-md5-96",   "com.jcraft.jsch.jce.HMACMD596");
     config.put("sha-1",         "com.jcraft.jsch.jce.SHA1");
     config.put("md5",           "com.jcraft.jsch.jce.MD5");
-    config.put("signature.dsa", "com.jcraft.jsch.jce.SignatureDSA");
+    config.put("signature.dss", "com.jcraft.jsch.jce.SignatureDSA");
+    config.put("signature.rsa", "com.jcraft.jsch.jce.SignatureRSA");
   }
   private static java.util.Vector pool=new java.util.Vector();
   public JSch(){

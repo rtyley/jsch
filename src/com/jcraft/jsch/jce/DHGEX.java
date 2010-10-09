@@ -29,6 +29,10 @@ public class DHGEX extends KeyExchange{
   static int preferred=1024;
   static int max=1024;
 
+  static final int RSA=0;
+  static final int DSS=1;
+  private int type=0;
+
   com.jcraft.jsch.DH dh;
   HASH sha;
 
@@ -160,17 +164,41 @@ public class DHGEX extends KeyExchange{
 
     // System.out.print("H -> "); dump(H, 0, H.length);
 
-    Signature sig=new SignatureDSA();
-    sig.init();
+    i=0;
+    j=0;
+    j=((K_S[i++]<<24)&0xff000000)|((K_S[i++]<<16)&0x00ff0000)|
+      ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
+    String alg=new String(K_S, i, j);
+    i+=j;
 
-    byte[] q=null;
-    {
+    if(alg.equals("ssh-rsa")){
       byte[] tmp;
-      i=0;
-      j=0;
+      byte[] ee;
+      byte[] n;
+
+      type=RSA;
+
       j=((K_S[i++]<<24)&0xff000000)|((K_S[i++]<<16)&0x00ff0000)|
 	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
-      i+=j;
+      tmp=new byte[j]; System.arraycopy(K_S, i, tmp, 0, j); i+=j;
+      ee=tmp;
+      j=((K_S[i++]<<24)&0xff000000)|((K_S[i++]<<16)&0x00ff0000)|
+	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
+      tmp=new byte[j]; System.arraycopy(K_S, i, tmp, 0, j); i+=j;
+      n=tmp;
+
+      SignatureRSA sig=new SignatureRSA();
+      sig.init();
+      sig.setPubKey(ee, n);   
+      sig.update(H);
+      return sig.verify(sig_of_H);
+    }
+    else if(alg.equals("ssh-dss")){
+      byte[] q=null;
+      byte[] tmp;
+
+      type=DSS;
+
       j=((K_S[i++]<<24)&0xff000000)|((K_S[i++]<<16)&0x00ff0000)|
 	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
       tmp=new byte[j]; System.arraycopy(K_S, i, tmp, 0, j); i+=j;
@@ -187,11 +215,18 @@ public class DHGEX extends KeyExchange{
 	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
       tmp=new byte[j]; System.arraycopy(K_S, i, tmp, 0, j); i+=j;
       f=tmp;
-    }
-    sig.setPubKey(f, p, q, g);   
-    sig.update(H);
 
-    return sig.verify(sig_of_H);
+      SignatureDSA sig=new SignatureDSA();
+      sig.init();
+      sig.setPubKey(f, p, q, g);   
+      sig.update(H);
+      return sig.verify(sig_of_H);
+    }
+    else{
+	System.out.println("unknow alg");
+	return false;
+    }	    
+
   }
 
   public byte[] getK(){ return K; }
@@ -222,5 +257,8 @@ public class DHGEX extends KeyExchange{
       return "???";
     }
   }
-
+  public String getKeyType(){
+    if(type==DSS) return "DSA";
+    return "RSA";
+  }
 }

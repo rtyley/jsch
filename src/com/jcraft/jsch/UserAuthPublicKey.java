@@ -72,7 +72,8 @@ class UserAuthPublicKey extends UserAuth{
     if(buf.buffer[5]==Const.SSH_MSG_USERAUTH_PK_OK){
     }
     else if(buf.buffer[5]==Const.SSH_MSG_USERAUTH_FAILURE){
-      System.out.println("USERAUTH publickey "+identity+" is not acceptable.");
+      System.out.println("USERAUTH publickey "+session.getIdentity()+
+			 " is not acceptable.");
       return false;
     }
     else{

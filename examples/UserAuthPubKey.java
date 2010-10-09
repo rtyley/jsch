@@ -13,7 +13,7 @@ public class UserAuthPubKey{
       Session session=jsch.getSession(host, 22);
 
       JFileChooser chooser = new JFileChooser();
-      chooser.setDialogTitle("Choose your DSA privatekey(ex. ~/.ssh/id_dsa)");
+      chooser.setDialogTitle("Choose your privatekey(ex. ~/.ssh/id_dsa)");
       chooser.setFileHidingEnabled(false);
       int returnVal = chooser.showOpenDialog(null);
       if(returnVal == JFileChooser.APPROVE_OPTION) {
