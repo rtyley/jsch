@@ -35,6 +35,7 @@ public class Sftp{
       byte[] buf=new byte[1024];
       int i;
       String str;
+      int level=0;
 
       while(true){
         out.print("sftp> ");
@@ -76,7 +77,7 @@ public class Sftp{
             continue;
 	  }
 	  try{
-	    int level=Integer.parseInt((String)cmds.elementAt(1));
+	    level=Integer.parseInt((String)cmds.elementAt(1));
 	    java.util.Properties config=new java.util.Properties();
 	    if(level==0){
 	      config.put("compression.s2c", "none");

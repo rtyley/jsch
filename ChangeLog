@@ -1,8 +1,16 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Feb 26 09:25:31 UTC 2003
+Last modified: Thu Mar  6 15:00:13 UTC 2003
 
+	
+Changes since version 0.1.1:	
+- added the file name globbing support on sftp session.
+- fixed a bug in the public key authentication.
+  When there was not a public key in ~/.ssh/, that problem occurred.
+- improved the 'setTimeout' method.
+- fixed a typo in 'LICENSE.txt'
 
+	
 Changes since version 0.1.0:	
 - added 'rekey' method to 'Session' class for key re-exchanging.
 - added 'rekey' and 'compression' command to 'examples/Sftp.java'.

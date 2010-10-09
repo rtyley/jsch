@@ -17,12 +17,12 @@ modification, are permitted provided that the following conditions are met:
 
 THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
 INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-VISIGOTH SOFTWARE SOCIETY OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL JCRAFT,
+INC. OR ANY CONTRIBUTORS TO THIS SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
@@ -178,11 +178,16 @@ class Identity{
 
       }
 
-      file=new File(identity+".pub");
-      fis=new FileInputStream(identity+".pub");
-      buf=new byte[(int)(file.length())];
-      len=fis.read(buf, 0, buf.length);
-      fis.close();
+      try{
+        file=new File(identity+".pub");
+        fis=new FileInputStream(identity+".pub");
+        buf=new byte[(int)(file.length())];
+        len=fis.read(buf, 0, buf.length);
+        fis.close();
+      }
+      catch(Exception ee){
+	return;
+      }
 
       if(buf.length>4 &&             // FSecure's public key
 	 buf[0]=='-' && buf[1]=='-' && buf[2]=='-' && buf[3]=='-'){
@@ -229,6 +234,7 @@ class Identity{
 	}
       }
       else{
+	if(buf[0]!='s'|| buf[1]!='s'|| buf[2]!='h'|| buf[3]!='-') return;
 	i=0;
 	while(i<len){ if(buf[i]==' ')break; i++;} i++;
 	if(i>=len) return;

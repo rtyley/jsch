@@ -17,12 +17,12 @@ modification, are permitted provided that the following conditions are met:
 
 THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
 INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-VISIGOTH SOFTWARE SOCIETY OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL JCRAFT,
+INC. OR ANY CONTRIBUTORS TO THIS SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
@@ -156,7 +156,37 @@ public class Session implements Runnable{
         InputStream in;
         OutputStream out;
 	if(socket_factory==null){
-          socket=new Socket(host, port);
+	  if(timeout==0){
+	    socket=new Socket(host, port);
+	  }
+	  else{
+	    final Socket[] sockp=new Socket[1];
+	    final Thread thread=Thread.currentThread();
+	    final Exception[] ee=new Exception[1];
+	    final boolean[] done=new boolean[1];
+	    done[0]=false;
+	    new Thread(new Runnable(){
+		public void run(){
+		  try{
+		    sockp[0]=new Socket(host, port);
+		    if(done[0]) sockp[0].close();
+		    else thread.interrupt();
+		  }
+		  catch(Exception e){ee[0]=e;}
+		}
+	      }).start();
+	    try{ Thread.sleep(timeout); }
+	    catch(Exception eee){}
+	    done[0]=true;
+	    if(sockp[0]!=null) socket=sockp[0];
+	    else{
+              String message="socket is not established";
+	      if(ee[0]!=null){
+		message=ee[0].toString();
+	      }
+	      throw new JSchException(message);
+	    }
+	  }
 	  in=socket.getInputStream();
 	  out=socket.getOutputStream();
 	}
@@ -164,6 +194,9 @@ public class Session implements Runnable{
           socket=socket_factory.createSocket(host, port);
 	  in=socket_factory.getInputStream(socket);
 	  out=socket_factory.getOutputStream(socket);
+	}
+	if(timeout>0){
+	  socket.setSoTimeout(timeout);
 	}
         socket.setTcpNoDelay(true);
         io.setInputStream(in);
@@ -1013,7 +1046,11 @@ System.out.println("NEWKEYS");
   public int getTimeout(){ return timeout; }
   public void setTimeout(int foo) throws JSchException {
     if(socket==null){
-      throw new JSchException("session is not established");
+      if(foo<0){
+        throw new JSchException("invalid timeout value");
+      }
+      this.timeout=foo;
+      return;
     }
     try{
       socket.setSoTimeout(foo);
