@@ -39,6 +39,8 @@ public class ChannelForwardedTCPIP extends Channel{
 //static private final int LOCAL_WINDOW_SIZE_MAX=0x100000;
   static private final int LOCAL_MAXIMUM_PACKET_SIZE=0x4000;
 
+  static private final int TIMEOUT=10*1000;
+
   SocketFactory factory=null;
   private Socket socket=null;
   private ForwardedTCPIPDaemon daemon=null;
@@ -55,7 +57,8 @@ public class ChannelForwardedTCPIP extends Channel{
     connected=true;
   }
 
-  void init (){
+  public void run(){
+
     try{ 
       if(lport==-1){
         Class c=Class.forName(target);
@@ -64,23 +67,24 @@ public class ChannelForwardedTCPIP extends Channel{
         Object[] foo=getPort(session, rport);
         daemon.setArg((Object[])foo[3]);
         new Thread(daemon).start();
-        return;
       }
       else{
         socket=(factory==null) ? 
-          new Socket(target, lport) : 
+           Util.createSocket(target, lport, TIMEOUT) : 
           factory.createSocket(target, lport);
         socket.setTcpNoDelay(true);
         io.setInputStream(socket.getInputStream());
         io.setOutputStream(socket.getOutputStream());
       }
+      sendOpenConfirmation();
     }
     catch(Exception e){
-      System.err.println(e);
+      sendOpenFailure(SSH_OPEN_ADMINISTRATIVELY_PROHIBITED);
+      close=true;
+      disconnect();
+      return; 
     }
-  }
 
-  public void run(){
     thread=Thread.currentThread();
     Buffer buf=new Buffer(rmpsize);
     Packet packet=new Packet(buf);

@@ -109,9 +109,8 @@ System.err.println("");
     type="x11".getBytes();
 
     connected=true;
-
+    /*
     try{ 
-      //socket=new Socket(host, port);
       socket=Util.createSocket(host, port, TIMEOUT);
       socket.setTcpNoDelay(true);
       io=new IO();
@@ -121,9 +120,26 @@ System.err.println("");
     catch(Exception e){
       //System.err.println(e);
     }
+    */
   }
 
   public void run(){
+
+    try{ 
+      socket=Util.createSocket(host, port, TIMEOUT);
+      socket.setTcpNoDelay(true);
+      io=new IO();
+      io.setInputStream(socket.getInputStream());
+      io.setOutputStream(socket.getOutputStream());
+      sendOpenConfirmation();
+    }
+    catch(Exception e){
+      sendOpenFailure(SSH_OPEN_ADMINISTRATIVELY_PROHIBITED);
+      close=true;
+      disconnect();
+      return;
+    }
+
     thread=Thread.currentThread();
     Buffer buf=new Buffer(rmpsize);
     Packet packet=new Packet(buf);

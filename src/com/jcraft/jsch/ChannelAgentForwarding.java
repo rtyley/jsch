@@ -69,6 +69,16 @@ class ChannelAgentForwarding extends Channel{
     connected=true;
   }
 
+  public void run(){
+    try{
+      sendOpenConfirmation();
+    }
+    catch(Exception e){
+      close=true;
+      disconnect();
+    }
+  }
+
   void write(byte[] foo, int s, int l) throws java.io.IOException {
 
     if(packet==null){

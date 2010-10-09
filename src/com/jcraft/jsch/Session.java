@@ -33,7 +33,7 @@ import java.io.*;
 import java.net.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.32";
+  static private final String version="JSCH-0.1.33";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -46,6 +46,10 @@ public class Session implements Runnable{
   static final int SSH_MSG_NEWKEYS=                        21;
   static final int SSH_MSG_KEXDH_INIT=                     30;
   static final int SSH_MSG_KEXDH_REPLY=                    31;
+  static final int SSH_MSG_KEX_DH_GEX_GROUP=               31;
+  static final int SSH_MSG_KEX_DH_GEX_INIT=                32;
+  static final int SSH_MSG_KEX_DH_GEX_REPLY=               33;
+  static final int SSH_MSG_KEX_DH_GEX_REQUEST=             34;
   static final int SSH_MSG_GLOBAL_REQUEST=                 80;
   static final int SSH_MSG_REQUEST_SUCCESS=                81;
   static final int SSH_MSG_REQUEST_FAILURE=                82;
@@ -1132,6 +1136,10 @@ key_type+" key fingerprint is "+key_fprint+".\n"+
          command==SSH_MSG_NEWKEYS ||
          command==SSH_MSG_KEXDH_INIT ||
          command==SSH_MSG_KEXDH_REPLY ||
+         command==SSH_MSG_KEX_DH_GEX_GROUP ||
+         command==SSH_MSG_KEX_DH_GEX_INIT ||
+         command==SSH_MSG_KEX_DH_GEX_REPLY ||
+         command==SSH_MSG_KEX_DH_GEX_REQUEST ||
          command==SSH_MSG_DISCONNECT){
         break;
       }
@@ -1365,7 +1373,14 @@ break;
 	     !("x11".equals(ctyp) && x11_forwarding) &&
 	     !("auth-agent@openssh.com".equals(ctyp) && agent_forwarding)){
             //System.err.println("Session.run: CHANNEL OPEN "+ctyp); 
-	    throw new IOException("Session.run: CHANNEL OPEN "+ctyp);
+	    //throw new IOException("Session.run: CHANNEL OPEN "+ctyp);
+	    packet.reset();
+	    buf.putByte((byte)SSH_MSG_CHANNEL_OPEN_FAILURE);
+	    buf.putInt(buf.getInt());
+ 	    buf.putInt(Channel.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED);
+	    buf.putString("".getBytes());
+	    buf.putString("".getBytes());
+	    write(packet);
 	  }
 	  else{
 	    channel=Channel.getChannel(ctyp);
@@ -1373,13 +1388,6 @@ break;
 	    channel.getData(buf);
 	    channel.init();
 
-	    packet.reset();
-	    buf.putByte((byte)SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
-	    buf.putInt(channel.getRecipient());
- 	    buf.putInt(channel.id);
-	    buf.putInt(channel.lwsize);
-	    buf.putInt(channel.lmpsize);
-	    write(packet);
 	    Thread tmp=new Thread(channel);
 	    tmp.setName("Channel "+ctyp+" "+host);
             if(daemon_thread){

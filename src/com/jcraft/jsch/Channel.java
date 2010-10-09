@@ -37,6 +37,15 @@ import java.io.IOException;
 
 
 public abstract class Channel implements Runnable{
+
+  static final int SSH_MSG_CHANNEL_OPEN_CONFIRMATION=      91;
+  static final int SSH_MSG_CHANNEL_OPEN_FAILURE=           92;
+
+  static final int SSH_OPEN_ADMINISTRATIVELY_PROHIBITED=    1;
+  static final int SSH_OPEN_CONNECT_FAILED=                 2;
+  static final int SSH_OPEN_UNKNOWN_CHANNEL_TYPE=           3;
+  static final int SSH_OPEN_RESOURCE_SHORTAGE=              4;
+
   static int index=0; 
   private static java.util.Vector pool=new java.util.Vector();
   static Channel getChannel(String type){
@@ -561,4 +570,32 @@ public abstract class Channel implements Runnable{
   public Session getSession(){ return session; }
   public int getId(){ return id; }
   //public int getRecipientId(){ return getRecipient(); }
+
+  protected void sendOpenConfirmation() throws Exception{
+    Buffer buf=new Buffer(100);
+    Packet packet=new Packet(buf);
+    packet.reset();
+    buf.putByte((byte)SSH_MSG_CHANNEL_OPEN_CONFIRMATION);
+    buf.putInt(getRecipient());
+    buf.putInt(id);
+    buf.putInt(lwsize);
+    buf.putInt(lmpsize);
+    session.write(packet);
+  }
+
+  protected void sendOpenFailure(int reasoncode){
+    try{
+      Buffer buf=new Buffer(100);
+      Packet packet=new Packet(buf);
+      packet.reset();
+      buf.putByte((byte)SSH_MSG_CHANNEL_OPEN_FAILURE);
+      buf.putInt(getRecipient());
+      buf.putInt(reasoncode);
+      buf.putString("open failed".getBytes());
+      buf.putString("".getBytes());
+      session.write(packet);
+    }
+    catch(Exception e){
+    }
+  }
 }

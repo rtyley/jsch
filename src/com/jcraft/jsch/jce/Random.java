@@ -38,7 +38,7 @@ public class Random implements com.jcraft.jsch.Random{
 
     // We hope that 'new SecureRandom()' will use NativePRNG algorithm
     // on Sun's Java5 for GNU/Linux and Solaris.
-    // It seems NativePRNG refers to /dev/random and it must not be blocked,
+    // It seems NativePRNG refers to /dev/urandom and it must not be blocked,
     // but NativePRNG is slower than SHA1PRNG ;-<
     // TIPS: By adding option '-Djava.security.egd=file:/dev/./urandom'
     //       SHA1PRNG will be used instead of NativePRNG.

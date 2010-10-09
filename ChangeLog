@@ -1,6 +1,20 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Mar  7 06:50:37 UTC 2007
+Last modified: Fri May 11 07:12:24 UTC 2007
+
+Changes since version 0.1.32:			
+- bugfix: freeze in 'diffie-hellman-group-exchange-sha1'.          FIXED.
+          By the default, 'diffie-hellman-group1-sha1' will be used
+	  and if you have not chosen 'diffie-hellman-group-exchange-sha1'
+	  explicitly, you don't have to worry about it.
+- bugfix: there should be timeout mechanism in opening a socket
+	  for remote port forwarding.                              FIXED.
+	  At the failure or timeout, 'SSH_MSG_CHANNEL_OPEN_FAILURE'
+	  will be sent to sshd.
+- bugfix: there should be timeout mechanism in opening a socket
+	  for X11 forwarding.                                      FIXED.
+	  At the failure or timeout, 'SSH_MSG_CHANNEL_OPEN_FAILURE'
+          will be sent to sshd.
 
 	
 Changes since version 0.1.31:			
