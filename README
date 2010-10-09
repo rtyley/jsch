@@ -1,0 +1,126 @@
+
+                                      JSch
+
+                                Java Secure Channel
+                         by ymnk@jcraft.com, JCraft,Inc.
+
+                            http://www.jcraft.com/jsch/
+
+Last modified: Sun Oct 20 14:23:06 UTC 2002
+
+Description
+===========
+JSch is a pure Java implementation of SSH2.  JSch allows you to 
+connect to an sshd server and use port forwarding, X11 forwarding, 
+file transfer, etc., and you can integrate its functionality
+into your own Java programs. JSch is licensed under GNU LGPL.
+
+
+Documentation
+=============
+* README files all over the source tree have info related to the stuff
+  in the directories. 
+* ChangeLog: what changed from the previous version?
+
+
+Directories & Files in the Source Tree
+======================================
+* src/com/ has source trees of JSch
+* example/ has some samples, which demonstrate the usages.
+* tools/ has scripts for Ant.
+
+Why JSch?
+==========
+Our intension of developing this stuff is to enable users of our pure
+java X servers, WiredX(http://wiredx.net/), WeirdX to enjoy secure X
+sessions.  So, our efforts have been done mostly in the SSH2 protocol related
+to X Window System; X11 forwarding.  Of course, we are also interested in 
+adding other functionalities; port forward, file transfer, terminal emulation, etc.
+
+
+Features
+========
+* JSch requires J2SE 1.4.
+  JSch is in pure Java, but it depends on JavaTM Cryptography
+  Extension (JCE), which is included in J2SE 1.4.0 or later.
+* SSH2 protocol support.
+* Key exchange: diffie-hellman-group-exchange-sha1
+  From the implementation of Diffie-Hellman key exchange by JCE,
+  the bit-size of prime number p is 1024.
+* Cipher: blowfish-cbc
+* MAC: hmac-md5
+* Key type: ssh-dss
+* Userauth: password
+* X11 forwarding.
+* xauth spoofing.
+* connection through HTTP proxy.
+* port forwarding(-R).
+* remote exec.
+* JSch is licensed under GNU LGPL.
+
+
+How To Try
+==========
+This archive does not include java byte code, so please compile
+the source code by your self.
+  $ cd jsch-?.?.?/src
+  $ javac com/jcraft/jsch/*java com/jcraft/jsch/jce/*java
+'/examples/' directory has included some samples to demonstrate what 
+JSch can do.  Please refer to '/examples/README' file.
+
+
+TODO
+====
+* Cipher: 3des-cbc
+* MAC: hmac-sha1, hmac-sha1-96,
+* hmac-md5-96
+* Key type: ssh-rsa
+* Userauth: publickey
+* port forwarding(-L).
+* file transfer.
+* packet compression.
+  JZlib(http://www.jcraft.com/jzlib/) will be used.
+* re-implementation with java.nio.
+* replacing cipher, hash by JCE with pure Java code.
+  It seems BeeCrypt(http://www.virtualunlimited.com/products/beecrypt/),
+  which in under GNU LGPL, can be integrated into JSch.
+* terminal emulation.
+* error handling.
+
+
+Copyrights & Disclaimers
+========================
+JSch is copyrighted by JCraft,Inc. and is licensed through the
+GNU Library General Public License. 
+Read the COPYING file for the complete license.
+
+
+Credits and Acknowledgments
+============================
+JSch has been developed by ymnk@jcaft.com and it can not be hacked
+without several help.
+* First of all, we want to thank JCE team</a> at Sun Microsystems.
+  For long time, we had planed to implement SSH2 in pure Java,
+  but we had hesitated to do because tons of work must be done for
+  implementing ciphers, hashes, etc., from the scratch.
+  Thanks to newly added functionalities to J2SE 1.4.0, we could
+  release the first working version within just 1.5 weeks from the scratch.
+* We appreciate the OpenSSH project.
+  The options '-ddd' of sshd, '---vvv' of ssh and the compile options 
+  '-DPACKET_DEBUG', '-DDEBUG_KEXDH' and  '-DDEBUG_KEX' were very
+  useful in debugging JSch.
+* We appreciate IETF sesch working group and SSH Communications Security Corp.
+  Without the standardization of the protocol, we could not get the
+  chance to implement JSch.
+* We also appreciate Seigo Haruyama(http://www.unixuser.org/~haruyama/),
+  who are interpreting drafts of SSH2 protocol in Japanese.
+  His works were very useful for us to understand the technical terms
+  in our native language.
+
+
+If you have any comments, suggestions and questions, write us 
+at jsch@jcraft.com
+
+
+``SSH is a registered trademark and Secure Shell is a trademark of
+SSH Communications Security Corp (www.ssh.com)''.

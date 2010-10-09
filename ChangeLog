@@ -1,0 +1,16 @@
+ChangeLog of JSch
+====================================================================
+Last modified: Sun Oct 20 14:21:46 UTC 2002
+
+	
+Changes since version 0.0.1:
+- the tunneling via HTTP proxy is supported.
+- port forwarding like option -R of ssh command.
+  the given port on the remote host will be forwarded to the given host
+  and port on the local side.	
+
+Changes since version 0.0.2:	
+- remote exec is supported.	
+- examples/Exec.java is added.
+- build.xml and some scripts for Ant are added. (lbruand)
+- Const class is added. (lbruand)
