@@ -67,7 +67,7 @@ public class SftpATTRS {
   static final int S_IWOTH = 00002; // write by others
   static final int S_IXOTH = 00001; // execute/search by others
 
-  String getPermissionsString() {
+  public String getPermissionsString() {
     StringBuffer buf = new StringBuffer(10);
 
     if(isDir()) buf.append('d');
@@ -130,6 +130,9 @@ public class SftpATTRS {
   int atime;
   int mtime;
   String[] extended=null;
+
+  private SftpATTRS(){
+  }
 
   static SftpATTRS getATTR(Buffer buf){
     SftpATTRS attr=new SftpATTRS();	
@@ -201,21 +204,21 @@ public class SftpATTRS {
       }
     }
   }
-  void setSIZE(long size){
+  public void setSIZE(long size){
     flags|=SSH_FILEXFER_ATTR_SIZE;
     this.size=size;
   }
-  void setUIDGID(int uid, int gid){
+  public void setUIDGID(int uid, int gid){
     flags|=SSH_FILEXFER_ATTR_UIDGID;
     this.uid=uid;
     this.gid=gid;
   }
-  void setACMODTIME(int atime, int mtime){
+  public void setACMODTIME(int atime, int mtime){
     flags|=SSH_FILEXFER_ATTR_ACMODTIME;
     this.atime=atime;
     this.mtime=mtime;
   }
-  void setPERMISSIONS(int permissions){
+  public void setPERMISSIONS(int permissions){
     flags|=SSH_FILEXFER_ATTR_PERMISSIONS;
     this.permissions=permissions;
   }

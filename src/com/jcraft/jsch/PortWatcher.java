@@ -129,6 +129,8 @@ class PortWatcher implements Runnable{
 	((ChannelDirectTCPIP)channel).setOrgIPAddress(socket.getInetAddress().getHostAddress());
 	((ChannelDirectTCPIP)channel).setOrgPort(socket.getPort());
         channel.connect();
+	if(channel.exitstatus!=-1){
+	}
       }
     }
     catch(Exception e){

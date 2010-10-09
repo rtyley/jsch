@@ -75,10 +75,13 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	// byte      SSH_MSG_USERAUTH_SUCCESS(52)
 	// string    service name
 	try{  buf=session.read(buf); }
+	catch(JSchException e){
+	  return false;
+	}
 	catch(java.io.IOException e){
 	  return false;
 	}
-//System.out.println("read: 52 ? "+    buf.buffer[5]);
+	//System.out.println("read: 52 ? "+    buf.buffer[5]);
 	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_SUCCESS){
 	  return true;
 	}
@@ -105,8 +108,11 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	    throw new JSchPartialAuthException(new String(foo));
 	  }
 
-	  if(firsttime)
-	    cancel=true;  // ??
+	  if(firsttime){
+	    throw new JSchException("USERAUTH KI is not supported");
+	    //return false;
+	    //cancel=true;  // ??
+	  }
 	  break;
 	}
 	if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_INFO_REQUEST){
@@ -160,13 +166,19 @@ class UserAuthKeyboardInteractive extends UserAuth{
 	    }
 	  }
 	  session.write(packet);
+	  if(cancel)
+	    break;
 //System.out.println("continue loop");
 	  continue loop;
 	}
-	throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
+	//throw new JSchException("USERAUTH fail ("+buf.buffer[5]+")");
+	return false;
       }
-      if(cancel) break;
+      if(cancel){
+	throw new JSchAuthCancelException("keyboard-interactive");
+	//break;
+      }
     }
-    return false;
+    //return false;
   }
 }

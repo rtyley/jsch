@@ -4,8 +4,11 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class UserAuthKI{
+public class ViaSOCKS5{
   public static void main(String[] arg){
+
+    String proxy_host;
+    int proxy_port;
 
     try{
       JSch jsch=new JSch();
@@ -18,9 +21,22 @@ public class UserAuthKI{
 
       Session session=jsch.getSession(user, host, 22);
 
-      // username and passphrase will be given via UserInfo interface.
+      String proxy=JOptionPane.showInputDialog("Enter proxy server",
+                                                 "hostname:port");
+      proxy_host=proxy.substring(0, proxy.indexOf(':'));
+      proxy_port=Integer.parseInt(proxy.substring(proxy.indexOf(':')+1));
+
+      session.setProxy(new ProxySOCKS5(proxy_host, proxy_port));
+
+      // username and password will be given via UserInfo interface.
       UserInfo ui=new MyUserInfo();
       session.setUserInfo(ui);
+
+      //java.util.Hashtable config=new java.util.Hashtable();
+      //config.put("compression.s2c", "zlib,non");
+      //config.put("compression.c2s", "zlib,none");
+      //session.setConfig(config);
+
       session.connect();
 
       Channel channel=session.openChannel("shell");
@@ -35,8 +51,7 @@ public class UserAuthKI{
     }
   }
 
-
-  public static class MyUserInfo implements UserInfo, UIKeyboardInteractive{
+  public static class MyUserInfo implements UserInfo{
     public String getPassword(){ return passwd; }
     public boolean promptYesNo(String str){
       Object[] options={ "yes", "no" };
@@ -48,12 +63,12 @@ public class UserAuthKI{
              null, options, options[0]);
        return foo==0;
     }
-
+  
     String passwd;
     JTextField passwordField=(JTextField)new JPasswordField(20);
-  
+
     public String getPassphrase(){ return null; }
-    public boolean promptPassphrase(String message){ return false; }
+    public boolean promptPassphrase(String message){ return true; }
     public boolean promptPassword(String message){
       Object[] ob={passwordField}; 
       int result=
@@ -68,63 +83,8 @@ public class UserAuthKI{
     public void showMessage(String message){
       JOptionPane.showMessageDialog(null, message);
     }
-
-    final GridBagConstraints gbc = 
-	new GridBagConstraints(0,0,1,1,1,1,
-			       GridBagConstraints.NORTHWEST,
-			       GridBagConstraints.NONE,
-			       new Insets(0,0,0,0),0,0);
-    private Container panel;
-    public String[] promptKeyboardInteractive(String destination,
-					      String name,
-					      String instruction,
-					      String[] prompt,
-					      boolean[] echo){
-      panel = new JPanel();
-      panel.setLayout(new GridBagLayout());
-
-      gbc.weightx = 1.0;
-      gbc.gridwidth = GridBagConstraints.REMAINDER;
-      gbc.gridx = 0;
-      panel.add(new JLabel(instruction), gbc);
-      gbc.gridy++;
-
-      gbc.gridwidth = GridBagConstraints.RELATIVE;
-
-      JTextField[] texts=new JTextField[prompt.length];
-      for(int i=0; i<prompt.length; i++){
-	gbc.fill = GridBagConstraints.NONE;
-	gbc.gridx = 0;
-	gbc.weightx = 1;
-	panel.add(new JLabel(prompt[i]),gbc);
-
-	gbc.gridx = 1;
-	gbc.fill = GridBagConstraints.HORIZONTAL;
-	gbc.weighty = 1;
-	if(echo[i]){
-	  texts[i]=new JTextField(20);
-	}
-	else{
-	  texts[i]=new JPasswordField(20);
-	}
-	panel.add(texts[i], gbc);
-	gbc.gridy++;
-      }
-
-      if(JOptionPane.showConfirmDialog(null, panel, 
-				       destination+": "+name,
-				       JOptionPane.OK_CANCEL_OPTION,
-				       JOptionPane.QUESTION_MESSAGE)
-	 ==JOptionPane.OK_OPTION){
-	String[] response=new String[prompt.length];
-	for(int i=0; i<prompt.length; i++){
-	  response[i]=texts[i].getText();
-	}
-	return response;
-      }
-      else{
-	return null;  // cancel
-      }
-    }
   }
+
 }
+
+

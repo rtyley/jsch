@@ -147,10 +147,16 @@ public class DHG1 extends KeyExchange{
       // impint q of dsa
       // impint g of dsa
       // impint pub_key of dsa
-      //System.out.print("K_S: "); dump(K_S, 0, K_S.length);
-
+      //System.out.print("K_S: "); //dump(K_S, 0, K_S.length);
       byte[] f=_buf.getMPInt();
       byte[] sig_of_H=_buf.getString();
+      /*
+for(int ii=0; ii<sig_of_H.length;ii++){
+  System.out.print(Integer.toHexString(sig_of_H[ii]&0xff));
+  System.out.print(": ");
+}
+System.out.println("");
+      */
 
       dh.setF(f);
       K=dh.getK();
@@ -167,7 +173,6 @@ public class DHG1 extends KeyExchange{
       // mpint     K, the shared secret
       // This value is called the exchange hash, and it is used to authenti-
       // cate the key exchange.
-
       buf.reset();
       buf.putString(V_C); buf.putString(V_S);
       buf.putString(I_C); buf.putString(I_S);
@@ -176,10 +181,9 @@ public class DHG1 extends KeyExchange{
       buf.putMPInt(K);
       byte[] foo=new byte[buf.getLength()];
       buf.getByte(foo);
-
       sha.update(foo, 0, foo.length);
       H=sha.digest();
-      // System.out.print("H -> "); dump(H, 0, H.length);
+      //System.out.print("H -> "); //dump(H, 0, H.length);
 
       i=0;
       j=0;
@@ -236,7 +240,6 @@ public class DHG1 extends KeyExchange{
 	  ((K_S[i++]<<8)&0x0000ff00)|((K_S[i++])&0x000000ff);
 	tmp=new byte[j]; System.arraycopy(K_S, i, tmp, 0, j); i+=j;
 	f=tmp;
-
 	SignatureDSA sig=new SignatureDSA();
 	sig.init();
 	sig.setPubKey(f, p, q, g);   

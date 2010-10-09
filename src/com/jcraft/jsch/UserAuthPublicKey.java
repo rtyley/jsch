@@ -126,8 +126,9 @@ class UserAuthPublicKey extends UserAuth{
 	  if(userinfo==null) throw new JSchException("USERAUTH fail");
 	  if(identity.isEncrypted() &&
 	     !userinfo.promptPassphrase("Passphrase for "+identity.identity)){
+	    throw new JSchAuthCancelException("publickey");
 	    //throw new JSchException("USERAUTH cancel");
-	    break;
+	    //break;
 	  }
 	  passphrase=userinfo.getPassphrase();
 	}

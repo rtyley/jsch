@@ -83,7 +83,16 @@ public class ProxyHTTP implements Proxy{
         out=socket_factory.getOutputStream(socket);
       }
       socket.setTcpNoDelay(true);
+
       out.write(("CONNECT "+host+":"+port+" HTTP/1.0\n").getBytes());
+
+      if(user!=null && passwd!=null){
+	byte[] code=(user+":"+passwd).getBytes();
+	code=Util.toBase64(code, 0, code.length);
+	out.write("Proxy-Authorization: Basic ".getBytes());
+	out.write(code);
+	out.write("\n".getBytes());
+      }
 
       out.write("\n".getBytes());
       out.flush();

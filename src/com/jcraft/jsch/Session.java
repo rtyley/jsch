@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.15";
+  static private final String version="JSCH-0.1.16";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -213,7 +213,7 @@ public class Session implements Runnable{
       isConnected=true;
 
       i=0;
-      while(true){
+      while(i<buf.buffer.length){
         j=io.getByte();
         buf.buffer[i]=(byte)j; i++; 
         if(j==10)break;
@@ -225,7 +225,11 @@ public class Session implements Runnable{
 	  i--;
 	}
       }
-      else{
+
+      if(i==buf.buffer.length ||
+	 i<7 ||                                      // SSH-1.99 or SSH-2.0
+	 (buf.buffer[4]=='1' && buf.buffer[6]!='9')  // SSH-1.5
+	 ){
 	throw new JSchException("invalid server's version string");
       }
 
@@ -272,6 +276,7 @@ public class Session implements Runnable{
       }
 
       boolean auth=false;
+      boolean auth_cancel=false;
 
       UserAuthNone usn=new UserAuthNone(userinfo);
       auth=usn.start(this);
@@ -308,17 +313,25 @@ public class Session implements Runnable{
 	    us=new UserAuthPassword(userinfo);
 	  }
 	  if(us!=null){
-	    try{ auth=us.start(this); }
+	    try{ 
+	      auth=us.start(this); 
+	      auth_cancel=false;
+	    }
+	    catch(JSchAuthCancelException ee){
+	      //System.out.println(ee);
+	      auth_cancel=true;
+	    }
 	    catch(JSchPartialAuthException ee){
 	      methods=ee.getMethods();
 	      //System.out.println("PartialAuth: "+methods);
+	      auth_cancel=false;
 	      continue loop;
 	    }
 	    catch(RuntimeException ee){
 	      throw ee;
 	    }
 	    catch(Exception ee){
-	      //System.out.println("ee: "+ee);
+	      //System.out.println("ee: "+ee); // SSH_MSG_DISCONNECT: 2 Too many authentication failures
 	    }
 	  }
 	  if(!auth){
@@ -334,7 +347,8 @@ public class Session implements Runnable{
 	(new Thread(this)).start();
 	return;
       }
-
+      if(auth_cancel)
+	throw new JSchException("Auth cancel");
       throw new JSchException("Auth fail");
     }
     catch(Exception e) {
@@ -470,6 +484,8 @@ System.out.println(e);
     int i=jsch.getKnownHosts().check(host, K_S);
     if((shkc.equals("ask") || shkc.equals("yes")) &&
        i==KnownHosts.CHANGED){
+      String file=jsch.getKnownHosts().getKnownHostsFile();
+      if(file==null){file="known_hosts";}
       String message=
 "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"+
 "@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @\n"+
@@ -480,7 +496,7 @@ System.out.println(e);
 "The fingerprint for the "+kex.getKeyType()+" key sent by the remote host is\n"+
 	  kex.getFingerPrint()+".\n"+
 "Please contact your system administrator.\n"+
-"Add correct host key in "+jsch.getKnownHosts().getKnownHostsFile()+" to get rid of this message.";
+"Add correct host key in "+file+" to get rid of this message.";
       if(userinfo!=null){
 	userinfo.showMessage(message);
       }
@@ -499,7 +515,7 @@ System.out.println(e);
 	boolean foo=userinfo.promptYesNo(
 "The authenticity of host '"+host+"' can't be established.\n"+
 kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
-"Are you sure you want to continue connecting (yes/no)?"
+"Are you sure you want to continue connecting?"
 					 );
 	if(!foo){
 	  throw new JSchException("reject HostKey");
@@ -527,14 +543,14 @@ kex.getKeyType()+" key fingerprint is "+kex.getFingerPrint()+".\n"+
 	  foo=false;
 	  if(userinfo!=null){
 	    foo=userinfo.promptYesNo(
-jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
-"Are you sure you want to create it (yes/no)?"
+bar+" does not exist.\n"+
+"Are you sure you want to create it?"
                                     );
 	    goo=goo.getParentFile();
 	    if(foo && goo!=null && !goo.exists()){
 	      foo=userinfo.promptYesNo(
 "The parent directory "+goo+" does not exist.\n"+
-"Are you sure you want to create it (yes/no)?"
+"Are you sure you want to create it?"
 );
 	      if(foo){
 		if(!goo.mkdirs()){
@@ -652,17 +668,19 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
       }
 
       int type=buf.buffer[5]&0xff;
-//System.out.println("read: "+type);
+      //System.out.println("read: "+type);
       if(type==SSH_MSG_DISCONNECT){
         buf.rewind();
         buf.getInt();buf.getShort();
 	int reason_code=buf.getInt();
 	byte[] description=buf.getString();
 	byte[] language_tag=buf.getString();
+/*
 	System.err.println("SSH_MSG_DISCONNECT:"+
                            " "+reason_code+
 			   " "+new String(description)+
 			   " "+new String(language_tag));
+*/
 	throw new JSchException("SSH_MSG_DISCONNECT:"+
 				" "+reason_code+
 				" "+new String(description)+
@@ -674,12 +692,14 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
       else if(type==SSH_MSG_DEBUG){
         buf.rewind();
         buf.getInt();buf.getShort();
+/*
 	byte always_display=(byte)buf.getByte();
 	byte[] message=buf.getString();
 	byte[] language_tag=buf.getString();
 	System.err.println("SSH_MSG_DEBUG:"+
 			   " "+new String(message)+
 			   " "+new String(language_tag));
+*/
       }
       else if(type==SSH_MSG_CHANNEL_WINDOW_ADJUST){
           buf.rewind();
@@ -1024,6 +1044,22 @@ break;
 	  channel.setRemoteWindowSize(buf.getInt());
 	  channel.setRemotePacketSize(buf.getInt());
 	  break;
+	case SSH_MSG_CHANNEL_OPEN_FAILURE:
+          buf.getInt(); 
+	  buf.getShort(); 
+	  i=buf.getInt(); 
+	  channel=Channel.getChannel(i, this);
+	  if(channel==null){
+	    //break;
+	  }
+	  int reason_code=buf.getInt(); 
+	  //foo=buf.getString();  // additional textual information
+	  //foo=buf.getString();  // language tag 
+	  channel.exitstatus=reason_code;
+	  channel.close=true;
+	  channel.eof=true;
+	  channel.setRecipient(0);
+	  break;
 	case SSH_MSG_CHANNEL_REQUEST:
           buf.getInt(); 
 	  buf.getShort(); 
@@ -1246,6 +1282,11 @@ break;
   public void setX11Host(String host){ ChannelX11.setHost(host); }
   public void setX11Port(int port){ ChannelX11.setPort(port); }
   public void setX11Cookie(String cookie){ ChannelX11.setCookie(cookie); }
+
+  public void setConfig(java.util.Properties foo){
+setConfig((java.util.Hashtable)foo);
+  }
+ 
   public void setConfig(java.util.Hashtable foo){
     if(config==null) config=new java.util.Hashtable();
     for(java.util.Enumeration e=foo.keys() ; e.hasMoreElements() ;) {

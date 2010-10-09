@@ -70,13 +70,17 @@ public class SignatureRSA implements com.jcraft.jsch.SignatureRSA{
   public boolean verify(byte[] sig) throws Exception{
     int i=0;
     int j=0;
+    byte[] tmp;
+
+    if(sig[0]==0 && sig[1]==0 && sig[2]==0){
     j=((sig[i++]<<24)&0xff000000)|((sig[i++]<<16)&0x00ff0000)|
 	((sig[i++]<<8)&0x0000ff00)|((sig[i++])&0x000000ff);
     i+=j;
     j=((sig[i++]<<24)&0xff000000)|((sig[i++]<<16)&0x00ff0000)|
 	((sig[i++]<<8)&0x0000ff00)|((sig[i++])&0x000000ff);
-    byte[] tmp=new byte[j]; 
+    tmp=new byte[j]; 
     System.arraycopy(sig, i, tmp, 0, j); sig=tmp;
+    }
 //System.out.println("j="+j+" "+Integer.toHexString(sig[0]&0xff));
     return signature.verify(sig);
   }

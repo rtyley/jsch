@@ -1,6 +1,16 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Tue May 18 14:28:40 UTC 2004
+Last modified: Wed Jul  7 17:11:17 UTC 2004
+
+	
+Changes since version 0.1.15:		
+- adding support of setting mime for remote files on sftp channel.
+- setKnownHosts method of JSch class will accept InputStream.
+- implementation of Basic password authentication for HTTP proxy.
+- fixed a bug in checking which ssh protocol version remote sshd supports
+- SSH_MSG_CHANNEL_OPEN_FAILURE will be handled correctly.
+- methods in SftpATTRS class has been public.
+- working around SIGBLOB bug hidden in older sshd.
 
 	
 Changes since version 0.1.14:		

@@ -29,6 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
+import java.io.InputStream;
 public class JSch{
   static java.util.Hashtable config=new java.util.Hashtable();
   static{
@@ -85,7 +86,18 @@ public class JSch{
     pool.addElement(s);
     return s;
   }
-  public void setKnownHosts(String foo){ known_hosts.setKnownHosts(foo); }
+  /*
+  public void setKnownHosts(String foo) throws JSchException{
+    known_hosts.setKnownHosts(foo); 
+  }
+  */
+  public void setKnownHosts(String foo){
+    try{known_hosts.setKnownHosts(foo);}
+    catch(Exception e){}
+  }
+  public void setKnownHosts(InputStream foo) throws JSchException{ 
+    known_hosts.setKnownHosts(foo); 
+  }
   public KnownHosts getKnownHosts(){ return known_hosts; }
   public void addIdentity(String foo) throws JSchException{
     addIdentity(foo, null);

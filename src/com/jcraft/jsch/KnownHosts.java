@@ -44,12 +44,21 @@ class KnownHosts{
 
   private java.util.Vector pool=new java.util.Vector();
 
-  void setKnownHosts(String foo){
-    known_hosts=foo;
+  void setKnownHosts(String foo) throws JSchException{
+    try{
+      known_hosts=foo;
+      FileInputStream fis=new FileInputStream(foo);
+      setKnownHosts(fis);
+    }
+    catch(FileNotFoundException e){
+    } 
+  }
+  void setKnownHosts(InputStream foo) throws JSchException{
     StringBuffer sb=new StringBuffer();
     int i;
+    boolean error=false;
     try{
-      FileInputStream fis=new FileInputStream(known_hosts);
+      InputStream fis=foo;
       String host;
       String key;
       int type;
@@ -58,7 +67,11 @@ loop:
         sb.setLength(0);
         while(true){
           i=fis.read();
-	  if(i==-1) break loop;
+	  if(i==-1){
+	    if(sb.length()>0)
+	      error=true;
+	    break loop;
+	  }
           if(i==0x20){
             host=sb.toString();
             break;
@@ -69,7 +82,7 @@ loop:
         sb.setLength(0);
         while(true){
           i=fis.read();
-	  if(i==-1) break loop;
+	  if(i==-1){error=true; break loop; }
           if(i==0x20){
             if(sb.toString().equals("ssh-dss")) type=SSHDSS;
 	    else type=SSHRSA;
@@ -81,7 +94,7 @@ loop:
         sb.setLength(0);
         while(true){
           i=fis.read();
-	  if(i==-1) break loop;
+	  if(i==-1){error=true; break loop; }
           if(i==0x0d){ continue; }
           if(i==0x0a){
             key=sb.toString();
@@ -99,8 +112,15 @@ loop:
         pool.addElement(hk);
       }
       fis.close();
+      if(error){
+	throw new JSchException("KnownHosts: invalid format");
+      }
     }
     catch(Exception e){
+      if(e instanceof JSchException){
+	throw (JSchException)e;         
+      }
+      throw new JSchException(e.toString());
     }
   }
 
@@ -151,7 +171,10 @@ loop:
     hk=new HostKey(host, type, key);
     pool.addElement(hk);
   }
-  void sync() throws IOException { sync(known_hosts); }
+  void sync() throws IOException { 
+    if(known_hosts!=null)
+      sync(known_hosts); 
+  }
   void sync(String foo) throws IOException {
     if(foo==null) return;
     FileOutputStream fos=new FileOutputStream(foo);

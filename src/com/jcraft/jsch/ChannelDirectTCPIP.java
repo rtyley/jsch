@@ -89,6 +89,12 @@ public class ChannelDirectTCPIP extends Channel{
       }
       catch(Exception ee){
       }
+
+      if(this.eof){      // failed to open
+	disconnect();
+	return;
+      }
+
       (new Thread(this)).start();
     }
     catch(Exception e){
