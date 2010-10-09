@@ -124,7 +124,7 @@ System.out.println("");
         i=io.in.read(buf.buffer, 
 		     14, 
 		     buf.buffer.length-14
-		     -16 -20 // padding and mac
+		     -32 -20 // padding and mac
 		     );
 	if(i<=0){
 	  eof();

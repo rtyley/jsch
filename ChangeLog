@@ -2,13 +2,25 @@ ChangeLog of JSch
 ====================================================================
 Last modified: Tue Oct 11 16:18:54 UTC 2005
 
+Changes since version 0.1.23:		
+- bugfix: there was resource leak problems in closing local port forwardings.
+  	  FIXED. 
+- bugfix: there was a session crash problems in using aes-cbc cipher.  FIXED. 
+- change: ChannelSession.setPtySize was redefined.
+- feature: added SocketFactory for remote port forwarding.
+	   Session.setPortForwardingR(int rport, String host, int lport, 
+	                              SocketFactory sf)
+- feature: added ServerSocketFactory for local port forwarding.	
+	   Session.setPortForwardingL(String boundaddress,
+	                              int lport, String host, int rport,
+	                              ServerSocketFactory ssf)
 
 Changes since version 0.1.22:		
-- bugfix: there is a freeze problem at fails on key-exchanging. FIXED. 
+- bugfix: there was a freeze problem at fails on key-exchanging. FIXED. 
 - bugfix: race-condition forcefully disconnects session in closing channels.
 	  FIXED. 
-	
 
+	
 Changes since version 0.1.21:		
 - bugfix: there is a bug in read() method implementation for the
           input-stream returned from ChannelSftp.get().  FIXED. 

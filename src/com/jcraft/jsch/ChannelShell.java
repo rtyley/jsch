@@ -60,11 +60,11 @@ public class ChannelShell extends ChannelSession{
     io.setInputStream(session.in);
     io.setOutputStream(session.out);
   }
-  public void setPtySize(int row, int col, int wp, int hp){
+  public void setPtySize(int col, int row, int wp, int hp){
     //if(thread==null) return;
     try{
       RequestWindowChange request=new RequestWindowChange();
-      request.setSize(row, col, wp, hp);
+      request.setSize(col, row, wp, hp);
       request.request(session, this);
     }
     catch(Exception e){

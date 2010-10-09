@@ -40,8 +40,8 @@ class PortWatcher implements Runnable{
   int rport;
   String host;
   InetAddress boundaddress;
-  ServerSocket ss;
   Runnable thread;
+  ServerSocket ss;
 
   static String[] getPortForwarding(Session session){
     java.util.Vector foo=new java.util.Vector();
@@ -79,11 +79,11 @@ class PortWatcher implements Runnable{
       return null;
     }
   }
-  static PortWatcher addPort(Session session, String address, int lport, String host, int rport) throws JSchException{
+  static PortWatcher addPort(Session session, String address, int lport, String host, int rport, ServerSocketFactory ssf) throws JSchException{
     if(getPort(session, address, lport)!=null){
       throw new JSchException("PortForwardingL: local port "+ address+":"+lport+" is already registered.");
     }
-    PortWatcher pw=new PortWatcher(session, address, lport, host, rport);
+    PortWatcher pw=new PortWatcher(session, address, lport, host, rport, ssf);
     pool.addElement(pw);
     return pw;
   }
@@ -114,14 +114,17 @@ class PortWatcher implements Runnable{
   }
   PortWatcher(Session session, 
 	      String address, int lport, 
-	      String host, int rport) throws JSchException{
+	      String host, int rport,
+              ServerSocketFactory factory) throws JSchException{
     this.session=session;
     this.lport=lport;
     this.host=host;
     this.rport=rport;
     try{
       boundaddress=InetAddress.getByName(address);
-      ss=new ServerSocket(lport, 0, boundaddress);
+      ss=(factory==null) ? 
+        new ServerSocket(lport, 0, boundaddress) :
+        factory.createServerSocket(lport, 0, boundaddress);
     }
     catch(Exception e){ 
       System.out.println(e);
@@ -156,6 +159,8 @@ class PortWatcher implements Runnable{
     catch(Exception e){
       //System.out.println("! "+e);
     }
+
+    delete();
   }
 
   void delete(){

@@ -123,6 +123,7 @@ public class ChannelSftp extends ChannelSession{
       returned by the server if the server does not implement an
       operation).
 */
+  private static final int MAX_MSG_LENGTH = 256* 1024;
 
   public static final int OVERWRITE=0;
   public static final int RESUME=1;
@@ -199,6 +200,11 @@ public class ChannelSftp extends ChannelSession{
       i=io.in.read(buf.buffer, 0, buf.buffer.length);
 //System.out.println(io+" "+io.in+" "+io.out);
       length=buf.getInt();
+
+      if(length > MAX_MSG_LENGTH){
+        throw new SftpException(SSH_FX_FAILURE, "Received message too long " + length);
+      }
+
       type=buf.getByte();           // 2 -> SSH_FXP_VERSION
       server_version=buf.getInt();
 //System.out.println("SFTP protocol server-version="+server_version);

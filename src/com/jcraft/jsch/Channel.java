@@ -157,10 +157,11 @@ public abstract class Channel implements Runnable{
       if(retry==0){
         throw new JSchException("channel is not opened.");
       }
-      start();
       connected=true;
+      start();
     }
     catch(Exception e){
+      connected=false;
       if(e instanceof JSchException) throw (JSchException)e;
     }
   }
@@ -386,6 +387,9 @@ public abstract class Channel implements Runnable{
     connected=false;
 
     close();
+
+    eof_remote=eof_local=true;
+
     thread=null;
 
     try{

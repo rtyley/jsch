@@ -34,9 +34,9 @@ class RequestWindowChange implements Request{
   int height_rows=24;
   int width_pixels=640;
   int height_pixels=480;
-  void setSize(int row, int col, int wp, int hp){
-    this.width_columns=row; 
-    this.height_rows=col; 
+  void setSize(int col, int row, int wp, int hp){
+    this.width_columns=col; 
+    this.height_rows=row; 
     this.width_pixels=wp;
     this.height_pixels=hp;
   }

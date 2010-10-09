@@ -39,6 +39,7 @@ public class ChannelForwardedTCPIP extends Channel{
   static private final int LOCAL_WINDOW_SIZE_MAX=0x20000;
   static private final int LOCAL_MAXIMUM_PACKET_SIZE=0x4000;
 
+  SocketFactory factory=null;
   String target;
   int lport;
   int rport;
@@ -63,7 +64,9 @@ public class ChannelForwardedTCPIP extends Channel{
         return;
       }
       else{
-        Socket socket=new Socket(target, lport);
+        Socket socket=(factory==null) ? 
+          new Socket(target, lport) : 
+          factory.createSocket(target, lport);
         socket.setTcpNoDelay(true);
         io.setInputStream(socket.getInputStream());
         io.setOutputStream(socket.getOutputStream());
@@ -84,7 +87,7 @@ public class ChannelForwardedTCPIP extends Channel{
         i=io.in.read(buf.buffer, 
                      14, 
                      buf.buffer.length-14
-                     -16 -20 // padding and mac
+                     -32 -20 // padding and mac
                      );
         if(i<=0){
           eof();
@@ -131,6 +134,9 @@ public class ChannelForwardedTCPIP extends Channel{
         this.target=(String)foo[2];
         if(foo[3]==null || (foo[3] instanceof Object[])){ this.lport=-1; }
         else{ this.lport=((Integer)foo[3]).intValue(); }
+        if(foo.length>=5){
+          this.factory=((SocketFactory)foo[4]);
+        }
         break;
       }
       if(target==null){
@@ -168,14 +174,15 @@ public class ChannelForwardedTCPIP extends Channel{
     return bar;
   }
 
-  static void addPort(Session session, int port, String target, int lport) throws JSchException{
+  static void addPort(Session session, int port, String target, int lport, SocketFactory factory) throws JSchException{
     synchronized(pool){
       if(getPort(session, port)!=null){
         throw new JSchException("PortForwardingR: remote port "+port+" is already registered.");
       }
-      Object[] foo=new Object[4];
+      Object[] foo=new Object[5];
       foo[0]=session; foo[1]=new Integer(port);
       foo[2]=target; foo[3]=new Integer(lport);
+      foo[4]=factory;
       pool.addElement(foo);
     }
   }
@@ -245,4 +252,7 @@ public class ChannelForwardedTCPIP extends Channel{
     }
   }
   public int getRemotePort(){return rport;}
+  void setSocketFactory(SocketFactory factory){
+    this.factory=factory;
+  }
 }

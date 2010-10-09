@@ -70,8 +70,8 @@ System.out.println("");
 
   int shift(int len, int mac){
     int s=len+5+9;
-    int pad=(-s)&7;
-    if(pad<8)pad+=8;
+    int pad=(-s)&15;
+    if(pad<16)pad+=16;
     s+=pad;
     s+=mac;
 

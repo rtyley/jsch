@@ -183,14 +183,14 @@ Read the LICENSE.txt file for the complete license.
 
 Credits and Acknowledgments
 ============================
-JSch has been developed by ymnk@jcraft.com and it can not be hacked
+JSch has been developed by ymnk@jcaft.com and it can not be hacked
 without several help.
-* First of all, we want to thank JCE team at Sun Microsystems.
+* First of all, we want to thank JCE team</a> at Sun Microsystems.
   For long time, we had planed to implement SSH2 in pure Java,
   but we had hesitated to do because tons of work must be done for
   implementing ciphers, hashes, etc., from the scratch.
   Thanks to newly added functionalities to J2SE 1.4.0, we could
-  start this project.
+  release the first working version within just 1.5 weeks from the scratch.
 * We appreciate the OpenSSH project.
   The options '-ddd' of sshd, '---vvv' of ssh and the compile options 
   '-DPACKET_DEBUG', '-DDEBUG_KEXDH' and  '-DDEBUG_KEX' were very

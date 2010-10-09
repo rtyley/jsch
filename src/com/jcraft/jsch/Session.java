@@ -34,7 +34,7 @@ import java.net.*;
 import java.lang.*;
 
 public class Session implements Runnable{
-  static private final String version="JSCH-0.1.23";
+  static private final String version="JSCH-0.1.24";
 
   // http://ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt
   static final int SSH_MSG_DISCONNECT=                      1;
@@ -1399,7 +1399,10 @@ break;
     setPortForwardingL("127.0.0.1", lport, host,rport);
   }
   public void setPortForwardingL(String boundaddress, int lport, String host, int rport) throws JSchException{
-    PortWatcher pw=PortWatcher.addPort(this, boundaddress, lport, host, rport);
+    setPortForwardingL(boundaddress, lport, host, rport, null);
+  }
+  public void setPortForwardingL(String boundaddress, int lport, String host, int rport, ServerSocketFactory ssf) throws JSchException{
+    PortWatcher pw=PortWatcher.addPort(this, boundaddress, lport, host, rport, ssf);
     Thread tmp=new Thread(pw);
     tmp.setName("PortWatcher Thread for "+host);
     tmp.start();
@@ -1415,7 +1418,10 @@ break;
   }
 
   public void setPortForwardingR(int rport, String host, int lport) throws JSchException{
-    ChannelForwardedTCPIP.addPort(this, rport, host, lport);
+    setPortForwardingR(rport, host, lport, (SocketFactory)null);
+  }
+  public void setPortForwardingR(int rport, String host, int lport, SocketFactory sf) throws JSchException{
+    ChannelForwardedTCPIP.addPort(this, rport, host, lport, sf);
     setPortForwarding(rport);
   }
 

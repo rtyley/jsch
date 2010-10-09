@@ -59,8 +59,11 @@ public class ChannelDirectTCPIP extends Channel{
     }
   }
 
-  public void connect(){
+  public void connect() throws JSchException{
     try{
+      if(!session.isConnected()){
+        throw new JSchException("session is down");
+      }
       Buffer buf=new Buffer(150);
       Packet packet=new Packet(buf);
       // send
@@ -81,24 +84,45 @@ public class ChannelDirectTCPIP extends Channel{
       buf.putString(originator_IP_address.getBytes());
       buf.putInt(originator_port);
       session.write(packet);
+
+      int retry=1000;
       try{
-        while(this.getRecipient()==-1){
+        while(this.getRecipient()==-1 && 
+              session.isConnected() &&
+              retry>0 &&
+              !eof_remote){
           //Thread.sleep(500);
-          Thread.sleep(10);
+          Thread.sleep(50);
+          retry--;
         }
       }
       catch(Exception ee){
       }
-
+      if(!session.isConnected()){
+	throw new JSchException("session is down");
+      }
+      if(retry==0 || this.eof_remote){
+        throw new JSchException("channel is not opened.");
+      }
+      /*
       if(this.eof_remote){      // failed to open
         disconnect();
         return;
       }
+      */
+
+      connected=true;
 
       thread=new Thread(this);
       thread.start();
     }
     catch(Exception e){
+      io.close();
+      io=null;
+      Channel.del(this);
+      if (e instanceof JSchException) {
+        throw (JSchException) e;
+      }
     }
   }
 
@@ -110,11 +134,14 @@ public class ChannelDirectTCPIP extends Channel{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null && io!=null && io.in!=null){
+      while(isConnected() &&
+            thread!=null && 
+            io!=null && 
+            io.in!=null){
         i=io.in.read(buf.buffer, 
                      14, 
                      buf.buffer.length-14
-                     -16 -20 // padding and mac
+                     -32 -20 // padding and mac
                      );
         if(i<=0){
           eof();
