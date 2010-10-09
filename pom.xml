@@ -9,7 +9,7 @@
     <version>4</version>
   </parent>
   <artifactId>jsch</artifactId>
-  <version>0.1.43.0-UNOFFICIAL-BUILD</version>
+  <version>0.1.43.1-UNOFFICIAL-BUILD-SNAPSHOT</version>
   <name>JSch</name>
 
   <description>JSch is a pure Java implementation of SSH2 - this is a spork by Roberto Tyley for experimental purposes</description>
