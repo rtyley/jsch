@@ -133,11 +133,11 @@ public abstract class Channel implements Runnable{
       buf.putInt(this.lmpsize);
       session.write(packet);
 
-      int retry=100;
+      int retry=1000;
       while(this.getRecipient()==-1 &&
 	    session.isConnected() &&
 	    retry>0){
-	try{Thread.sleep(500);}catch(Exception ee){}
+	try{Thread.sleep(50);}catch(Exception ee){}
 	retry--;
       }
       if(!session.isConnected()){
@@ -172,10 +172,17 @@ public abstract class Channel implements Runnable{
   public void setOutputStream(OutputStream out){
     io.setOutputStream(out);
   }
-
+  /*public*/ void setExtOutputStream(OutputStream out){
+    io.setExtOutputStream(out);
+  }
   public InputStream getInputStream() throws IOException {
     PipedInputStream in=new PipedInputStream();
     io.setOutputStream(new PassiveOutputStream(in));
+    return in;
+  }
+  /*public*/ InputStream getExtInputStream() throws IOException {
+    PipedInputStream in=new PipedInputStream();
+    io.setExtOutputStream(new PassiveOutputStream(in));
     return in;
   }
   public OutputStream getOutputStream() throws IOException {
@@ -201,6 +208,11 @@ public abstract class Channel implements Runnable{
     if(eof)return;
     if(io.out!=null)
       io.put(foo, s, l);
+  }
+  void write_ext(byte[] foo, int s, int l) throws IOException {
+    if(eof)return;
+    if(io.out_ext!=null)
+      io.put_ext(foo, s, l);
   }
 
   void eof(){
@@ -257,13 +269,17 @@ public abstract class Channel implements Runnable{
       if(io!=null){
 	try{
 	  //System.out.println(" io.in="+io.in);
-	  if(io.in!=null && (io.in instanceof PassiveInputStream))
+	  if(io.in!=null && 
+	     (io.in instanceof PassiveInputStream)
+	     )
 	    io.in.close();
 	}
 	catch(Exception ee){}
 	try{
 	  //System.out.println(" io.out="+io.out);
-	  if(io.out!=null && (io.out instanceof PassiveOutputStream))
+	  if(io.out!=null && 
+	     (io.out instanceof PassiveOutputStream)
+	     )
 	    io.out.close();
 	}
 	catch(Exception ee){}

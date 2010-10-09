@@ -43,8 +43,9 @@ public class ScpTo{
 
       byte[] tmp=new byte[1];
 
-      // wait for '\0'
-      do{ in.read(tmp, 0, 1); }while(tmp[0]!=0);
+      if(checkAck(in)!=0){
+	System.exit(0);
+      }
 
       // send "C0644 filesize filename", where filename should not include '/'
       int filesize=(int)(new File(lfile)).length();
@@ -58,8 +59,9 @@ public class ScpTo{
       command+="\n";
       out.write(command.getBytes()); out.flush();
 
-      // wait for '\0'
-      do{ in.read(tmp, 0, 1); }while(tmp[0]!=0);
+      if(checkAck(in)!=0){
+	System.exit(0);
+      }
 
       // send a content of lfile
       FileInputStream fis=new FileInputStream(lfile);
@@ -73,14 +75,42 @@ public class ScpTo{
       // send '\0'
       buf[0]=0; out.write(buf, 0, 1); out.flush();
 
-      // wait for '\0'
-      do{ in.read(tmp, 0, 1); }while(tmp[0]!=0);
+      if(checkAck(in)!=0){
+	System.exit(0);
+      }
 
       System.exit(0);
     }
     catch(Exception e){
       System.out.println(e);
     }
+  }
+
+  static int checkAck(InputStream in) throws IOException{
+    int b=in.read();
+    // b may be 0 for success,
+    //          1 for error,
+    //          2 for fatal error,
+    //          -1
+    if(b==0) return b;
+    if(b==-1) return b;
+
+    if(b==1 || b==2){
+      StringBuffer sb=new StringBuffer();
+      int c;
+      do {
+	c=in.read();
+	sb.append((char)c);
+      }
+      while(c!='\n');
+      if(b==1){ // error
+	System.out.print(sb.toString());
+      }
+      if(b==2){ // fatal error
+	System.out.print(sb.toString());
+      }
+    }
+    return b;
   }
 
   public static class MyUserInfo implements UserInfo{

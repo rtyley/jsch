@@ -34,9 +34,13 @@ import java.io.*;
 public class IO{
   InputStream in;
   OutputStream out;
+  OutputStream out_ext;
 
   void setOutputStream(OutputStream out){
     this.out=out;
+  }
+  void setExtOutputStream(OutputStream out){
+    this.out_ext=out;
   }
   void setInputStream(InputStream in){
     this.in=in;
@@ -48,6 +52,10 @@ public class IO{
   void put(byte[] array, int begin, int length) throws IOException {
     out.write(array, begin, length);
     out.flush();
+  }
+  void put_ext(byte[] array, int begin, int length) throws IOException {
+    out_ext.write(array, begin, length);
+    out_ext.flush();
   }
 
   int getByte() throws IOException {

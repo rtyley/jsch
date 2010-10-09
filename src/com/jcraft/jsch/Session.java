@@ -51,6 +51,8 @@ public class Session implements Runnable{
   static final int SSH_MSG_USERAUTH_FAILURE=               51;
   static final int SSH_MSG_USERAUTH_SUCCESS=               52;
   static final int SSH_MSG_USERAUTH_BANNER=                53;
+  static final int SSH_MSG_USERAUTH_INFO_REQUEST=          60;
+  static final int SSH_MSG_USERAUTH_INFO_RESPONSE=         61;
   static final int SSH_MSG_USERAUTH_PK_OK=                 60;
   static final int SSH_MSG_GLOBAL_REQUEST=                 80;
   static final int SSH_MSG_REQUEST_SUCCESS=                81;
@@ -281,7 +283,41 @@ public class Session implements Runnable{
 
       String methods=usn.getMethods();
       // methods: publickey,password,keyboard-interactive
+      if(methods==null){
+	methods="publickey,password,keyboard-interactive";
+      }
 
+//System.out.println("methods: "+methods);
+      while(!auth && 
+	    methods!=null && methods.length()>0){
+	UserAuth us=null;
+	if(methods.startsWith("publickey")){
+	  if(jsch.identities.size()>0){
+	    us=new UserAuthPublicKey(userinfo);
+	  }
+	}
+	else if(methods.startsWith("keyboard-interactive")){
+	  if(userinfo instanceof UIKeyboardInteractive){
+	    us=new UserAuthKeyboardInteractive(userinfo);
+	  }
+	}
+	else if(methods.startsWith("password")){
+	  us=new UserAuthPassword(userinfo);
+	}
+	if(us!=null){
+	  try{ auth=us.start(this); }
+	  catch(Exception ee){
+	    //System.out.println("ee: "+ee);
+	  }
+	}
+	if(!auth){
+	  int comma=methods.indexOf(",");
+	  if(comma==-1) break;
+	  methods=methods.substring(comma+1);
+	}
+      }
+
+/*
       if(!auth &&
 	 (methods==null || methods.indexOf("publickey")!=-1) &&
 	 jsch.identities.size()>0){
@@ -295,10 +331,18 @@ public class Session implements Runnable{
       }
 
       if(!auth &&
+	 (userinfo instanceof UIKeyboardInteractive) && 
+	 (methods==null || methods.indexOf("keyboard-interactive")!=-1)){
+	UserAuth us=new UserAuthKeyboardInteractive(userinfo);
+	auth=us.start(this);
+      }
+
+      if(!auth &&
 	 (methods==null || methods.indexOf("password")!=-1)){
 	UserAuth us=new UserAuthPassword(userinfo);
 	auth=us.start(this);
       }
+*/
 
       if(auth){
 	(new Thread(this)).start();
@@ -889,8 +933,9 @@ break;
 	  }
 	  buf.getInt();                   // data_type_code == 1
 	  foo=buf.getString(start, length);
-	  channel.write(foo, start[0], length[0]);
-//System.out.println("stderr: "+new String(foo, start[0], length[0]));
+	  //System.out.println("stderr: "+new String(foo,start[0],length[0]));
+	  //channel.write(foo, start[0], length[0]);
+	  channel.write_ext(foo, start[0], length[0]);
 
 	  len=length[0];
 	  channel.setLocalWindowSize(channel.lwsize-len);

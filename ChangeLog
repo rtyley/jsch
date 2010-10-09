@@ -1,7 +1,18 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Fri Sep 19 15:45:33 UTC 2003
+Last modified: Wed Nov 19 15:19:21 UTC 2003
 
+	
+Changes since version 0.1.8:	
+- fixed crash problems on the local port forwarding.
+- fixed crash problems on the remote port forwarding.
+- added setErrStream() and getErrStream() to ChannelExec.
+- added keyboard-interactive authentication support.
+- modified TripleDESCBC to support IBM's JDK 1.4.1.
+- added 'examples/UserAuthKI.java', which demonstrates keyboard-interactive
+  authentication.
+
+	
 Changes since version 0.1.7:	
 - added APIs for sftp resume downloads and uploads.
   The author greatly appreciates 

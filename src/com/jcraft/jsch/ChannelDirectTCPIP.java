@@ -83,7 +83,8 @@ public class ChannelDirectTCPIP extends Channel{
       session.write(packet);
       try{
         while(this.getRecipient()==-1){
-          Thread.sleep(500);
+          //Thread.sleep(500);
+          Thread.sleep(10);
         }
       }
       catch(Exception ee){
@@ -102,7 +103,7 @@ public class ChannelDirectTCPIP extends Channel{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null && io.in!=null){
+      while(thread!=null && io!=null && io.in!=null){
         i=io.in.read(buf.buffer, 
 		     14, 
 		     buf.buffer.length-14
@@ -122,7 +123,7 @@ public class ChannelDirectTCPIP extends Channel{
     }
     catch(Exception e){
     }
-    thread=null;
+    disconnect();
 //System.out.println("connect end");
 
 /*
@@ -154,13 +155,11 @@ public class ChannelDirectTCPIP extends Channel{
       }
     }
     catch(Exception e){
-      e.printStackTrace();
+      //e.printStackTrace();
     }
     io=null;
     Channel.del(this);
   }
-
-
   public void setInputStream(InputStream in){
     io.setInputStream(in);
   }

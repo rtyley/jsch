@@ -53,16 +53,28 @@ public class TripleDESCBC implements Cipher{
       System.arraycopy(key, 0, tmp, 0, tmp.length);
       key=tmp;
     }
+
     try{
-      SecretKeySpec skeySpec = new SecretKeySpec(key, "DESede");
       cipher=javax.crypto.Cipher.getInstance("DESede/CBC/"+pad);
+/*
+      // The following code does not work on IBM's JDK 1.4.1
+      SecretKeySpec skeySpec = new SecretKeySpec(key, "DESede");
       cipher.init((mode==ENCRYPT_MODE?
 		   javax.crypto.Cipher.ENCRYPT_MODE:
 		   javax.crypto.Cipher.DECRYPT_MODE),
 		  skeySpec, new IvParameterSpec(iv));
+*/
+      DESedeKeySpec keyspec=new DESedeKeySpec(key);
+      SecretKeyFactory keyfactory=SecretKeyFactory.getInstance("DESede");
+      SecretKey _key=keyfactory.generateSecret(keyspec);
+      cipher.init((mode==ENCRYPT_MODE?
+		   javax.crypto.Cipher.ENCRYPT_MODE:
+		   javax.crypto.Cipher.DECRYPT_MODE),
+		  _key, new IvParameterSpec(iv));
     }
     catch(Exception e){
       System.out.println(e);
+      cipher=null;
     }
   }
   public void update(byte[] foo, int s1, int len, byte[] bar, int s2) throws Exception{

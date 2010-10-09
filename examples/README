@@ -119,3 +119,10 @@ This directory contains some examples, which demonstrate how to use JSch
   If everything works fine, you will get the shell prompt.
   In current implementation, jsch only reads 'known_hosts' for checking
   and does not modify it.
+
+- UserAuthKI.java
+  This program will demonstrate the keyboard-interactive authentication.
+  $ CLASSPATH=.:../src javac UserAuthKI.java
+  $ CLASSPATH=.:../src java UserAuthKI
+  If the remote sshd supports keyboard-interactive authentication,
+  you will be prompted.

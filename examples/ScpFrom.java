@@ -51,9 +51,13 @@ public class ScpFrom{
       buf[0]=0; out.write(buf, 0, 1); out.flush();
 
       while(true){
-        // read 'C0644 '
-        in.read(buf, 0, 6);
-        if(buf[0]!='C')break;
+	int c=checkAck(in);
+        if(c!='C'){
+	  break;
+	}
+
+        // read '0644 '
+        in.read(buf, 0, 5);
 
         int filesize=0;
         while(true){
@@ -71,7 +75,7 @@ public class ScpFrom{
   	  }
         }
 
-        //System.out.println("filesize="+filesize+", file="+file);
+	//System.out.println("filesize="+filesize+", file="+file);
 
         // send '\0'
         buf[0]=0; out.write(buf, 0, 1); out.flush();
@@ -92,8 +96,11 @@ public class ScpFrom{
         fos.close();
 
         byte[] tmp=new byte[1];
-        // wait for '\0'
-        do{ in.read(tmp, 0, 1); }while(tmp[0]!=0);
+
+	if(checkAck(in)!=0){
+	  System.exit(0);
+	}
+
         // send '\0'
         buf[0]=0; out.write(buf, 0, 1); out.flush();
       }
@@ -102,6 +109,33 @@ public class ScpFrom{
     catch(Exception e){
       System.out.println(e);
     }
+  }
+
+  static int checkAck(InputStream in) throws IOException{
+    int b=in.read();
+    // b may be 0 for success,
+    //          1 for error,
+    //          2 for fatal error,
+    //          -1
+    if(b==0) return b;
+    if(b==-1) return b;
+
+    if(b==1 || b==2){
+      StringBuffer sb=new StringBuffer();
+      int c;
+      do {
+	c=in.read();
+	sb.append((char)c);
+      }
+      while(c!='\n');
+      if(b==1){ // error
+	System.out.print(sb.toString());
+      }
+      if(b==2){ // fatal error
+	System.out.print(sb.toString());
+      }
+    }
+    return b;
   }
 
   public static class MyUserInfo implements UserInfo{

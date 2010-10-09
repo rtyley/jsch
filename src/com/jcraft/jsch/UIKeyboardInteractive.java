@@ -27,30 +27,13 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package com.jcraft.jsch.jce;
+package com.jcraft.jsch;
 
-import java.security.SecureRandom;
-import java.security.NoSuchAlgorithmException;
-
-public class Random implements com.jcraft.jsch.Random{
-  private byte[] tmp=new byte[16];
-  private SecureRandom random;
-  public Random(){
-    random=null;
-    try{ random=SecureRandom.getInstance("SHA1PRNG"); }
-    catch(java.security.NoSuchAlgorithmException e){ 
-      // System.out.println(e); 
-
-      // The following code is for IBM's JCE
-      try{ random=SecureRandom.getInstance("IBMSecureRandom"); }
-      catch(java.security.NoSuchAlgorithmException ee){ 
-	System.out.println(ee); 
-      }
-    }
-  }
-  public void fill(byte[] foo, int start, int len){
-    if(len>tmp.length){ tmp=new byte[len]; }
-    random.nextBytes(tmp);
-    System.arraycopy(tmp, 0, foo, start, len);
-  }
+public interface UIKeyboardInteractive{
+  String[] promptKeyboardInteractive(String destination,
+				     String name,
+				     String instruction,
+				     String lang,
+				     String[] prompt,
+				     boolean[] echo);
 }

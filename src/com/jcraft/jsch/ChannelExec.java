@@ -94,4 +94,11 @@ public class ChannelExec extends ChannelSession{
     thread=null;
 //System.out.println(this+":run <");
   }
+
+  public void setErrStream(java.io.OutputStream out){
+    setExtOutputStream(out);
+  }
+  public java.io.InputStream getErrStream() throws java.io.IOException {
+    return getExtInputStream();
+  }
 }

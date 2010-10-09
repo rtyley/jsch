@@ -93,8 +93,8 @@ class UserAuthPassword extends UserAuth{
 	buf.getInt(); buf.getByte(); buf.getByte(); 
 	byte[] foo=buf.getString();
 	int partial_success=buf.getByte();
-//      System.out.println(new String(foo)+
-//			 " partial_success:"+(partial_success!=0));
+	//System.out.println(new String(foo)+
+	//		 " partial_success:"+(partial_success!=0));
 	break;
       }
       else{

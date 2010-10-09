@@ -69,7 +69,7 @@ class ChannelForwardedTCPIP extends Channel{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null && io.in!=null){
+      while(thread!=null && io!=null && io.in!=null){
         i=io.in.read(buf.buffer, 
 		     14, 
 		     buf.buffer.length-14
@@ -88,11 +88,26 @@ class ChannelForwardedTCPIP extends Channel{
       }
     }
     catch(Exception e){
-      System.out.println(e);
+      //System.out.println(e);
     }
+    //thread=null;
+    //eof();
+    disconnect();
+  }
+  public void disconnect(){
+    close();
     thread=null;
-
-    eof();
+    try{
+      if(io!=null){
+      if(io.in!=null)io.in.close();
+      if(io.out!=null)io.out.close();
+      }
+    }
+    catch(Exception e){
+      //e.printStackTrace();
+    }
+    io=null;
+    Channel.del(this);
   }
   void getData(Buffer buf){
     setRecipient(buf.getInt());

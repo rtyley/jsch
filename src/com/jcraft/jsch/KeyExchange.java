@@ -86,6 +86,7 @@ public abstract class KeyExchange{
   */
 
   protected static String[] guess(byte[]I_S, byte[]I_C){
+//System.out.println("guess: ");
     String[] guess=new String[PROPOSAL_MAX];
     Buffer sb=new Buffer(I_S); sb.setOffSet(17);
     Buffer cb=new Buffer(I_C); cb.setOffSet(17);
@@ -93,6 +94,9 @@ public abstract class KeyExchange{
     for(int i=0; i<PROPOSAL_MAX; i++){
       byte[] sp=sb.getString();  // server proposal
       byte[] cp=cb.getString();  // client proposal
+
+//System.out.println("server-proposal: |"+new String(sp)+"|");
+//System.out.println("client-proposal: |"+new String(cp)+"|");
 
       int j=0;
       int k=0;
@@ -111,6 +115,7 @@ public abstract class KeyExchange{
 //System.out.println("  "+new String(sp, m, l-m));
 	  if(algorithm.equals(new String(sp, m, l-m))){
 	    guess[i]=algorithm;
+//System.out.println("  "+algorithm);
 	    break loop;
 	  }
 	  l++;
@@ -123,6 +128,7 @@ public abstract class KeyExchange{
 	guess[i]="";
       }
       else if(guess[i]==null){
+//System.out.println("  fail");
 	return null;
       }
     }

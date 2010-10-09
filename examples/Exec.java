@@ -46,7 +46,23 @@ public class Exec{
       channel.setInputStream(System.in);
       channel.setOutputStream(System.out);
 
+      //FileOutputStream fos=new FileOutputStream("/tmp/stderr");
+      //((ChannelExec)channel).setErrStream(fos);
+      ((ChannelExec)channel).setErrStream(System.err);
+
       channel.connect();
+
+      /*
+      byte[] tmp=new byte[1];
+      InputStream in = channel.getInputStream();
+      while(true){
+	if(channel.isEOF()) break;
+	while (in.available()>0){
+	  in.read(tmp, 0, 1);
+	  System.out.print(new String(tmp, 0, 1));
+	}
+      }
+      */
     }
     catch(Exception e){
       System.out.println(e);
