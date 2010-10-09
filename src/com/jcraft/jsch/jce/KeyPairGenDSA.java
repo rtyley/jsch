@@ -27,49 +27,41 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-package com.jcraft.jsch;
+package com.jcraft.jsch.jce;
 
-import java.net.*;
-class ChannelSession extends Channel{
-  private static byte[] _session="session".getBytes();
-  ChannelSession(){
-    super();
-    type=_session;
-    io=new IO();
+import java.math.BigInteger;
+import java.security.*;
+import java.security.spec.*;
+import java.security.interfaces.*;
+import javax.crypto.*;
+import javax.crypto.spec.*;
+import javax.crypto.interfaces.*;
+
+public class KeyPairGenDSA implements com.jcraft.jsch.KeyPairGenDSA{
+  byte[] x;  // private
+  byte[] y;  // public
+  byte[] p;
+  byte[] q;
+  byte[] g;
+
+  public void init(int key_size) throws Exception{
+    KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DSA");
+    keyGen.initialize(key_size, new SecureRandom());
+    KeyPair pair = keyGen.generateKeyPair();
+    PublicKey pubKey=pair.getPublic();
+    PrivateKey prvKey=pair.getPrivate();
+
+    x=((DSAPrivateKey)prvKey).getX().toByteArray();
+    y=((DSAPublicKey)pubKey).getY().toByteArray();
+
+    DSAParams params=((DSAKey)prvKey).getParams();
+    p=params.getP().toByteArray();
+    q=params.getQ().toByteArray();
+    g=params.getG().toByteArray();
   }
-
-  /*
-  public void init(){
-    io.setInputStream(session.in);
-    io.setOutputStream(session.out);
-  }
-  */
-
-  public void run(){
-    thread=this;
-    Buffer buf=new Buffer();
-    Packet packet=new Packet(buf);
-    int i=0;
-    try{
-      while(thread!=null && io!=null && io.in!=null){
-        i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
-	if(i==0)continue;
-	if(i==-1)break;
-        packet.reset();
-        buf.putByte((byte) Session.SSH_MSG_CHANNEL_DATA);
-        buf.putInt(recipient);
-        buf.putInt(i);
-        buf.skip(i);
-	session.write(packet, this, i);
-      }
-    }
-    catch(Exception e){
-      //System.out.println("ChannelSession.run: "+e);
-    }
-    thread=null;
-  }
-
-//  public String toString(){
-//      return "Channel: type="+new String(type)+",id="+id+",recipient="+recipient+",window_size="+window_size+",packet_size="+packet_size;
-//  }
+  public byte[] getX(){return x;}
+  public byte[] getY(){return y;}
+  public byte[] getP(){return p;}
+  public byte[] getQ(){return q;}
+  public byte[] getG(){return g;}
 }

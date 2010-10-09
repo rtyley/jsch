@@ -1,6 +1,13 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Nov 19 15:19:21 UTC 2003
+Last modified: Wed Dec  3 14:19:48 UTC 2003
+
+	
+Changes since version 0.1.9:	
+- username and password can be in UTF-8 encoding.
+- DSA keypair generation.
+- added 'examples/KeyGen.java', which demonstrates
+  the DSA keypair generation.
 
 	
 Changes since version 0.1.8:	

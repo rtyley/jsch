@@ -172,7 +172,7 @@ public abstract class Channel implements Runnable{
   public void setOutputStream(OutputStream out){
     io.setOutputStream(out);
   }
-  /*public*/ void setExtOutputStream(OutputStream out){
+  public void setExtOutputStream(OutputStream out){
     io.setExtOutputStream(out);
   }
   public InputStream getInputStream() throws IOException {
@@ -180,7 +180,7 @@ public abstract class Channel implements Runnable{
     io.setOutputStream(new PassiveOutputStream(in));
     return in;
   }
-  /*public*/ InputStream getExtInputStream() throws IOException {
+  public InputStream getExtInputStream() throws IOException {
     PipedInputStream in=new PipedInputStream();
     io.setExtOutputStream(new PassiveOutputStream(in));
     return in;
@@ -248,7 +248,7 @@ public abstract class Channel implements Runnable{
       session.write(packet);
     }
     catch(Exception e){
-      e.printStackTrace();
+      //e.printStackTrace();
     }
   }
   static void eof(Session session){
@@ -263,7 +263,9 @@ public abstract class Channel implements Runnable{
   }
   public void disconnect(){
 //System.out.println(this+":disconnect "+((ChannelExec)this).command+" "+io.in);
+//System.out.println(this+":disconnect "+io+" "+io.in);
     close();
+//System.out.println("$1");
     thread=null;
     try{
       if(io!=null){
@@ -286,11 +288,11 @@ public abstract class Channel implements Runnable{
       }
     }
     catch(Exception e){
-      e.printStackTrace();
+      //e.printStackTrace();
     }
+//System.out.println("$2");
     io=null;
     Channel.del(this);
-//System.out.println(this+":bye");
   }
 
   public void sendSignal(String foo) throws Exception {

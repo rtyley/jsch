@@ -29,47 +29,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.net.*;
-class ChannelSession extends Channel{
-  private static byte[] _session="session".getBytes();
-  ChannelSession(){
-    super();
-    type=_session;
-    io=new IO();
-  }
-
-  /*
-  public void init(){
-    io.setInputStream(session.in);
-    io.setOutputStream(session.out);
-  }
-  */
-
-  public void run(){
-    thread=this;
-    Buffer buf=new Buffer();
-    Packet packet=new Packet(buf);
-    int i=0;
-    try{
-      while(thread!=null && io!=null && io.in!=null){
-        i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
-	if(i==0)continue;
-	if(i==-1)break;
-        packet.reset();
-        buf.putByte((byte) Session.SSH_MSG_CHANNEL_DATA);
-        buf.putInt(recipient);
-        buf.putInt(i);
-        buf.skip(i);
-	session.write(packet, this, i);
-      }
-    }
-    catch(Exception e){
-      //System.out.println("ChannelSession.run: "+e);
-    }
-    thread=null;
-  }
-
-//  public String toString(){
-//      return "Channel: type="+new String(type)+",id="+id+",recipient="+recipient+",window_size="+window_size+",packet_size="+packet_size;
-//  }
+public interface KeyPairGenDSA{
+  void init(int key_size) throws Exception;
+  byte[] getX();
+  byte[] getY();
+  byte[] getP();
+  byte[] getQ();
+  byte[] getG();
 }

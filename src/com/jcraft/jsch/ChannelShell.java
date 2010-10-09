@@ -69,7 +69,7 @@ public class ChannelShell extends ChannelSession{
     Packet packet=new Packet(buf);
     int i=0;
     try{
-      while(thread!=null && io.in!=null){
+      while(thread!=null && io!=null && io.in!=null){
         i=io.in.read(buf.buffer, 14, buf.buffer.length-14);
 	if(i==0)continue;
 	if(i==-1)break;
@@ -83,7 +83,7 @@ public class ChannelShell extends ChannelSession{
       }
     }
     catch(Exception e){
-      System.out.println(e);
+      //System.out.println("ChannelShell.run: "+e);
     }
     thread=null;
   }
@@ -96,7 +96,7 @@ public class ChannelShell extends ChannelSession{
       request.request(session, this);
     }
     catch(Exception e){
-      System.out.println(e);
+      System.out.println("ChannelShell.setPtySize: "+e);
     }
   }
 }

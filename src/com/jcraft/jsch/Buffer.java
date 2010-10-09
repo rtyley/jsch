@@ -207,7 +207,6 @@ public class Buffer{
 	}
     }
     System.out.println("");
-
   }
   static void dump(byte[] b){
     dump(b, 0, b.length);

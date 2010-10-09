@@ -60,6 +60,7 @@ public class JSch{
     config.put("md5",           "com.jcraft.jsch.jce.MD5");
     config.put("signature.dss", "com.jcraft.jsch.jce.SignatureDSA");
     config.put("signature.rsa", "com.jcraft.jsch.jce.SignatureRSA");
+    config.put("keypairgen.dsa",   "com.jcraft.jsch.jce.KeyPairGenDSA");
     config.put("random",        "com.jcraft.jsch.jce.Random");
 
     config.put("zlib",          "com.jcraft.jsch.jcraft.Compression");

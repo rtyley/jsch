@@ -56,6 +56,18 @@ class UserAuthPassword extends UserAuth{
 	}
       }
 
+      byte[] _username=null;
+      try{ _username=username.getBytes("UTF-8"); }
+      catch(java.io.UnsupportedEncodingException e){
+	_username=username.getBytes();
+      }
+
+      byte[] _password=null;
+      try{ _password=username.getBytes("UTF-8"); }
+      catch(java.io.UnsupportedEncodingException e){
+	_password=username.getBytes();
+      }
+
       // send
       // byte      SSH_MSG_USERAUTH_REQUEST(50)
       // string    user name
@@ -65,11 +77,11 @@ class UserAuthPassword extends UserAuth{
       // string    plaintext password (ISO-10646 UTF-8)
       packet.reset();
       buf.putByte((byte)Session.SSH_MSG_USERAUTH_REQUEST);
-      buf.putString(username.getBytes());
+      buf.putString(_username);
       buf.putString("ssh-connection".getBytes());
       buf.putString("password".getBytes());
       buf.putByte((byte)0);
-      buf.putString(password.getBytes());
+      buf.putString(_password);
       session.write(packet);
 
       loop:
@@ -84,9 +96,14 @@ class UserAuthPassword extends UserAuth{
       }
       if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_BANNER){
 	buf.getInt(); buf.getByte(); buf.getByte();
-	byte[] message=buf.getString();
+	byte[] _message=buf.getString();
 	byte[] lang=buf.getString();
-	userinfo.showMessage(new String(message));
+	String message=null;
+	try{ message=new String(_message, "UTF-8"); }
+	catch(java.io.UnsupportedEncodingException e){
+	  message=new String(_message);
+	}
+	userinfo.showMessage(message);
 	continue loop;
       }
       if(buf.buffer[5]==Session.SSH_MSG_USERAUTH_FAILURE){

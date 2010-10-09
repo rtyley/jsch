@@ -110,8 +110,8 @@ class Identity{
         if(buf[i]=='C'&& buf[i+1]=='B'&& buf[i+2]=='C'&& buf[i+3]==','){
           i+=4;
 	  for(int ii=0; ii<iv.length; ii++){
-            iv[ii]=(byte)(((hexconv(buf[i++])<<4)&0xf0)+
-			  (hexconv(buf[i++])&0xf));
+            iv[ii]=(byte)(((a2b(buf[i++])<<4)&0xf0)+
+			  (a2b(buf[i++])&0xf));
   	  }
 	  continue;
 	}
@@ -717,9 +717,54 @@ System.out.println("");
     }
     return true;
   }
-  private byte hexconv(byte c){
+
+  private int writeSEQUENCE(byte[] buf, int index, int len){
+    buf[index++]=0x30;
+    index=writeLength(buf, index, len);
+    return index;
+  }
+  private int writeINTEGER(byte[] buf, int index, byte[] data){
+    buf[index++]=0x02;
+    index=writeLength(buf, index, data.length);
+    System.arraycopy(data, 0, buf, index, data.length);
+    index+=data.length;
+    return index;
+  }
+
+  private int countLength(int len){
+    int i=1;
+    if(len<=0x7f) return i;
+    while(len>0){
+      len>>>=8;
+      i++;
+    }
+    return i;
+  }
+
+  private int writeLength(byte[] data, int index, int len){
+    int i=countLength(len)-1;
+    if(i==0){
+      data[index++]=(byte)len;
+      return index;
+    }
+    data[index++]=(byte)(0x80|i);
+    int j=index+i;
+    while(i>0){
+      data[index+i-1]=(byte)(len&0xff);
+      len>>>=8;
+      i--;
+    }
+    return j;
+  }
+
+  private byte a2b(byte c){
     if('0'<=c&&c<='9') return (byte)(c-'0');
-    return (byte)(c-'a'+10);
+    if('a'<=c&&c<='z') return (byte)(c-'a'+10);
+    return (byte)(c-'A'+10);
+  }
+  private byte b2a(byte c){
+    if(0<=c&&c<=9) return (byte)(c+'0');
+    return (byte)(c-10+'A');
   }
   public boolean isEncrypted(){
     return encrypted;

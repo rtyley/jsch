@@ -146,7 +146,7 @@ public class Session implements Runnable{
 	Class c=Class.forName(getConfig("random"));
         random=(Random)(c.newInstance());
       }
-      catch(Exception e){ System.err.println(e); }
+      catch(Exception e){ System.err.println("connect: random "+e); }
     }
     Packet.setRandom(random);
 
@@ -366,7 +366,7 @@ public class Session implements Runnable{
 	}
       }
       isConnected=false;
-      e.printStackTrace();
+      //e.printStackTrace();
       if(e instanceof JSchException) throw (JSchException)e;
       throw new JSchException("Session.connect: "+e);
     }
@@ -418,7 +418,7 @@ System.out.println(e);
       Class c=Class.forName(getConfig(guess[KeyExchange.PROPOSAL_KEX_ALGS]));
       kex=(KeyExchange)(c.newInstance());
     }
-    catch(Exception e){ System.err.println(e); }
+    catch(Exception e){ System.err.println("kex: "+e); }
     kex.guess=guess;
     kex.init(this, V_S, V_C, I_S, I_C);
     return kex;
@@ -546,7 +546,7 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
 	}
 	if(foo){
 	  try{ jsch.getKnownHosts().sync(bar); }
-	  catch(Exception e){ System.out.println(e); }
+	  catch(Exception e){ System.out.println("sync known_hosts: "+e); }
 	}
       }
     }
@@ -566,7 +566,7 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
       return channel;
     }
     catch(Exception e){
-      e.printStackTrace();
+      //e.printStackTrace();
     }
     return null;
   }
@@ -835,7 +835,7 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
 	}
       }
     }
-    catch(Exception e){ System.err.println(e); }
+    catch(Exception e){ System.err.println("updatekeys: "+e); }
   }
 
   public /*synchronized*/ void write(Packet packet, Channel c, int length) throws Exception{
@@ -1067,11 +1067,11 @@ break;
     }
     catch(NullPointerException e){
       //System.out.println("@1");
-      e.printStackTrace();
+      //e.printStackTrace();
     }
     catch(Exception e){
       //System.out.println("@2");
-      e.printStackTrace();
+      //e.printStackTrace();
     }
     isConnected=false;
   }
