@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
-Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -623,6 +623,8 @@ public class ChannelSftp extends ChannelSubsystem{
       byte[] handle=buf.getString();         // filename
 
       byte[] data=null;
+      int[] data_start=new int[1];
+      int[] data_len=new int[1];
 
       long offset=0;
       if(mode==RESUME){
@@ -643,15 +645,15 @@ public class ChannelSftp extends ChannelSubsystem{
  	  }
  	  throwStatusError(buf, i);
 	}
-	data=buf.getString();
-        dst.write(data, 0, data.length);
+	data=buf.getString(data_start, data_len);
+        dst.write(data, data_start[0], data_len[0]);
 	dst.flush();
 	if(monitor!=null){
-	  if(!monitor.count(data.length)){
+	  if(!monitor.count(data_len[0])){
 	    break;
 	  }
 	}
-        offset+=data.length;
+        offset+=data_len[0];
       }
       sendCLOSE(handle);
 

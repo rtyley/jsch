@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Thu Dec 11 15:04:08 UTC 2003
+Last modified: Fri Jan 23 00:08:41 JST 2004
 
 
 Description
@@ -43,7 +43,7 @@ adding other functionality - port forward, file transfer, terminal emulation, et
 Features
 ========
 * JSch is in pure Java, but it depends on JavaTM Cryptography
-  Extension (JCE).  Jsch is know to work with:
+  Extension (JCE).  JSch is know to work with:
   o J2SE 1.4.0 or later (no additional libraries required).
   o J2SE 1.3 and Sun's JCE reference implementation that can be
     obtained at http://java.sun.com/products/jce/
@@ -69,6 +69,7 @@ Features
 * remote exec.
 * generating DSA and RSA key pairs.
 * SSH File Transfer Protocol(version 0, 1, 2, 3)
+* partial authentication
 * packet compression.
   JZlib(http://www.jcraft.com/jzlib/) has been used.
 * JSch is licensed under BSD style license(refer to LICENSE.txt).

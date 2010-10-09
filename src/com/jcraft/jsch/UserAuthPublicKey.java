@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
-Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -60,6 +60,8 @@ class UserAuthPublicKey extends UserAuth{
       Identity identity=(Identity)(identities.elementAt(i));
       byte[] pubkeyblob=identity.getPublicKeyBlob();
 
+//System.out.println("UserAuthPublicKey: "+identity+" "+pubkeyblob);
+
       if(pubkeyblob!=null){
 	// send
 	// byte      SSH_MSG_USERAUTH_REQUEST(50)
@@ -116,6 +118,8 @@ class UserAuthPublicKey extends UserAuth{
 	}
       }
 
+//System.out.println("UserAuthPublicKey: identity.isEncrypted()="+identity.isEncrypted());
+
       int count=5;
       while(true){
 	if((identity.isEncrypted() && passphrase==null)){
@@ -129,6 +133,7 @@ class UserAuthPublicKey extends UserAuth{
 	}
 
 	if(!identity.isEncrypted() || passphrase!=null){
+//System.out.println("UserAuthPublicKey: @1 "+passphrase);
 	  if(identity.setPassphrase(passphrase))
 	    break;
 	}
@@ -137,8 +142,12 @@ class UserAuthPublicKey extends UserAuth{
 	if(count==0)break;
       }
 
+//System.out.println("UserAuthPublicKey: identity.isEncrypted()="+identity.isEncrypted());
+
       if(identity.isEncrypted()) continue;
       if(pubkeyblob==null) pubkeyblob=identity.getPublicKeyBlob();
+
+//System.out.println("UserAuthPublicKey: pubkeyblob="+pubkeyblob);
       if(pubkeyblob==null) continue;
 
       // send
@@ -188,8 +197,11 @@ class UserAuthPublicKey extends UserAuth{
 	  buf.getInt(); buf.getByte(); buf.getByte(); 
 	  byte[] foo=buf.getString();
 	  int partial_success=buf.getByte();
-	  System.out.println(new String(foo)+
-			     " partial_success:"+(partial_success!=0));
+	  //System.out.println(new String(foo)+
+	  //                   " partial_success:"+(partial_success!=0));
+	  if(partial_success!=0){
+	    throw new JSchPartialAuthException(new String(foo));
+	  }
 	  break;
 	}
 	System.out.println("USERAUTH fail ("+buf.buffer[5]+")");

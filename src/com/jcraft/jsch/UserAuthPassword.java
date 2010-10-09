@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
-Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -112,6 +112,9 @@ class UserAuthPassword extends UserAuth{
 	int partial_success=buf.getByte();
 	//System.out.println(new String(foo)+
 	//		 " partial_success:"+(partial_success!=0));
+	if(partial_success!=0){
+	  throw new JSchPartialAuthException(new String(foo));
+	}
 	break;
       }
       else{

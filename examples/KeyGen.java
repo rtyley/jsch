@@ -40,7 +40,7 @@ class KeyGen{
 
     try{
       KeyPair kpair=KeyPair.genKeyPair(jsch, type);
-      kpair.setPassphrase(passphrase.getBytes());
+      kpair.setPassphrase(passphrase);
       kpair.writePrivateKey(filename);
       kpair.writePublicKey(filename+".pub", comment);
       System.out.println("Finger print: "+kpair.getFingerPrint());

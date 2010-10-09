@@ -137,3 +137,13 @@ or
   If everything works fine, you will get the DSA or RSA keypair, 
   output_keyfile and output_keyfile+".pub".
   The private key and public key are in the OpenSSH format.
+
+- ChangePassphrase.java
+  This program will demonstrate to change the passphrase for a
+  private key file instead of creating a new private key.
+  $ CLASSPATH=.:../src javac ChangePassphrase.java
+  $ CLASSPATH=.:../src java ChangePassphrase private-key
+  A passphrase will be prompted if the given private-key has been
+  encrypted.  After successfully loading the content of the
+  private-key, the new passphrase will be prompted and the given
+  private-key will be re-encrypted with that new passphrase.

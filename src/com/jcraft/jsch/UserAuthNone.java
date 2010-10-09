@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
-Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -88,8 +88,11 @@ class UserAuthNone extends UserAuth{
 	byte[] foo=buf.getString();
 	int partial_success=buf.getByte();
 	methods=new String(foo);
-	//System.out.println(methods+
-	//                   " partial_success:"+(partial_success!=0));
+//System.out.println("UserAuthNONE: "+methods+
+//		   " partial_success:"+(partial_success!=0));
+//	if(partial_success!=0){
+//	  throw new JSchPartialAuthException(new String(foo));
+//	}
         break;
       }
       else{

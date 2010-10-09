@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
-Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -40,9 +40,14 @@ public class KeyPairRSA extends KeyPair{
   private byte[] eq_array; // prime exponent q
   private byte[] c_array;  // coefficient
 
-  private int key_size=0;
-  public KeyPairRSA(JSch jsch, int key_size) throws JSchException{
-    super(jsch, key_size);
+  //private int key_size=0;
+  private int key_size=1024;
+
+  public KeyPairRSA(JSch jsch){
+    super(jsch);
+  }
+
+  void generate(int key_size) throws JSchException{
     this.key_size=key_size;
     try{
       Class c=Class.forName(jsch.getConfig("keypairgen.rsa"));
@@ -102,7 +107,196 @@ public class KeyPairRSA extends KeyPair{
     return plain;
   }
 
-  byte[] getPublicKeyBlob(){
+  boolean parse(byte [] plain){
+    /*
+    byte[] p_array;
+    byte[] q_array;
+    byte[] dmp1_array;
+    byte[] dmq1_array;
+    byte[] iqmp_array;
+    */
+    try{
+      int index=0;
+      int length=0;
+
+      if(vendor==VENDOR_FSECURE){
+	if(plain[index]!=0x30){                  // FSecure
+	  Buffer buf=new Buffer(plain);
+	  pub_array=buf.getMPIntBits();
+	  prv_array=buf.getMPIntBits();
+	  n_array=buf.getMPIntBits();
+	  byte[] u_array=buf.getMPIntBits();
+	  p_array=buf.getMPIntBits();
+	  q_array=buf.getMPIntBits();
+	  return true;
+	}
+	return false;
+      }
+
+      index++; // SEQUENCE
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+
+      if(plain[index]!=0x02)return false;
+      index++; // INTEGER
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+      index+=length;
+
+//System.out.println("int: len="+length);
+//System.out.print(Integer.toHexString(plain[index-1]&0xff)+":");
+//System.out.println("");
+
+      index++;
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+      n_array=new byte[length];
+      System.arraycopy(plain, index, n_array, 0, length);
+      index+=length;
+/*
+System.out.println("int: N len="+length);
+for(int i=0; i<n_array.length; i++){
+System.out.print(Integer.toHexString(n_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
+      index++;
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+      pub_array=new byte[length];
+      System.arraycopy(plain, index, pub_array, 0, length);
+      index+=length;
+/*
+System.out.println("int: E len="+length);
+for(int i=0; i<pub_array.length; i++){
+System.out.print(Integer.toHexString(pub_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
+      index++;
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+      prv_array=new byte[length];
+      System.arraycopy(plain, index, prv_array, 0, length);
+      index+=length;
+/*
+System.out.println("int: prv len="+length);
+for(int i=0; i<prv_array.length; i++){
+System.out.print(Integer.toHexString(prv_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
+
+      index++;
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+      p_array=new byte[length];
+      System.arraycopy(plain, index, p_array, 0, length);
+      index+=length;
+/*
+System.out.println("int: P len="+length);
+for(int i=0; i<p_array.length; i++){
+System.out.print(Integer.toHexString(p_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
+      index++;
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+      q_array=new byte[length];
+      System.arraycopy(plain, index, q_array, 0, length);
+      index+=length;
+/*
+System.out.println("int: q len="+length);
+for(int i=0; i<q_array.length; i++){
+System.out.print(Integer.toHexString(q_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
+      index++;
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+      ep_array=new byte[length];
+      System.arraycopy(plain, index, ep_array, 0, length);
+      index+=length;
+/*
+System.out.println("int: ep len="+length);
+for(int i=0; i<ep_array.length; i++){
+System.out.print(Integer.toHexString(ep_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
+      index++;
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+      eq_array=new byte[length];
+      System.arraycopy(plain, index, eq_array, 0, length);
+      index+=length;
+/*
+System.out.println("int: eq len="+length);
+for(int i=0; i<eq_array.length; i++){
+System.out.print(Integer.toHexString(eq_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
+      index++;
+      length=plain[index++]&0xff;
+      if((length&0x80)!=0){
+        int foo=length&0x7f; length=0;
+        while(foo-->0){ length=(length<<8)+(plain[index++]&0xff); }
+      }
+      c_array=new byte[length];
+      System.arraycopy(plain, index, c_array, 0, length);
+      index+=length;
+/*
+System.out.println("int: c len="+length);
+for(int i=0; i<c_array.length; i++){
+System.out.print(Integer.toHexString(c_array[i]&0xff)+":");
+}
+System.out.println("");
+*/
+    }
+    catch(Exception e){
+      //System.out.println(e);
+      return false;
+    }
+    return true;
+  }
+
+
+  public byte[] getPublicKeyBlob(){
+    byte[] foo=super.getPublicKeyBlob();
+    if(foo!=null) return foo;
+
+    if(pub_array==null) return null;
+
     Buffer buf=new Buffer(sshrsa.length+4+
 			  pub_array.length+4+ 
 			  n_array.length+4);

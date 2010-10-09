@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
-Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
 Copyright (c) 2003 Erwin Bolwidt, Amsterdam, The Netherlands.
 
 Redistribution and use in source and binary forms, with or without

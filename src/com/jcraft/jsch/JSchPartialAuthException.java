@@ -29,38 +29,16 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-class RequestWindowChange implements Request{
-  int width_columns=80;
-  int height_rows=24;
-  int width_pixels=640;
-  int height_pixels=480;
-  void setSize(int row, int col, int wp, int hp){
-    this.width_columns=row; 
-    this.height_rows=col; 
-    this.width_pixels=wp;
-    this.height_pixels=hp;
+public class JSchPartialAuthException extends JSchException{
+  String methods;
+  public JSchPartialAuthException () {
+    super();
   }
-  public void request(Session session, Channel channel) throws Exception{
-    Buffer buf=new Buffer();
-    Packet packet=new Packet(buf);
-
-    //byte      SSH_MSG_CHANNEL_REQUEST
-    //uint32    recipient_channel
-    //string    "window-change"
-    //boolean   FALSE
-    //uint32    terminal width, columns
-    //uint32    terminal height, rows
-    //uint32    terminal width, pixels
-    //uint32    terminal height, pixels
-    packet.reset();
-    buf.putByte((byte) Session.SSH_MSG_CHANNEL_REQUEST);
-    buf.putInt(channel.getRecipient());
-    buf.putString("window-change".getBytes());
-    buf.putByte((byte)0);
-    buf.putInt(width_columns);
-    buf.putInt(height_rows);
-    buf.putInt(width_pixels);
-    buf.putInt(height_pixels);
-    session.write(packet);
+  public JSchPartialAuthException (String s) {
+    super(s);
+    this.methods=s;
+  }
+  public String getMethods(){
+    return methods;
   }
 }

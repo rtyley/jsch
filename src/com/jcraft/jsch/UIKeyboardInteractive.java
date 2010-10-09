@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
-Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -33,7 +33,6 @@ public interface UIKeyboardInteractive{
   String[] promptKeyboardInteractive(String destination,
 				     String name,
 				     String instruction,
-				     String lang,
 				     String[] prompt,
 				     boolean[] echo);
 }

@@ -1,6 +1,14 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Thu Dec 11 15:03:40 UTC 2003
+Last modified: Fri Jan 23 00:04:36 JST 2004
+
+	
+Changes since version 0.1.12:	
+- added the partial authentication support.
+- allowing to change the passphrase of a private key file
+  instead of creating a new private key.
+- added 'examples/ChangePassphrase.java' 	
+- the interface 'UIKeyboardInteractive.java' has been modified.
 
 	
 Changes since version 0.1.11:	

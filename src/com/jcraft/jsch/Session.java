@@ -1,6 +1,6 @@
 /* -*-mode:java; c-basic-offset:2; -*- */
 /*
-Copyright (c) 2002,2003 ymnk, JCraft,Inc. All rights reserved.
+Copyright (c) 2002,2003,2004 ymnk, JCraft,Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -287,62 +287,50 @@ public class Session implements Runnable{
 	methods="publickey,password,keyboard-interactive";
       }
 
+      loop:
+      while(true){
+
 //System.out.println("methods: "+methods);
-      while(!auth && 
-	    methods!=null && methods.length()>0){
-	UserAuth us=null;
-	if(methods.startsWith("publickey")){
-	  if(jsch.identities.size()>0){
-	    us=new UserAuthPublicKey(userinfo);
+
+	while(!auth && 
+	      methods!=null && methods.length()>0){
+
+//System.out.println("  methods: "+methods);
+
+	  UserAuth us=null;
+	  if(methods.startsWith("publickey")){
+//System.out.println("   jsch.identities.size()="+jsch.identities.size());
+	    if(jsch.identities.size()>0){
+	      us=new UserAuthPublicKey(userinfo);
+	    }
+	  }
+	  else if(methods.startsWith("keyboard-interactive")){
+	    if(userinfo instanceof UIKeyboardInteractive){
+	      us=new UserAuthKeyboardInteractive(userinfo);
+	    }
+	  }
+	  else if(methods.startsWith("password")){
+	    us=new UserAuthPassword(userinfo);
+	  }
+	  if(us!=null){
+	    try{ auth=us.start(this); }
+	    catch(JSchPartialAuthException ee){
+	      methods=ee.getMethods();
+	      //System.out.println("PartialAuth: "+methods);
+	      continue loop;
+	    }
+	    catch(Exception ee){
+	      //System.out.println("ee: "+ee);
+	    }
+	  }
+	  if(!auth){
+	    int comma=methods.indexOf(",");
+	    if(comma==-1) break;
+	    methods=methods.substring(comma+1);
 	  }
 	}
-	else if(methods.startsWith("keyboard-interactive")){
-	  if(userinfo instanceof UIKeyboardInteractive){
-	    us=new UserAuthKeyboardInteractive(userinfo);
-	  }
-	}
-	else if(methods.startsWith("password")){
-	  us=new UserAuthPassword(userinfo);
-	}
-	if(us!=null){
-	  try{ auth=us.start(this); }
-	  catch(Exception ee){
-	    //System.out.println("ee: "+ee);
-	  }
-	}
-	if(!auth){
-	  int comma=methods.indexOf(",");
-	  if(comma==-1) break;
-	  methods=methods.substring(comma+1);
-	}
+        break;
       }
-
-/*
-      if(!auth &&
-	 (methods==null || methods.indexOf("publickey")!=-1) &&
-	 jsch.identities.size()>0){
-	try{
-	  UserAuth us=new UserAuthPublicKey(userinfo);
-          auth=us.start(this);
-	}
-	catch(Exception ee){
-	  //System.out.println("ee: "+ee);
-	}
-      }
-
-      if(!auth &&
-	 (userinfo instanceof UIKeyboardInteractive) && 
-	 (methods==null || methods.indexOf("keyboard-interactive")!=-1)){
-	UserAuth us=new UserAuthKeyboardInteractive(userinfo);
-	auth=us.start(this);
-      }
-
-      if(!auth &&
-	 (methods==null || methods.indexOf("password")!=-1)){
-	UserAuth us=new UserAuthPassword(userinfo);
-	auth=us.start(this);
-      }
-*/
 
       if(auth){
 	(new Thread(this)).start();
@@ -902,9 +890,10 @@ System.out.println("NEWKEYS");
           buf.getByte(); 
           i=buf.getInt(); 
 	  channel=Channel.getChannel(i, this);
-	  if(channel==null){
-	  }
 	  foo=buf.getString(start, length);
+	  if(channel==null){
+	    break;
+	  }
 try{
 	  channel.write(foo, start[0], length[0]);
 }
@@ -924,16 +913,18 @@ break;
 	    channel.setLocalWindowSize(channel.lwsize_max);
 	  }
 	  break;
+
         case SSH_MSG_CHANNEL_EXTENDED_DATA:
           buf.getInt();
 	  buf.getShort();
 	  i=buf.getInt();
 	  channel=Channel.getChannel(i, this);
-	  if(channel==null){
-	  }
 	  buf.getInt();                   // data_type_code == 1
 	  foo=buf.getString(start, length);
 	  //System.out.println("stderr: "+new String(foo,start[0],length[0]));
+	  if(channel==null){
+	    break;
+	  }
 	  //channel.write(foo, start[0], length[0]);
 	  channel.write_ext(foo, start[0], length[0]);
 
@@ -947,17 +938,19 @@ break;
 	    write(packet);
 	    channel.setLocalWindowSize(channel.lwsize_max);
 	  }
-
 	  break;
+
 	case SSH_MSG_CHANNEL_WINDOW_ADJUST:
           buf.getInt(); 
 	  buf.getShort(); 
 	  i=buf.getInt(); 
 	  channel=Channel.getChannel(i, this);
 	  if(channel==null){
+	    break;
 	  }
 	  channel.addRemoteWindowSize(buf.getInt()); 
 	  break;
+
 	case SSH_MSG_CHANNEL_EOF:
           buf.getInt(); 
           buf.getShort(); 
@@ -994,6 +987,7 @@ break;
 	  i=buf.getInt(); 
 	  channel=Channel.getChannel(i, this);
 	  if(channel==null){
+	    //break;
 	  }
 	  channel.setRecipient(buf.getInt());
 	  channel.setRemoteWindowSize(buf.getInt());
@@ -1212,5 +1206,11 @@ break;
     catch(Exception e){
       throw new JSchException(e.toString());
     }
+  }
+  public String getServerVersion(){
+    return new String(V_S);
+  }
+  public String getClientVersion(){
+    return new String(V_C);
   }
 }
