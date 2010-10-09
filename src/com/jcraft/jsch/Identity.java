@@ -60,7 +60,13 @@ class Identity{
   private static final int RSA=1;
   private static final int DSS=2;
   private static final int UNKNOWN=3;
+
+  private static final int OPENSSH=0;
+  private static final int FSECURE=1;
+  private static final int PUTTY=2;
+
   private int type=ERROR;
+  private int keytype=OPENSSH;
 
   private byte[] publickeyblob=null;
 
@@ -92,6 +98,7 @@ class Identity{
 	  else if(buf[i]=='R'&& buf[i+1]=='S'&& buf[i+2]=='A'){ type=RSA; }
 	  else if(buf[i]=='S'&& buf[i+1]=='S'&& buf[i+2]=='H'){ // FSecure
 	    type=UNKNOWN;
+	    keytype=FSECURE;
 	  }
 	  else{
             //System.out.println("invalid format: "+identity);
@@ -171,17 +178,14 @@ class Identity{
 	String cipher=new String(_cipher);
 	//System.out.println("cipher: "+cipher); 
 	if(cipher.equals("3des-cbc")){
-	  /*
-	  _buf.getByte(iv, 0, 4);
+  	   _buf.getInt();
 	   byte[] foo=new byte[encoded_data.length-_buf.getOffSet()];
 	   _buf.getByte(foo);
 	   encoded_data=foo;
 	   encrypted=true;
-	  */
-	  throw new JSchException("unknown privatekey format: "+identity);
+	   throw new JSchException("unknown privatekey format: "+identity);
 	}
 	else if(cipher.equals("none")){
-  	   _buf.getInt();
   	   _buf.getInt();
   	   _buf.getInt();
 
@@ -288,15 +292,27 @@ class Identity{
 	byte[] hn=new byte[key.length/hsize*hsize+
 			   (key.length%hsize==0?0:hsize)];
 	byte[] tmp=null;
-	for(int index=0; index+hsize<=hn.length;){
-	  if(tmp!=null){ hash.update(tmp, 0, tmp.length); }
-	  hash.update(passphrase, 0, passphrase.length);
-	  hash.update(iv, 0, iv.length);
-	  tmp=hash.digest();
-	  System.arraycopy(tmp, 0, hn, index, tmp.length);
-	  index+=tmp.length;
+	if(keytype==OPENSSH){
+	  for(int index=0; index+hsize<=hn.length;){
+	    if(tmp!=null){ hash.update(tmp, 0, tmp.length); }
+	    hash.update(passphrase, 0, passphrase.length);
+	    hash.update(iv, 0, iv.length);
+	    tmp=hash.digest();
+	    System.arraycopy(tmp, 0, hn, index, tmp.length);
+	    index+=tmp.length;
+	  }
+	  System.arraycopy(hn, 0, key, 0, key.length); 
 	}
-	System.arraycopy(hn, 0, key, 0, key.length); 
+	else if(keytype==FSECURE){
+	  for(int index=0; index+hsize<=hn.length;){
+	    if(tmp!=null){ hash.update(tmp, 0, tmp.length); }
+	    hash.update(passphrase, 0, passphrase.length);
+	    tmp=hash.digest();
+	    System.arraycopy(tmp, 0, hn, index, tmp.length);
+	    index+=tmp.length;
+	  }
+	  System.arraycopy(hn, 0, key, 0, key.length); 
+	}
       }
       if(decrypt()){
 	encrypted=false;
@@ -447,9 +463,20 @@ class Identity{
     try{
       byte[] plain;
       if(encrypted){
-        cipher.init(Cipher.DECRYPT_MODE, key, iv);
-        plain=new byte[encoded_data.length];
-        cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+	if(keytype==OPENSSH){
+	  cipher.init(Cipher.DECRYPT_MODE, key, iv);
+	  plain=new byte[encoded_data.length];
+	  cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+	}
+	else if(keytype==FSECURE){
+	  for(int i=0; i<iv.length; i++)iv[i]=0;
+	  cipher.init(Cipher.DECRYPT_MODE, key, iv);
+	  plain=new byte[encoded_data.length];
+	  cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+	}
+	else{
+	  return false;
+	}
       }
       else{
 	if(n_array!=null) return true;
@@ -459,7 +486,16 @@ class Identity{
       int index=0;
       int length=0;
 
-      if(plain[index]!=0x30)return false;
+      if(plain[index]!=0x30){                  // FSecure
+	Buffer buf=new Buffer(plain);
+	e_array=buf.getMPIntBits();
+        d_array=buf.getMPIntBits();
+	n_array=buf.getMPIntBits();
+	byte[] u_array=buf.getMPIntBits();
+	p_array=buf.getMPIntBits();
+	q_array=buf.getMPIntBits();
+        return true;
+      }
       index++; // SEQUENCE
       length=plain[index++]&0xff;
       if((length&0x80)!=0){
@@ -567,15 +603,26 @@ class Identity{
     try{
       byte[] plain;
       if(encrypted){
-        cipher.init(Cipher.DECRYPT_MODE, key, iv);
-        plain=new byte[encoded_data.length];
-        cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+	if(keytype==OPENSSH){
+	  cipher.init(Cipher.DECRYPT_MODE, key, iv);
+	  plain=new byte[encoded_data.length];
+	  cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
 /*
 for(int i=0; i<plain.length; i++){
 System.out.print(Integer.toHexString(plain[i]&0xff)+":");
 }
 System.out.println("");
 */
+	}
+	else if(keytype==FSECURE){
+	  for(int i=0; i<iv.length; i++)iv[i]=0;
+	  cipher.init(Cipher.DECRYPT_MODE, key, iv);
+	  plain=new byte[encoded_data.length];
+	  cipher.update(encoded_data, 0, encoded_data.length, plain, 0);
+	}
+	else{
+	  return false;
+	}
       }
       else{
 	if(P_array!=null) return true;
@@ -584,6 +631,7 @@ System.out.println("");
 
       if(plain[0]!=0x30){              // FSecure
 	Buffer buf=new Buffer(plain);
+	buf.getInt();
 	P_array=buf.getMPIntBits();
         G_array=buf.getMPIntBits();
 	Q_array=buf.getMPIntBits();

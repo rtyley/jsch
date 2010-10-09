@@ -39,6 +39,7 @@ import java.io.*;
 import java.net.*;
 
 public class ProxySOCKS5 implements Proxy{
+  private static int DEFAULTPORT=1080;
   private String proxy_host;
   private int proxy_port;
   private String host;
@@ -50,7 +51,18 @@ public class ProxySOCKS5 implements Proxy{
   private String passwd;
 
   public ProxySOCKS5(String proxy_host){
-    this(proxy_host, 1080);
+    int port=DEFAULTPORT;
+    String host=proxy_host;
+    if(proxy_host.indexOf(':')!=-1){
+      try{
+	host=proxy_host.substring(0, proxy_host.indexOf(':'));
+	port=Integer.parseInt(proxy_host.substring(proxy_host.indexOf(':')+1));
+      }
+      catch(Exception e){
+      }
+    }
+    this.proxy_host=host;
+    this.proxy_port=port;
   }
   public ProxySOCKS5(String proxy_host, int proxy_port){
     this.proxy_host=proxy_host;
@@ -307,5 +319,8 @@ public class ProxySOCKS5 implements Proxy{
     in=null;
     out=null;
     socket=null;
+  }
+  public static int getDefaultPort(){
+    return DEFAULTPORT;
   }
 }

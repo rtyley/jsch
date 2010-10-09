@@ -88,12 +88,13 @@ public abstract class Channel implements Runnable{
   int rwsize=0;         // remote initial window size
   int rmpsize=0;        // remote maximum packet size
 
-
   IO io=null;    
   Runnable thread=null;
 
   boolean eof=false;
   boolean close=false;
+
+  int exitstatus=-1;
 
   Session session;
 
@@ -203,7 +204,7 @@ public abstract class Channel implements Runnable{
   }
 
   void eof(){
-//System.out.println("EOF!!!!");
+//System.out.println("EOF!!!! "+this);
 //Thread.dumpStack();
     if(eof)return;
     eof=true;
@@ -312,6 +313,9 @@ public abstract class Channel implements Runnable{
       super(in);
     }
   }
+
+  void setExitStatus(int foo){ exitstatus=foo; }
+  public int getExitStatus(){ return exitstatus; }
 
   void setSession(Session session){
     this.session=session;

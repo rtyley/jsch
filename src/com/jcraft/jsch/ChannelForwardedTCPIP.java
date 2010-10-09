@@ -92,17 +92,7 @@ class ChannelForwardedTCPIP extends Channel{
     }
     thread=null;
 
-    try{
-      packet.reset();
-      buf.putByte((byte) Session.SSH_MSG_CHANNEL_EOF);
-      buf.putInt(recipient);
-      session.write(packet);
-    }
-    catch(Exception e){
-//      System.out.println(e);
-    }
-
-//    close();
+    eof();
   }
   void getData(Buffer buf){
     setRecipient(buf.getInt());
@@ -215,10 +205,11 @@ class ChannelForwardedTCPIP extends Channel{
     }
   }
   static void delPort(Session session){
-    for(java.util.Enumeration e=pool.elements(); e.hasMoreElements();){
-      Object[] bar=(Object[])(e.nextElement());
+    for(int i=0; i<pool.size(); i++){
+      Object[] bar=(Object[])(pool.elementAt(i));
       if(bar[0]==session) {
-        pool.removeElement(bar);	
+        pool.removeElement(bar);
+	i--;
       }
     }
   }

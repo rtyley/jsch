@@ -1,6 +1,12 @@
 ChangeLog of JSch
 ====================================================================
-Last modified: Wed Aug  6 15:11:34 UTC 2003
+Last modified: Tue Aug 26 16:47:57 UTC 2003
+
+	
+Changes since version 0.1.6:	
+- added 'int getExitStatus()' method to 'Channel' class.
+- fixed crash bugs in closing channels for port forwarding.
+- fixed glitches in managing forwarded ports.
 
 	
 Changes since version 0.1.5:	

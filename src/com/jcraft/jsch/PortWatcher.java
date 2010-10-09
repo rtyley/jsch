@@ -81,16 +81,18 @@ class PortWatcher implements Runnable{
     pool.removeElement(pw);
   }
   static void delPort(Session session){
-    for(java.util.Enumeration e=pool.elements(); e.hasMoreElements();){
-      PortWatcher p=(PortWatcher)(e.nextElement());
+    for(int i=0; i<pool.size(); i++){
+      PortWatcher p=(PortWatcher)(pool.elementAt(i));
       if(p.session==session) {
-	try{delPort(session, p.lport);}catch(Exception ee){}
+	p.delete();
+	pool.removeElement(p);
+	i--;
       }
     }
   }
   PortWatcher(Session session, 
 	      String boundaddress, int lport, 
-	      String host, int rport) {
+	      String host, int rport) throws JSchException{
     this.session=session;
     this.boundaddress=boundaddress;
     this.lport=lport;
@@ -103,6 +105,7 @@ class PortWatcher implements Runnable{
     }
     catch(Exception e){ 
       System.out.println(e);
+      throw new JSchException("PortForwardingL: local port "+lport+" cannot be bound.");
     }
   }
 

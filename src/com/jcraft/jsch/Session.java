@@ -531,6 +531,9 @@ jsch.getKnownHosts().getKnownHostsFile()+" does not exist.\n"+
   // encode will bin invoked in write with synchronization.
   public void encode(Packet packet) throws Exception{
 //System.out.println("encode: "+packet.buffer.buffer[5]);
+//if(packet.buffer.buffer[5]==96){
+//Thread.dumpStack();
+//}
     if(deflater!=null){
       packet.buffer.index=deflater.compress(packet.buffer.buffer, 
 					    5, packet.buffer.index);
@@ -859,8 +862,14 @@ System.out.println("NEWKEYS");
 	  if(channel==null){
 	  }
 	  foo=buf.getString(start, length);
+try{
 	  channel.write(foo, start[0], length[0]);
-
+}
+catch(Exception e){
+//System.out.println(e);
+  try{channel.disconnect();}catch(Exception ee){}
+break;
+}
 	  int len=length[0];
 	  channel.setLocalWindowSize(channel.lwsize-len);
  	  if(channel.lwsize<channel.lwsize_max/2){
@@ -953,21 +962,24 @@ System.out.println("NEWKEYS");
 	  foo=buf.getString(); 
           boolean reply=(buf.getByte()!=0);
 	  channel=Channel.getChannel(i, this);
-	  if(channel==null){
-	  }
-          byte reply_type=(byte)SSH_MSG_CHANNEL_FAILURE;
-          if((new String(foo)).equals("exit-status")){
-   	    i=buf.getInt();             // exit-status
+	  if(channel!=null){
+	    byte reply_type=(byte)SSH_MSG_CHANNEL_FAILURE;
+	    if((new String(foo)).equals("exit-status")){
+	      i=buf.getInt();             // exit-status
+	      channel.setExitStatus(i);
 //	    System.out.println("exit-stauts: "+i);
 //          channel.close();
-            reply_type=(byte)SSH_MSG_CHANNEL_SUCCESS;
-	  }
-          if(reply){
+	      reply_type=(byte)SSH_MSG_CHANNEL_SUCCESS;
+	    }
+	    if(reply){
 	      packet.reset();
 	      buf.putByte(reply_type);
 	      buf.putInt(channel.getRecipient());
 	      write(packet);
-          }
+	    }
+	  }
+	  else{
+	  }
 	  break;
 	case SSH_MSG_CHANNEL_OPEN:
           buf.getInt(); 
