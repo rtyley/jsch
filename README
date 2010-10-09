@@ -6,7 +6,7 @@
 
                             http://www.jcraft.com/jsch/
 
-Last modified: Tue Feb  4 04:48:43 UTC 2003
+Last modified: Tue Feb 11 14:11:51 UTC 2003
 
 
 Description
@@ -14,7 +14,7 @@ Description
 JSch is a pure Java implementation of SSH2.  JSch allows you to 
 connect to an sshd server and use port forwarding, X11 forwarding, 
 file transfer, etc., and you can integrate its functionality
-into your own Java programs. JSch is licensed under GNU LGPL.
+into your own Java programs. JSch is licensed under BSD style license.
 
 
 Documentation
@@ -65,7 +65,7 @@ Features
 * SSH File Transfer Protocol
 * packet compression.
   JZlib(http://www.jcraft.com/jzlib/) has been used.
-* JSch is licensed under GNU LGPL.
+* JSch is licensed under BSD style license(refer to LICENSE.txt).
 
 
 How To Try
@@ -109,16 +109,13 @@ TODO
 * generating RSA, DSA key pairs.
 * re-implementation with java.nio.
 * replacing cipher, hash by JCE with pure Java code.
-  It seems BeeCrypt(http://www.virtualunlimited.com/products/beecrypt/),
-  which in under GNU LGPL, can be integrated into JSch.
 * error handling.
 
 
 Copyrights & Disclaimers
 ========================
-JSch is copyrighted by JCraft,Inc. and is licensed through the
-GNU Library General Public License. 
-Read the COPYING file for the complete license.
+JSch is copyrighted by ymnk, JCraft,Inc. and is licensed through BSD style license.
+Read the LICENSE.txt file for the complete license.
 
 
 Credits and Acknowledgments
@@ -138,11 +135,12 @@ without several help.
 * We appreciate IETF sesch working group and SSH Communications Security Corp.
   Without the standardization of the protocol, we could not get the
   chance to implement JSch.
-* We also appreciate Seigo Haruyama(http://www.unixuser.org/~haruyama/),
+* We appreciate Seigo Haruyama(http://www.unixuser.org/~haruyama/),
   who are interpreting drafts of SSH2 protocol in Japanese.
   His works were very useful for us to understand the technical terms
   in our native language.
-
+* We also appreciate SourceForge.net's awesome service to the 
+  Open Source Community.
 
 If you have any comments, suggestions and questions, write us 
 at jsch@jcraft.com
