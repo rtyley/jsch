@@ -32,6 +32,20 @@
       <url>http://www.jcraft.com/jsch/LICENSE.txt</url>
     </license>
   </licenses>
+  <developers>
+    <developer>
+      <id>ymnk</id>
+      <email>ymnk@jcraft.com</email>
+      <url>http://twitter.com/ymnk</url>
+      <organization>JCraft</organization>
+      <organizationUrl>http://www.jcraft.com/jsch/</organizationUrl>
+    </developer>
+  </developers>
+  <contributors>
+    <contributor>
+      <name>Roberto Tyley</name>
+    </contributor>
+  </contributors>
 
   <dependencies>
     <dependency>
